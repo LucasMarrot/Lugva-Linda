@@ -1,0 +1,97 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+*.swo
+*~
+.Spotlight-V100
+.Trashes
+
+# IDE & Éditeurs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*.swn
+.vim/
+
+# Node.js & npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.pnpm-store/
+
+# Environnement
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build & dist
+dist/
+build/
+.next/
+out/
+.nuxt/
+coverage/
+.cache/
+.turbo/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dépôts temporaires
+tmp/
+temp/
+*.tmp
+
+# Fichiers système
+Thumbs.db
+.folder
+desktop.ini
+
+# Caches
+.eslintcache
+.stylelintcache
+.prettierignore
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Tests
+*.lcov
+.nyc_output/
+coverage/
+
+# Outils build
+.webpack/
+.vite/
+.tsbuildinfo
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Git
+.git/
+
+# Projets spécifiques
+_bmad-output/
