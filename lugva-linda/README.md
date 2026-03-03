@@ -1,8 +1,58 @@
-# React + TypeScript + Vite
+# Lugva Linda — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Application de gestion de tâches moderne construite avec React, TypeScript et Vite.
 
-Currently, two official plugins are available:
+## Fonctionnalités
+
+- **Tableau de bord** — Statistiques, taux de complétion, tâches récentes
+- **Liste de tâches** — CRUD complet avec recherche, filtres par statut/priorité/tag
+- **Vue Kanban** — Colonnes À faire / En cours / Terminé
+- **Responsive** — Mobile-first avec menu hamburger sur mobile
+
+## Stack technique
+
+| Couche | Technologie |
+|--------|-------------|
+| UI | React 19 + TypeScript |
+| Styles | Tailwind CSS v4 |
+| State | Zustand |
+| Routing | React Router v7 |
+| Icons | Lucide React |
+| Build | Vite 7 |
+
+## Démarrage
+
+```bash
+npm install
+npm run dev
+```
+
+L'application sera disponible sur [http://localhost:5173](http://localhost:5173).
+
+> **Note:** Le serveur API doit tourner sur `http://localhost:3001`. Voir `../lugva-linda-api/`.
+
+## Scripts disponibles
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Serveur de développement |
+| `npm run build` | Build de production |
+| `npm run lint` | Linter ESLint |
+| `npm run preview` | Prévisualiser le build |
+
+## Structure du projet
+
+```
+src/
+├── types/        # Interfaces TypeScript (Task, Status, Priority…)
+├── lib/          # Client API fetch
+├── store/        # Zustand store avec CRUD, filtres, stats
+├── components/
+│   ├── ui/       # Button, Input, Select, Badge, Modal, Textarea
+│   ├── layout/   # Layout, Sidebar avec navigation responsive
+│   └── tasks/    # TaskCard, TaskForm
+└── pages/        # Dashboard, Tasks, Board
+```
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh

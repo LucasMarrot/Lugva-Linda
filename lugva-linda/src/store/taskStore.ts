@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import { api } from '@/lib/api';
 import type { Task, TaskStats, TaskFilters } from '@/types';
 
@@ -76,22 +77,24 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 }));
 
 export function useFilteredTasks() {
-  return useTaskStore((state) => {
-    const { tasks, filters } = state;
-    return tasks.filter((task) => {
-      if (filters.search) {
-        const q = filters.search.toLowerCase();
-        if (
-          !task.title.toLowerCase().includes(q) &&
-          !task.description.toLowerCase().includes(q) &&
-          !task.tags.some((t) => t.toLowerCase().includes(q))
-        )
-          return false;
-      }
-      if (filters.status !== 'all' && task.status !== filters.status) return false;
-      if (filters.priority !== 'all' && task.priority !== filters.priority) return false;
-      if (filters.tag && !task.tags.includes(filters.tag)) return false;
-      return true;
-    });
-  });
+  return useTaskStore(
+    useShallow((state) => {
+      const { tasks, filters } = state;
+      return tasks.filter((task) => {
+        if (filters.search) {
+          const q = filters.search.toLowerCase();
+          if (
+            !task.title.toLowerCase().includes(q) &&
+            !task.description.toLowerCase().includes(q) &&
+            !task.tags.some((t) => t.toLowerCase().includes(q))
+          )
+            return false;
+        }
+        if (filters.status !== 'all' && task.status !== filters.status) return false;
+        if (filters.priority !== 'all' && task.priority !== filters.priority) return false;
+        if (filters.tag && !task.tags.includes(filters.tag)) return false;
+        return true;
+      });
+    })
+  );
 }
