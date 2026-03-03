@@ -93,7 +93,7 @@ export function TaskForm({ initialData, onSubmit, onCancel }: TaskFormProps) {
       <Input
         label="Date d'échéance"
         type="date"
-        value={dueDate ?? ''}
+        value={dueDate}
         onChange={(e) => setDueDate(e.target.value)}
       />
       {error && <p className="text-sm text-red-400">{error}</p>}
