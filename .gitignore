@@ -95,3 +95,4 @@ docker-compose.override.yml
 
 # Projets spécifiques
 _bmad-output/
+epics.md

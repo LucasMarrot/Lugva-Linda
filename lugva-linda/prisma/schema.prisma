@@ -1,0 +1,110 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ------------------------------------------------------
+// 1. UTILISATEURS (Système sur invitation)
+// ------------------------------------------------------
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id         String     @id
+  email      String     @unique
+  role       Role       @default(USER)
+  createdAt  DateTime   @default(now())
+  
+  languages  Language[]
+  categories Category[]
+  words      Word[]
+}
+
+// ------------------------------------------------------
+// 2. ORGANISATION
+// ------------------------------------------------------
+model Language {
+  id        String   @id @default(uuid())
+  name      String   
+  code      String?  
+  createdAt DateTime @default(now())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  words     Word[]
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  words     Word[]
+}
+
+// ------------------------------------------------------
+// 3. LES MOTS (Flashcards + État FSRS)
+// ------------------------------------------------------
+model Word {
+  id            String   @id @default(uuid())
+  
+  word          String   
+  translation   String   
+  synonyms      String[] 
+  tags          String[] 
+  example       String?  
+  notes         String?  
+  customAudio   String?  
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // PARAMÈTRES FSRS
+  due           DateTime @default(now()) 
+  stability     Float    @default(0)     
+  difficulty    Float    @default(0)     
+  elapsedDays   Int      @default(0)     
+  scheduledDays Int      @default(0)     
+  reps          Int      @default(0)     
+  lapses        Int      @default(0)     
+  state         Int      @default(0)     
+
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  languageId    String
+  language      Language   @relation(fields: [languageId], references: [id], onDelete: Cascade)
+  categoryId    String?
+  category      Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  reviewLogs    ReviewLog[]
+}
+
+// ------------------------------------------------------
+// 4. HISTORIQUE DE RÉVISION
+// ------------------------------------------------------
+model ReviewLog {
+  id              String   @id @default(uuid())
+  
+  grade           Int      
+  reviewDate      DateTime @default(now()) 
+  durationMs      Int?     
+
+  // CAPTURE DE L'ÉTAT FSRS (Avant révision)
+  state           Int      
+  due             DateTime 
+  stability       Float    
+  difficulty      Float    
+  elapsedDays     Int      
+  lastElapsedDays Int      
+  scheduledDays   Int      
+
+  wordId          String
+  word            Word     @relation(fields: [wordId], references: [id], onDelete: Cascade)
+}
