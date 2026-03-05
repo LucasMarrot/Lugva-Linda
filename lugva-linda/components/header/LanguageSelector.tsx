@@ -1,5 +1,10 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import type { Language } from '@prisma/client'
+import { createLanguage } from '@/actions/language-actions'
+
 import {
   Select,
   SelectContent,
@@ -16,19 +21,36 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-// import { createLanguage } from '@/actions/language-actions'
-import type { Language } from '@prisma/client'
 
 type LanguageSelectorProps = {
   languages: Language[]
 }
 
 export const LanguageSelector = ({ languages }: LanguageSelectorProps) => {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  const currentLangId =
+    searchParams.get('lang') || (languages.length > 0 ? languages[0].id : '')
+
+  const handleLanguageChange = (langId: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('lang', langId)
+    router.push(`/?${params.toString()}`)
+  }
+
+  const handleCreateLanguage = async (formData: FormData) => {
+    await createLanguage(formData)
+    setIsDialogOpen(false)
+  }
+
   return (
-    <Select>
+    <Select value={currentLangId} onValueChange={handleLanguageChange}>
       <SelectTrigger className="border-border bg-background h-9 w-[130px] focus:ring-0">
         <SelectValue placeholder="Langue" />
       </SelectTrigger>
+
       <SelectContent>
         {languages.map((lang) => (
           <SelectItem key={lang.id} value={lang.id}>
@@ -36,7 +58,7 @@ export const LanguageSelector = ({ languages }: LanguageSelectorProps) => {
           </SelectItem>
         ))}
 
-        <Dialog>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button
               variant="ghost"
@@ -49,12 +71,10 @@ export const LanguageSelector = ({ languages }: LanguageSelectorProps) => {
             <DialogHeader>
               <DialogTitle>Ajouter une langue</DialogTitle>
             </DialogHeader>
-            <form className="space-y-4 pt-4">
-              <Input name="name" placeholder="Nom (ex: Anglais)" required />
+            <form action={handleCreateLanguage} className="space-y-4 pt-4">
               <Input
-                name="code"
-                placeholder="Code (ex: EN)"
-                maxLength={2}
+                name="name"
+                placeholder="Nom de la langue (ex: Anglais)"
                 required
               />
               <Button type="submit" className="w-full">

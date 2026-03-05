@@ -22,6 +22,8 @@ export default async function HomePage() {
     user.id,
   )
 
+  if (languages.length === 0) redirect('/setup')
+
   return (
     <div className="bg-background min-h-screen pb-24">
       <Header languages={languages} />
