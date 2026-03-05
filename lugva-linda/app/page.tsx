@@ -10,7 +10,14 @@ import { LearningActions } from '@/components/dashboard/LearningActions'
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav'
 import { Header } from '@/components/header/Header'
 
-export default async function HomePage() {
+type HomePageProps = {
+  searchParams: Promise<{ lang?: string }>
+}
+
+export default async function HomePage(props: HomePageProps) {
+  const searchParams = await props.searchParams
+  const lang = searchParams.lang
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -22,7 +29,13 @@ export default async function HomePage() {
     user.id,
   )
 
-  if (languages.length === 0) redirect('/setup')
+  if (languages.length === 0) {
+    redirect('/setup')
+  }
+
+  if (!lang && languages.length > 0) {
+    redirect(`/?lang=${languages[0].id}`)
+  }
 
   return (
     <div className="bg-background min-h-screen pb-24">

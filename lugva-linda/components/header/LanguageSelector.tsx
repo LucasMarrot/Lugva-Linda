@@ -67,6 +67,7 @@ export const LanguageSelector = ({ languages }: LanguageSelectorProps) => {
               + Nouvelle langue
             </Button>
           </DialogTrigger>
+
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Ajouter une langue</DialogTitle>
