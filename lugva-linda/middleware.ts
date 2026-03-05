@@ -35,18 +35,16 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // PROTECTION DES ROUTES
-  // Si pas d'utilisateur et qu'on n'est pas déjà sur la page /login
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  const isAuthPage = request.nextUrl.pathname.startsWith('/auth') // On englobe tout le dossier auth
+
+  // 1. Si pas d'user et pas sur une page auth -> Direction /auth/login
+  if (!user && !isAuthPage) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // Si l'utilisateur est connecté et essaie d'aller sur /login, on le renvoie à l'accueil
-  if (user && request.nextUrl.pathname.startsWith('/login')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
+  // 2. Si user et sur /auth/login -> Direction Accueil
+  if (user && request.nextUrl.pathname.startsWith('/auth/login')) {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   return supabaseResponse
