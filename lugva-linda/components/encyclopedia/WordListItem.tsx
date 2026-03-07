@@ -1,16 +1,25 @@
 import { Word } from '@prisma/client'
+import { BookOpen } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 type WordListItemProps = {
   word: Word
   onClick: () => void
+  onRedirect?: (e: React.MouseEvent) => void
 }
 
-export const WordListItem = ({ word, onClick }: WordListItemProps) => {
+export const WordListItem = ({
+  word,
+  onClick,
+  onRedirect,
+}: WordListItemProps) => {
   return (
-    <button
+    <div
       id={`word-${word.id}`}
       onClick={onClick}
-      className="border-border/50 bg-card hover:bg-accent/50 flex w-full items-center justify-between gap-3 overflow-hidden rounded-xl border p-4 text-left transition-colors active:scale-[0.98]"
+      role="button"
+      tabIndex={0}
+      className="bg-card border-border/50 hover:bg-accent hover:border-border active:bg-accent/80 flex w-full cursor-pointer items-center justify-between gap-3 overflow-hidden rounded-xl border p-4 text-left transition-all duration-200 ease-in-out active:scale-[0.98]"
     >
       <div className="flex min-w-0 flex-col gap-1.5">
         <span className="text-foreground truncate text-lg font-semibold">
@@ -20,11 +29,28 @@ export const WordListItem = ({ word, onClick }: WordListItemProps) => {
           {word.translation}
         </span>
       </div>
-      {word.tags && word.tags.length > 0 && (
-        <span className="bg-primary/10 text-primary inline-flex h-6 shrink-0 items-center justify-center rounded-full px-3 text-[10px] font-bold tracking-widest whitespace-nowrap uppercase sm:text-xs">
-          {word.tags[0]}
-        </span>
-      )}
-    </button>
+
+      <div className="flex shrink-0 items-center gap-3">
+        {word.tags && word.tags.length > 0 && (
+          <span className="bg-primary/10 text-primary inline-flex h-6 items-center justify-center rounded-full px-3 text-[10px] font-bold tracking-widest whitespace-nowrap uppercase sm:text-xs">
+            {word.tags[0]}
+          </span>
+        )}
+
+        {onRedirect && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hover:bg-primary/10 hover:text-primary h-8 w-8 rounded-full transition-colors"
+            onClick={(e) => {
+              e.stopPropagation()
+              onRedirect(e)
+            }}
+          >
+            <BookOpen className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    </div>
   )
 }

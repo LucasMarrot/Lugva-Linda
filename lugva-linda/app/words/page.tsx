@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation'
 import prisma from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav'
-import { Header } from '@/components/header/Header' // NOUVEAU : On importe ton Header
-import { EncyclopediaClient } from '@/components/encyclopedia/EncyclopediaClent'
+import { Header } from '@/components/header/Header'
+import { EncyclopediaClient } from '@/components/encyclopedia/EncyclopediaClient'
 
 type WordsPageProps = {
   searchParams: Promise<{ lang?: string }>

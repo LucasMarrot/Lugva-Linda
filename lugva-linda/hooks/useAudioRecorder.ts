@@ -17,11 +17,16 @@ export const useAudioRecorder = (onAudioReady: (file: File | null) => void) => {
 
   const startRecording = useCallback(async () => {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error(
+          "L'enregistrement audio n'est pas supporté sur ce navigateur ou nécessite une connexion sécurisée (HTTPS).",
+        )
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true,
         },
       })
 

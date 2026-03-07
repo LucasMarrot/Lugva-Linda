@@ -5,35 +5,51 @@ import { ArrowLeft } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { createWord } from '@/actions/word-actions'
+import { createWord, updateWordAction } from '@/actions/word-actions'
 import { SynonymSelector } from './SynonymSelector'
-import { AudioRecorder } from './AudioRecorder' // <-- NOUVEL IMPORT
+import { AudioRecorder } from './AudioRecorder'
 import { TagSelector } from './TagSelector'
+import { Word } from '@prisma/client'
 
 type CreateWordViewProps = {
-  initialQuery: string
-  currentLangId: string
+  initialQuery?: string
+  currentLangId?: string
+  initialData?: Word
   onCancel: () => void
   onSuccess: () => void
 }
 
 export const CreateWordView = ({
-  initialQuery,
-  currentLangId,
+  initialQuery = '',
+  currentLangId = '',
+  initialData,
   onCancel,
   onSuccess,
 }: CreateWordViewProps) => {
-  const [selectedTag, setSelectedTag] = useState<string | null>(null)
-  const [selectedSynonyms, setSelectedSynonyms] = useState<string[]>([])
+  const isEditing = !!initialData
 
+  const [selectedTag, setSelectedTag] = useState<string | null>(
+    initialData?.tags?.[0] || null,
+  )
+  const [selectedSynonyms, setSelectedSynonyms] = useState<string[]>(
+    initialData?.synonyms || [],
+  )
   const [audioFile, setAudioFile] = useState<File | null>(null)
 
-  const handleCreate = async (formData: FormData) => {
+  const langId = isEditing ? initialData.languageId : currentLangId
+  const defaultWord = isEditing ? initialData.word : initialQuery
+
+  const handleSubmit = async (formData: FormData) => {
     if (audioFile) {
       formData.append('audioFile', audioFile)
     }
 
-    await createWord(formData)
+    if (isEditing) {
+      await updateWordAction(initialData.id, formData)
+    } else {
+      await createWord(formData)
+    }
+
     onSuccess()
   }
 
@@ -46,13 +62,15 @@ export const CreateWordView = ({
           onClick={onCancel}
           className="-ml-2"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="text-foreground h-5 w-5" />
         </Button>
-        <h3 className="text-lg font-semibold">Ajouter à l'encyclopédie</h3>
+        <h3 className="text-foreground text-lg font-semibold">
+          {isEditing ? 'Modifier la fiche' : "Ajouter à l'encyclopédie"}
+        </h3>
       </div>
 
-      <form action={handleCreate} className="space-y-6">
-        <input type="hidden" name="languageId" value={currentLangId} />
+      <form action={handleSubmit} className="space-y-6">
+        <input type="hidden" name="languageId" value={langId} />
         {selectedTag && <input type="hidden" name="tags" value={selectedTag} />}
         {selectedSynonyms.map((syn) => (
           <input key={syn} type="hidden" name="synonyms" value={syn} />
@@ -66,10 +84,10 @@ export const CreateWordView = ({
             <Input
               id="word"
               name="word"
-              defaultValue={initialQuery}
+              defaultValue={defaultWord}
               className="bg-background h-11"
               required
-              autoFocus
+              autoFocus={!isEditing}
             />
           </div>
           <div className="space-y-2">
@@ -82,6 +100,7 @@ export const CreateWordView = ({
             <Input
               id="translation"
               name="translation"
+              defaultValue={initialData?.translation || ''}
               placeholder="Ex: Bonjour, Maison..."
               className="bg-background h-11"
               required
@@ -100,13 +119,17 @@ export const CreateWordView = ({
         </div>
 
         <div className="space-y-3">
-          <Label className="text-foreground font-medium">Prononciation</Label>
+          <Label className="text-foreground font-medium">
+            {isEditing && initialData?.customAudio
+              ? "Nouvel audio (remplacera l'actuel)"
+              : 'Prononciation'}
+          </Label>
           <AudioRecorder onAudioReady={setAudioFile} />
         </div>
 
         <SynonymSelector
-          currentLangId={currentLangId}
-          currentWord={initialQuery}
+          currentLangId={langId}
+          currentWord={defaultWord}
           selectedSynonyms={selectedSynonyms}
           setSelectedSynonyms={setSelectedSynonyms}
         />
@@ -116,7 +139,7 @@ export const CreateWordView = ({
           size="lg"
           className="mt-2 h-14 w-full text-base shadow-md"
         >
-          Enregistrer la fiche
+          {isEditing ? 'Enregistrer les modifications' : 'Enregistrer la fiche'}
         </Button>
       </form>
     </div>

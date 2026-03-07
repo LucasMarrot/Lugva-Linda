@@ -168,3 +168,62 @@ export async function deleteWordAction(wordId: string) {
   revalidatePath('/')
   revalidatePath('/words')
 }
+
+export async function updateWordAction(wordId: string, formData: FormData) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Non autorisé')
+
+  const word = formData.get('word') as string
+  const translation = formData.get('translation') as string
+  const tags = formData.getAll('tags') as string[]
+  const synonyms = formData.getAll('synonyms') as string[]
+
+  const audioFile = formData.get('audioFile') as File | null
+  let customAudioUrl: string | undefined = undefined
+
+  if (audioFile && audioFile.size > 0) {
+    const fileExtension = audioFile.name.split('.').pop() || 'webm'
+    const fileName = `${user.id}-${Date.now()}.${fileExtension}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('audio-files')
+      .upload(fileName, audioFile, {
+        contentType: audioFile.type,
+        cacheControl: '3600',
+        upsert: false,
+      })
+
+    if (uploadError) throw new Error("Impossible de sauvegarder l'audio")
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('audio-files').getPublicUrl(fileName)
+    customAudioUrl = publicUrl
+  }
+
+  const existingWord = await prisma.word.findUnique({
+    where: { id: wordId },
+  })
+
+  if (!existingWord || existingWord.userId !== user.id) {
+    throw new Error('Mot introuvable ou accès refusé')
+  }
+
+  await prisma.word.update({
+    where: { id: wordId },
+    data: {
+      word,
+      translation,
+      tags,
+      synonyms,
+      ...(customAudioUrl !== undefined && { customAudio: customAudioUrl }),
+    },
+  })
+
+  revalidatePath('/')
+  revalidatePath('/words')
+}

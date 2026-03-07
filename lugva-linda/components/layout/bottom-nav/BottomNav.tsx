@@ -7,7 +7,7 @@ import { SearchDrawer } from '@/components/search/SearchDrawer'
 
 export const BottomNav = () => {
   return (
-    <nav className="border-border bg-background/90 pb-safe fixed right-0 bottom-0 left-0 z-50 flex items-center justify-around border-t p-3 backdrop-blur-md">
+    <nav className="border-border bg-background/90 pb-safe fixed right-0 bottom-0 left-0 z-50 flex h-16 items-center justify-around border-t backdrop-blur-md">
       <BottomNavItem href="/" icon={Brain} />
 
       <SearchDrawer>

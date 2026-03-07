@@ -18,10 +18,10 @@ export const BottomNavItem = ({ href, icon: Icon }: BottomNavItemProps) => {
     <Link
       href={href}
       className={cn(
-        'flex flex-col items-center gap-1 transition-colors',
+        'flex h-full flex-1 flex-col items-center justify-center transition-colors',
         isActive
           ? 'text-primary'
-          : 'text-muted-foreground hover:text-foreground',
+          : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground',
       )}
     >
       <Icon className="h-6 w-6" />
