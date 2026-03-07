@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { searchWords } from '@/actions/word-actions'
 import { SearchResultItem } from './SearchResultItem'
+import { Word } from '@prisma/client'
 
 type SearchViewProps = {
   query: string
@@ -20,7 +21,7 @@ export const SearchView = ({
   currentLangId,
   onCreateClick,
 }: SearchViewProps) => {
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState<Word[]>([])
   const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {

@@ -15,7 +15,6 @@ export async function createWord(formData: FormData) {
   const word = formData.get('word') as string
   const translation = formData.get('translation') as string
   let languageId = formData.get('languageId') as string
-
   const tags = formData.getAll('tags') as string[]
   const synonyms = formData.getAll('synonyms') as string[]
 
@@ -26,7 +25,7 @@ export async function createWord(formData: FormData) {
     const fileExtension = audioFile.name.split('.').pop() || 'webm'
     const fileName = `${user.id}-${Date.now()}.${fileExtension}`
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('audio-files')
       .upload(fileName, audioFile, {
         contentType: audioFile.type,
@@ -34,15 +33,11 @@ export async function createWord(formData: FormData) {
         upsert: false,
       })
 
-    if (uploadError) {
-      console.error("Erreur d'upload audio:", uploadError)
-      throw new Error("Impossible de sauvegarder l'audio")
-    }
+    if (uploadError) throw new Error("Impossible de sauvegarder l'audio")
 
     const {
       data: { publicUrl },
     } = supabase.storage.from('audio-files').getPublicUrl(fileName)
-
     customAudioUrl = publicUrl
   }
 
@@ -54,7 +49,7 @@ export async function createWord(formData: FormData) {
     languageId = firstLang.id
   }
 
-  await prisma.word.create({
+  const newWord = await prisma.word.create({
     data: {
       word,
       translation,
@@ -66,7 +61,27 @@ export async function createWord(formData: FormData) {
     },
   })
 
+  if (synonyms.length > 0) {
+    const existingSynonyms = await prisma.word.findMany({
+      where: {
+        userId: user.id,
+        languageId: languageId,
+        word: { in: synonyms, mode: 'insensitive' },
+      },
+    })
+
+    for (const existing of existingSynonyms) {
+      if (!existing.synonyms.includes(word)) {
+        await prisma.word.update({
+          where: { id: existing.id },
+          data: { synonyms: { push: word } },
+        })
+      }
+    }
+  }
+
   revalidatePath('/')
+  revalidatePath('/words')
 }
 
 export async function searchWords(query: string, languageId: string) {
@@ -106,4 +121,50 @@ export async function searchWords(query: string, languageId: string) {
   })
 
   return words
+}
+
+export async function getWordByTextAction(text: string, languageId: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Non autorisé')
+
+  const word = await prisma.word.findFirst({
+    where: {
+      userId: user.id,
+      languageId: languageId,
+      word: {
+        equals: text,
+        mode: 'insensitive',
+      },
+    },
+  })
+
+  return word
+}
+
+export async function deleteWordAction(wordId: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Non autorisé')
+
+  const word = await prisma.word.findUnique({
+    where: { id: wordId },
+  })
+
+  if (!word || word.userId !== user.id) {
+    throw new Error('Mot introuvable ou accès refusé')
+  }
+
+  await prisma.word.delete({
+    where: { id: wordId },
+  })
+
+  revalidatePath('/')
+  revalidatePath('/words')
 }

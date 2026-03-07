@@ -1,18 +1,27 @@
 import { BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useWordModal } from '../providers/WordModalProvider'
+import { useRouter } from 'next/navigation'
+import { Word } from '@prisma/client'
 
 type SearchResultItemProps = {
-  word: {
-    id: string
-    word: string
-    translation: string
-    tags?: string[]
-  }
+  word: Word
 }
 
 export const SearchResultItem = ({ word }: SearchResultItemProps) => {
+  const router = useRouter()
+  const { openWord } = useWordModal()
+
+  const handleGoToEncyclopedia = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    router.push(`/words?lang=${word.id}#word-${word.id}`)
+  }
+
   return (
-    <div className="border-border/50 bg-card hover:bg-accent/50 flex items-center justify-between rounded-xl border p-3 transition-colors">
+    <div
+      onClick={() => openWord(word)}
+      className="border-border/50 bg-card hover:bg-accent/50 flex items-center justify-between rounded-xl border p-3 transition-colors"
+    >
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <span className="text-foreground font-semibold">{word.word}</span>
@@ -30,6 +39,7 @@ export const SearchResultItem = ({ word }: SearchResultItemProps) => {
         variant="ghost"
         size="icon"
         className="h-8 w-8 shrink-0 rounded-full"
+        onClick={handleGoToEncyclopedia}
       >
         <BookOpen className="text-primary h-4 w-4" />
       </Button>

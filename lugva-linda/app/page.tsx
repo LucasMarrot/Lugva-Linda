@@ -39,7 +39,7 @@ export default async function HomePage(props: HomePageProps) {
 
   return (
     <div className="bg-background min-h-screen pb-24">
-      <Header languages={languages} />
+      <Header languages={languages} title="Dashboard" />
 
       <main className="space-y-8 px-4 pt-4">
         <DashboardStats totalWords={totalWords} wordsToReview={wordsToReview} />

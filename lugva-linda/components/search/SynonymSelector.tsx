@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { searchWords } from '@/actions/word-actions'
+import { Word } from '@prisma/client'
 
 type SynonymSelectorProps = {
   currentLangId: string
@@ -22,7 +23,7 @@ export const SynonymSelector = ({
 }: SynonymSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<Word[]>([])
 
   useEffect(() => {
     if (query.trim().length === 0) {
