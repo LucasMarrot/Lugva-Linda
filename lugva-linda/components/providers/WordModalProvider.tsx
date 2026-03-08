@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode } from 'react'
-import { useRouter } from 'next/navigation' // NOUVEAU
+import { useRouter } from 'next/navigation'
 import { WordDetailModal } from '@/components/shared/word-modal/WordDetailModal'
 import { deleteWordAction, getWordByTextAction } from '@/actions/word-actions'
 import { Word } from '@prisma/client'
@@ -42,11 +42,6 @@ export const WordModalProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const handleEdit = (wordId: string) => {
-    closeWord()
-    router.push(`/words/edit/${wordId}`)
-  }
-
   const handleDelete = async (wordId: string) => {
     try {
       await deleteWordAction(wordId)
@@ -65,7 +60,6 @@ export const WordModalProvider = ({ children }: { children: ReactNode }) => {
         word={activeWord}
         onClose={closeWord}
         onSynonymSelect={handleSynonymSelect}
-        onEdit={handleEdit}
         onDelete={handleDelete}
       />
     </WordModalContext.Provider>
