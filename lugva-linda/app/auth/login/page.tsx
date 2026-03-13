@@ -1,7 +1,7 @@
-import { login } from './actions'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { login } from './actions';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
@@ -9,16 +9,15 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from '@/components/ui/card';
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error: string }>
+  searchParams: Promise<{ error: string }>;
 }) {
-  // Dans Next.js 15, on doit attendre la résolution des paramètres d'URL
-  const params = await searchParams
-  const hasError = params.error === 'true'
+  const params = await searchParams;
+  const hasError = params.error === 'true';
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4 dark:bg-zinc-950">
@@ -32,7 +31,6 @@ export default async function LoginPage({
           </CardDescription>
         </CardHeader>
 
-        {/* Le formulaire appelle directement notre Server Action */}
         <form action={login}>
           <CardContent className="space-y-4">
             {hasError && (
@@ -63,5 +61,5 @@ export default async function LoginPage({
         </form>
       </Card>
     </div>
-  )
+  );
 }

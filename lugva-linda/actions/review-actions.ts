@@ -9,6 +9,8 @@ type ValidGrade = Exclude<Rating, Rating.Manual>;
 export const getDueWords = async (languageId: string, limit: number = 10) => {
   const now = new Date();
 
+  // Étape A : Les mots urgents (Échus)
+  // On prend ceux dont la date est passée, triés du plus en retard au moins en retard
   const dueWords = await prisma.word.findMany({
     where: {
       languageId,
@@ -19,8 +21,11 @@ export const getDueWords = async (languageId: string, limit: number = 10) => {
     orderBy: { due: 'asc' },
   });
 
+  // Étape B : Les nouveaux mots
+  // Si on n'a pas atteint la limite, on intègre des mots jamais appris
+  let newWords: typeof dueWords = [];
   if (dueWords.length < limit) {
-    const newWords = await prisma.word.findMany({
+    newWords = await prisma.word.findMany({
       where: {
         languageId,
         state: 0,
@@ -28,11 +33,28 @@ export const getDueWords = async (languageId: string, limit: number = 10) => {
       take: limit - dueWords.length,
       orderBy: { createdAt: 'asc' },
     });
-
-    return [...dueWords, ...newWords];
   }
 
-  return dueWords;
+  let results = [...dueWords, ...newWords];
+
+  // Étape C (DÉFINITIVE) : La Révision Anticipée (Advance Review)
+  // Si la session n'est toujours pas pleine,
+  // on prend les mots déjà appris les plus proches d'être oubliés dans le futur.
+  if (results.length < limit) {
+    const advanceWords = await prisma.word.findMany({
+      where: {
+        languageId,
+        due: { gt: now },
+        state: { not: 0 },
+      },
+      take: limit - results.length,
+      orderBy: { due: 'asc' },
+    });
+
+    results = [...results, ...advanceWords];
+  }
+
+  return results;
 };
 
 export const processReview = async (

@@ -22,11 +22,11 @@ export const mapWordToCard = (word: Word): Card => {
     due: word.due,
     stability: word.stability,
     difficulty: word.difficulty,
-    elapsed_days: word.elapsedDays,
     scheduled_days: word.scheduledDays,
     reps: word.reps,
     lapses: word.lapses,
     state: word.state as State,
+    last_review: word.lastReview ?? undefined,
   };
 };
 
@@ -34,11 +34,11 @@ export interface FSRSUpdateData {
   due: Date;
   stability: number;
   difficulty: number;
-  elapsedDays: number;
   scheduledDays: number;
   reps: number;
   lapses: number;
   state: number;
+  lastReview: Date | null;
 }
 
 export const mapCardToWordUpdate = (card: Card): FSRSUpdateData => {
@@ -46,10 +46,10 @@ export const mapCardToWordUpdate = (card: Card): FSRSUpdateData => {
     due: card.due,
     stability: card.stability,
     difficulty: card.difficulty,
-    elapsedDays: card.elapsed_days,
     scheduledDays: card.scheduled_days,
     reps: card.reps,
     lapses: card.lapses,
     state: card.state as number,
+    lastReview: card.last_review ? card.last_review : null,
   };
 };

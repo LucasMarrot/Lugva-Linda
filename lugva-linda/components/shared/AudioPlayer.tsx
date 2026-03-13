@@ -1,23 +1,27 @@
-'use client'
+'use client';
 
-import { useState, useRef } from 'react'
-import { Play, Square } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState, useRef } from 'react';
+import { Play, Square } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-export const AudioPlayer = ({ audioUrl }: { audioUrl: string }) => {
-  const [isPlaying, setIsPlaying] = useState(false)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+type AudioPlayerProps = {
+  audioUrl: string;
+};
+
+export const AudioPlayer = ({ audioUrl }: AudioPlayerProps) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const togglePlay = () => {
-    if (!audioRef.current) return
+    if (!audioRef.current) return;
     if (isPlaying) {
-      audioRef.current.pause()
-      setIsPlaying(false)
+      audioRef.current.pause();
+      setIsPlaying(false);
     } else {
-      audioRef.current.play()
-      setIsPlaying(true)
+      audioRef.current.play();
+      setIsPlaying(true);
     }
-  }
+  };
 
   return (
     <div className="bg-muted/30 border-border/50 flex items-center gap-3 rounded-xl border p-3">
@@ -44,5 +48,5 @@ export const AudioPlayer = ({ audioUrl }: { audioUrl: string }) => {
         className="hidden"
       />
     </div>
-  )
-}
+  );
+};
