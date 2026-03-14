@@ -1,16 +1,15 @@
 'use client';
 
 import type { Word } from '@prisma/client';
-import { X } from 'lucide-react';
 
 import { useReviewSession, type SessionStats } from '@/hooks/useReviewSession';
 import { DynamicProgressBar } from '../controls/DynamicProgressBar';
 import { RatingButtonGroup } from '../controls/RatingButtonGroup';
-import { ConfirmButton } from '@/components/shared/ConfirmButton';
 import { SessionLayoutMotion } from '../controls/SessionLayoutMotion';
 import { RatingRevealMotion } from '../controls/RatingRevealMotion';
 import { LapseTransitionScreen } from './LapseTransitionScreen';
 import { Flashcard } from '../flashcard/FlashCard';
+import { SessionHeader } from '../SessionHeader';
 
 type ActiveSessionScreenProps = {
   initialWords: Word[];
@@ -31,24 +30,19 @@ export const ActiveSessionScreen = ({
   if (!currentWord) return null;
 
   if (showLapseTransition) {
-    return <LapseTransitionScreen onContinue={actions.dismissTransition} />;
+    return (
+      <LapseTransitionScreen
+        onContinue={actions.dismissTransition}
+        onQuit={onQuit}
+        languageName={languageName}
+      />
+    );
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-2xl flex-col overflow-hidden pt-2 pb-4">
-      <div className="mb-2 flex shrink-0 flex-col gap-3 px-4">
-        <div className="flex w-full items-center justify-between">
-          <h1 className="text-xl font-bold">{languageName}</h1>
-          <ConfirmButton
-            onConfirm={onQuit}
-            idleText="Quitter"
-            idleIcon={<X className="h-4 w-4" />}
-            idleVariant="ghostDestructive"
-            confirmVariant="destructive"
-            className="h-8 px-2"
-          />
-        </div>
-
+    <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-2xl flex-col overflow-hidden p-4">
+      <SessionHeader languageName={languageName} onQuit={onQuit} />
+      <div className="mb-2 flex shrink-0 flex-col gap-3 py-4">
         <DynamicProgressBar
           initialCount={progress.initialCount}
           currentIndex={progress.currentIndex}

@@ -19,11 +19,13 @@ export type ReviewSessionIntent =
 type ReviewSessionContainerProps = {
   initialWords: Word[];
   sessionIntent?: ReviewSessionIntent;
+  languageName?: string;
 };
 
 export const ReviewSessionContainer = ({
   initialWords,
   sessionIntent = { mode: 'DUE_ONLY' },
+  languageName = 'Anglais',
 }: ReviewSessionContainerProps) => {
   const router = useRouter();
   const [sessionState, setSessionState] = useState<SessionState>('pre');
@@ -32,13 +34,16 @@ export const ReviewSessionContainer = ({
   const handleGoHome = () => router.push('/');
 
   if (initialWords.length === 0)
-    return <EmptySessionScreen onGoHome={handleGoHome} />;
+    return (
+      <EmptySessionScreen onQuit={handleGoHome} languageName={languageName} />
+    );
 
   if (sessionState === 'pre')
     return (
       <PreSessionScreen
         wordCount={initialWords.length}
         sessionIntent={sessionIntent}
+        languageName={languageName}
         onStart={() => setSessionState('active')}
         onQuit={handleGoHome}
       />
@@ -48,6 +53,7 @@ export const ReviewSessionContainer = ({
     return (
       <ActiveSessionScreen
         initialWords={initialWords}
+        languageName={languageName}
         onComplete={(sessionStats) => {
           setStats(sessionStats);
           setSessionState('post');
@@ -57,7 +63,13 @@ export const ReviewSessionContainer = ({
     );
 
   if (sessionState === 'post' && stats)
-    return <PostSessionScreen stats={stats} />;
+    return (
+      <PostSessionScreen
+        stats={stats}
+        onQuit={handleGoHome}
+        languageName={languageName}
+      />
+    );
 
   return null;
 };

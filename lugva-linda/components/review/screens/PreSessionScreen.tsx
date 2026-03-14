@@ -1,10 +1,10 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Play, Clock, Brain, X } from 'lucide-react';
+import { Play, Clock, Brain } from 'lucide-react';
 import type { ReviewSessionIntent } from '../ReviewSessionContainer';
 import { cn } from '@/lib/utils';
-import { ConfirmButton } from '@/components/shared/ConfirmButton';
+import { SessionHeader } from '../SessionHeader';
 
 type PreSessionScreenProps = {
   wordCount: number;
@@ -35,50 +35,58 @@ export const PreSessionScreen = ({
       : `${seconds} s`;
 
   return (
-    <div className="animate-in fade-in zoom-in mx-auto flex h-[calc(100vh-4rem)] max-w-md flex-col items-center justify-center p-4 text-center duration-500">
-      <div className="bg-primary/10 mb-6 flex h-20 w-20 items-center justify-center rounded-full">
-        <Brain className="text-primary h-10 w-10" />
-      </div>
+    <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-2xl flex-col p-4 text-center">
+      <SessionHeader languageName={languageName} onQuit={onQuit} />
 
-      <h1 className="mb-2 text-3xl font-bold">Prêt pour la révision ?</h1>
-      <p
-        className={cn(
-          'mb-8',
-          isForcedFill
-            ? 'text-destructive font-medium'
-            : 'text-muted-foreground',
-        )}
-      >
-        {isForcedFill
-          ? `Session forcée à ${sessionIntent.targetCount} mots : ce remplissage anticipé n'est pas optimisé pour l'apprentissage.`
-          : 'Votre cerveau est sur le point de consolider de nouvelles connexions.'}
-      </p>
-
-      <div className="mb-8 grid w-full grid-cols-2 gap-4">
-        <div className="bg-card border-border flex flex-col items-center rounded-xl border p-4 shadow-sm">
-          <span className="text-primary mb-1 text-3xl font-bold">
-            {wordCount}
-          </span>
-          <span className="text-muted-foreground text-sm">Mots à réviser</span>
+      <div className="animate-in fade-in zoom-in mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center duration-500">
+        <div className="bg-primary/10 mb-6 flex h-20 w-20 items-center justify-center rounded-full">
+          <Brain className="text-primary h-10 w-10" />
         </div>
 
-        <div className="bg-card border-border flex flex-col items-center rounded-xl border p-4 shadow-sm">
-          <div className="mb-1 flex items-center gap-2">
-            <Clock className="text-primary h-5 w-5" />
-            <span className="text-primary text-xl font-bold">{timeString}</span>
+        <h1 className="mb-2 text-3xl font-bold">Prêt pour la révision ?</h1>
+        <p
+          className={cn(
+            'mb-8',
+            isForcedFill
+              ? 'text-destructive font-medium'
+              : 'text-muted-foreground',
+          )}
+        >
+          {isForcedFill
+            ? `Session forcée à ${sessionIntent.targetCount} mots : ce remplissage anticipé n'est pas optimisé pour l'apprentissage.`
+            : 'Votre cerveau est sur le point de consolider de nouvelles connexions.'}
+        </p>
+
+        <div className="mb-8 grid w-full grid-cols-2 gap-4">
+          <div className="bg-card border-border flex flex-col items-center rounded-xl border p-4 shadow-sm">
+            <span className="text-primary mb-1 text-3xl font-bold">
+              {wordCount}
+            </span>
+            <span className="text-muted-foreground text-sm">
+              Mots à réviser
+            </span>
           </div>
-          <span className="text-muted-foreground text-sm">Temps estimé</span>
-        </div>
-      </div>
 
-      <Button
-        size="lg"
-        className="h-14 w-full gap-2 rounded-xl text-lg"
-        onClick={onStart}
-      >
-        <Play className="h-5 w-5 fill-current" />
-        Commencer la session
-      </Button>
+          <div className="bg-card border-border flex flex-col items-center rounded-xl border p-4 shadow-sm">
+            <div className="mb-1 flex items-center gap-2">
+              <Clock className="text-primary h-5 w-5" />
+              <span className="text-primary text-xl font-bold">
+                {timeString}
+              </span>
+            </div>
+            <span className="text-muted-foreground text-sm">Temps estimé</span>
+          </div>
+        </div>
+
+        <Button
+          size="lg"
+          className="h-14 w-full gap-2 rounded-xl text-lg"
+          onClick={onStart}
+        >
+          <Play className="h-5 w-5 fill-current" />
+          Commencer la session
+        </Button>
+      </div>
     </div>
   );
 };
