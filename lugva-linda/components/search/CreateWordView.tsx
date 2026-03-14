@@ -1,23 +1,25 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { createWord, updateWordAction } from '@/actions/word-actions'
-import { SynonymSelector } from './SynonymSelector'
-import { AudioRecorder } from './AudioRecorder'
-import { TagSelector } from './TagSelector'
-import { Word } from '@prisma/client'
+import { useMemo, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { createWord, updateWordAction } from '@/actions/word-actions';
+import { SynonymSelector } from './SynonymSelector';
+import { AudioRecorder } from './AudioRecorder';
+import { TagSelector } from './TagSelector';
+import { Word } from '@prisma/client';
+import { cn } from '@/lib/utils';
+import { createWordFormSchema } from '@/lib/validation/schemas';
 
 type CreateWordViewProps = {
-  initialQuery?: string
-  currentLangId?: string
-  initialData?: Word
-  onCancel: () => void
-  onSuccess: () => void
-}
+  initialQuery?: string;
+  currentLangId?: string;
+  initialData?: Word;
+  onCancel: () => void;
+  onSuccess: () => void;
+};
 
 export const CreateWordView = ({
   initialQuery = '',
@@ -26,32 +28,55 @@ export const CreateWordView = ({
   onCancel,
   onSuccess,
 }: CreateWordViewProps) => {
-  const isEditing = !!initialData
+  const isEditing = !!initialData;
 
   const [selectedTag, setSelectedTag] = useState<string | null>(
     initialData?.tags?.[0] || null,
-  )
+  );
   const [selectedSynonyms, setSelectedSynonyms] = useState<string[]>(
     initialData?.synonyms || [],
-  )
-  const [audioFile, setAudioFile] = useState<File | null>(null)
+  );
+  const [audioFile, setAudioFile] = useState<File | null>(null);
 
-  const langId = isEditing ? initialData.languageId : currentLangId
-  const defaultWord = isEditing ? initialData.word : initialQuery
+  const langId = isEditing ? initialData.languageId : currentLangId;
+  const defaultWord = isEditing ? initialData.word : initialQuery;
+  const defaultTranslation = initialData?.translation || '';
+
+  const [wordValue, setWordValue] = useState(defaultWord);
+  const [translationValue, setTranslationValue] = useState(defaultTranslation);
+
+  const formValidation = useMemo(
+    () =>
+      createWordFormSchema.safeParse({
+        word: wordValue,
+        translation: translationValue,
+      }),
+    [wordValue, translationValue],
+  );
+
+  const validationIssues = formValidation.success
+    ? []
+    : formValidation.error.issues;
+  const wordError = validationIssues.find(
+    (issue) => issue.path[0] === 'word',
+  )?.message;
+  const translationError = validationIssues.find(
+    (issue) => issue.path[0] === 'translation',
+  )?.message;
 
   const handleSubmit = async (formData: FormData) => {
     if (audioFile) {
-      formData.append('audioFile', audioFile)
+      formData.append('audioFile', audioFile);
     }
 
     if (isEditing) {
-      await updateWordAction(initialData.id, formData)
+      await updateWordAction(initialData.id, formData);
     } else {
-      await createWord(formData)
+      await createWord(formData);
     }
 
-    onSuccess()
-  }
+    onSuccess();
+  };
 
   return (
     <div className="animate-in slide-in-from-right-4 fade-in space-y-6 pb-8 duration-200">
@@ -84,11 +109,23 @@ export const CreateWordView = ({
             <Input
               id="word"
               name="word"
-              defaultValue={defaultWord}
-              className="bg-background h-11"
+              value={wordValue}
+              onChange={(event) => setWordValue(event.target.value)}
+              aria-invalid={!!wordError}
+              placeholder="Ex: hello"
+              className={cn(
+                'bg-background h-11',
+                wordError &&
+                  'border-destructive ring-destructive/20 focus-visible:ring-destructive/30',
+              )}
               required
               autoFocus={!isEditing}
             />
+            {wordError && (
+              <p className="text-destructive text-sm font-medium">
+                {wordError}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label
@@ -100,11 +137,22 @@ export const CreateWordView = ({
             <Input
               id="translation"
               name="translation"
-              defaultValue={initialData?.translation || ''}
+              value={translationValue}
+              onChange={(event) => setTranslationValue(event.target.value)}
               placeholder="Ex: Bonjour, Maison..."
-              className="bg-background h-11"
+              aria-invalid={!!translationError}
+              className={cn(
+                'bg-background h-11',
+                translationError &&
+                  'border-destructive ring-destructive/20 focus-visible:ring-destructive/30',
+              )}
               required
             />
+            {translationError && (
+              <p className="text-destructive text-sm font-medium">
+                {translationError}
+              </p>
+            )}
           </div>
         </div>
 
@@ -129,7 +177,7 @@ export const CreateWordView = ({
 
         <SynonymSelector
           currentLangId={langId}
-          currentWord={defaultWord}
+          currentWord={wordValue}
           selectedSynonyms={selectedSynonyms}
           setSelectedSynonyms={setSelectedSynonyms}
         />
@@ -138,10 +186,11 @@ export const CreateWordView = ({
           type="submit"
           size="lg"
           className="mt-2 h-14 w-full text-base shadow-md"
+          disabled={!formValidation.success}
         >
           {isEditing ? 'Enregistrer les modifications' : 'Enregistrer la fiche'}
         </Button>
       </form>
     </div>
-  )
-}
+  );
+};

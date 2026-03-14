@@ -1,41 +1,43 @@
-import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { BookOpen } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
-import { getDashboardData } from '@/data/dashboard'
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { BookOpen } from 'lucide-react';
+import { createClient } from '@/lib/supabase/server';
+import { getDashboardData } from '@/data/dashboard';
 
-import { Button } from '@/components/ui/button'
-import { DashboardStats } from '@/components/dashboard/DashboardStats'
-import { LearningActions } from '@/components/dashboard/LearningActions'
-import { BottomNav } from '@/components/layout/bottom-nav/BottomNav'
-import { Header } from '@/components/header/Header'
+import { Button } from '@/components/ui/button';
+import { DashboardStats } from '@/components/dashboard/DashboardStats';
+import { LearningActions } from '@/components/dashboard/LearningActions';
+import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
+import { Header } from '@/components/header/Header';
 
 type HomePageProps = {
-  searchParams: Promise<{ lang?: string }>
-}
+  searchParams: Promise<{ lang?: string }>;
+};
 
 export default async function HomePage(props: HomePageProps) {
-  const searchParams = await props.searchParams
-  const lang = searchParams.lang
+  const searchParams = await props.searchParams;
+  const lang = searchParams.lang;
 
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  if (!user) redirect('/auth/login')
+  if (!user) redirect('/auth/login');
 
   const { languages, totalWords, wordsToReview } = await getDashboardData(
     user.id,
-  )
+  );
 
   if (languages.length === 0) {
-    redirect('/setup')
+    redirect('/setup');
   }
 
   if (!lang && languages.length > 0) {
-    redirect(`/?lang=${languages[0].id}`)
+    redirect(`/?lang=${languages[0].id}`);
   }
+
+  const activeLanguageId = lang ?? languages[0].id;
 
   return (
     <div className="bg-background min-h-screen pb-24">
@@ -43,7 +45,7 @@ export default async function HomePage(props: HomePageProps) {
 
       <main className="space-y-8 px-4 pt-4">
         <DashboardStats totalWords={totalWords} wordsToReview={wordsToReview} />
-        <LearningActions />
+        <LearningActions languageId={activeLanguageId} />
 
         <Button
           variant="outline"
@@ -52,12 +54,12 @@ export default async function HomePage(props: HomePageProps) {
         >
           <Link href="/words">
             <BookOpen className="text-primary h-5 w-5" />
-            Parcourir l'encyclopédie
+            Parcourir l&apos;encyclopedie
           </Link>
         </Button>
       </main>
 
       <BottomNav />
     </div>
-  )
+  );
 }

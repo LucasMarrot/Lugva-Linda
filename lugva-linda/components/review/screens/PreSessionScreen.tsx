@@ -1,17 +1,28 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Play, Clock, Brain } from 'lucide-react';
+import { Play, Clock, Brain, X } from 'lucide-react';
+import type { ReviewSessionIntent } from '../ReviewSessionContainer';
+import { cn } from '@/lib/utils';
+import { ConfirmButton } from '@/components/shared/ConfirmButton';
 
-interface PreSessionScreenProps {
+type PreSessionScreenProps = {
   wordCount: number;
+  sessionIntent: ReviewSessionIntent;
   onStart: () => void;
-}
+  onQuit: () => void;
+  languageName?: string;
+};
 
 export const PreSessionScreen = ({
   wordCount,
+  sessionIntent,
   onStart,
+  onQuit,
+  languageName = 'Anglais',
 }: PreSessionScreenProps) => {
+  const isForcedFill = sessionIntent.mode === 'FORCED_FILL';
+
   // TODO : Intégrer un vrai calcul en fonction du temps des sessions précédentes, du nombre de mots, etc.
   // Calcul de l'estimation (30 secondes par mot)
   const estimatedSeconds = wordCount * 30;
@@ -30,8 +41,17 @@ export const PreSessionScreen = ({
       </div>
 
       <h1 className="mb-2 text-3xl font-bold">Prêt pour la révision ?</h1>
-      <p className="text-muted-foreground mb-8">
-        Votre cerveau est sur le point de consolider de nouvelles connexions.
+      <p
+        className={cn(
+          'mb-8',
+          isForcedFill
+            ? 'text-destructive font-medium'
+            : 'text-muted-foreground',
+        )}
+      >
+        {isForcedFill
+          ? `Session forcée à ${sessionIntent.targetCount} mots : ce remplissage anticipé n'est pas optimisé pour l'apprentissage.`
+          : 'Votre cerveau est sur le point de consolider de nouvelles connexions.'}
       </p>
 
       <div className="mb-8 grid w-full grid-cols-2 gap-4">

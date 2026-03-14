@@ -1,31 +1,29 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import prisma from '@/lib/prisma'
-import { createLanguage } from '@/actions/language-actions'
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
+import { createLanguage } from '@/actions/language-actions';
 
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+} from '@/components/ui/card';
+import { SetupLanguageForm } from '@/components/setup/SetupLanguageForm';
 
 export default async function SetupPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  if (!user) redirect('/auth/login')
+  if (!user) redirect('/auth/login');
 
   const languageCount = await prisma.language.count({
     where: { userId: user.id },
-  })
+  });
 
-  if (languageCount > 0) redirect('/')
+  if (languageCount > 0) redirect('/');
 
   return (
     <div className="bg-background flex min-h-screen items-center justify-center p-4">
@@ -37,21 +35,10 @@ export default async function SetupPage() {
             souhaitez apprendre.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form action={createLanguage} className="space-y-4">
-            <div className="space-y-2">
-              <Input
-                name="name"
-                placeholder="Nom de la langue (ex: Anglais)"
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full">
-              Commencer l'apprentissage
-            </Button>
-          </form>
-        </CardContent>
+        <div className="px-6 pb-6">
+          <SetupLanguageForm action={createLanguage} />
+        </div>
       </Card>
     </div>
-  )
+  );
 }

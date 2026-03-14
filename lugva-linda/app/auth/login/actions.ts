@@ -1,24 +1,27 @@
-'use server'
+'use server';
 
-import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { loginFormSchema } from '@/lib/validation/schemas';
 
 export async function login(formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createClient();
 
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
+  const parsedForm = loginFormSchema.parse({
+    email: String(formData.get('email') ?? ''),
+    password: String(formData.get('password') ?? ''),
+  });
 
   const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+    email: parsedForm.email,
+    password: parsedForm.password,
+  });
 
   if (error) {
-    redirect('/login?error=true')
+    redirect('/auth/login?error=true');
   }
 
-  revalidatePath('/', 'layout')
-  redirect('/')
+  revalidatePath('/', 'layout');
+  redirect('/');
 }

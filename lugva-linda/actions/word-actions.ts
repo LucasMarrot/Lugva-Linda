@@ -1,29 +1,47 @@
-'use server'
+'use server';
 
-import prisma from '@/lib/prisma'
-import { createClient } from '@/lib/supabase/server'
-import { revalidatePath } from 'next/cache'
+import {
+  requireAuthenticatedUser,
+  verifyLanguageOwnership,
+  verifyWordOwnership,
+} from '@/lib/auth/server';
+import prisma from '@/lib/prisma';
+import { createClient } from '@/lib/supabase/server';
+import {
+  languageIdSchema,
+  nonEmptyTextSchema,
+  wordIdSchema,
+} from '@/lib/validation/schemas';
+import { revalidatePath } from 'next/cache';
+
+const normalizeText = (value: string) => value.normalize('NFC').trim();
+
+const getNormalizedStringArray = (values: FormDataEntryValue[]) => {
+  return values
+    .filter((value): value is string => typeof value === 'string')
+    .map((value) => normalizeText(value))
+    .filter((value) => value.length > 0);
+};
 
 export async function createWord(formData: FormData) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await requireAuthenticatedUser();
+  const supabase = await createClient();
 
-  if (!user) throw new Error('Non autorisé')
+  const word = nonEmptyTextSchema.parse(
+    normalizeText(String(formData.get('word') ?? '')),
+  );
+  const translation = nonEmptyTextSchema.parse(
+    normalizeText(String(formData.get('translation') ?? '')),
+  );
+  const tags = getNormalizedStringArray(formData.getAll('tags'));
+  const synonyms = getNormalizedStringArray(formData.getAll('synonyms'));
 
-  const word = formData.get('word') as string
-  const translation = formData.get('translation') as string
-  let languageId = formData.get('languageId') as string
-  const tags = formData.getAll('tags') as string[]
-  const synonyms = formData.getAll('synonyms') as string[]
-
-  const audioFile = formData.get('audioFile') as File | null
-  let customAudioUrl: string | null = null
+  const audioFile = formData.get('audioFile') as File | null;
+  let customAudioUrl: string | null = null;
 
   if (audioFile && audioFile.size > 0) {
-    const fileExtension = audioFile.name.split('.').pop() || 'webm'
-    const fileName = `${user.id}-${Date.now()}.${fileExtension}`
+    const fileExtension = audioFile.name.split('.').pop() || 'webm';
+    const fileName = `${user.id}-${Date.now()}.${fileExtension}`;
 
     const { error: uploadError } = await supabase.storage
       .from('audio-files')
@@ -31,25 +49,33 @@ export async function createWord(formData: FormData) {
         contentType: audioFile.type,
         cacheControl: '3600',
         upsert: false,
-      })
+      });
 
-    if (uploadError) throw new Error("Impossible de sauvegarder l'audio")
+    if (uploadError) throw new Error("Impossible de sauvegarder l'audio");
 
     const {
       data: { publicUrl },
-    } = supabase.storage.from('audio-files').getPublicUrl(fileName)
-    customAudioUrl = publicUrl
+    } = supabase.storage.from('audio-files').getPublicUrl(fileName);
+    customAudioUrl = publicUrl;
   }
+
+  const languageIdEntry = formData.get('languageId');
+  let languageId =
+    typeof languageIdEntry === 'string' ? normalizeText(languageIdEntry) : '';
 
   if (!languageId) {
     const firstLang = await prisma.language.findFirst({
       where: { userId: user.id },
-    })
-    if (!firstLang) throw new Error('Aucune langue trouvée')
-    languageId = firstLang.id
+    });
+    if (!firstLang) throw new Error('Aucune langue trouvée');
+    languageId = firstLang.id;
+  } else {
+    const parsedLanguageId = languageIdSchema.parse(languageId);
+    await verifyLanguageOwnership(parsedLanguageId, user.id);
+    languageId = parsedLanguageId;
   }
 
-  const newWord = await prisma.word.create({
+  await prisma.word.create({
     data: {
       word,
       translation,
@@ -59,7 +85,7 @@ export async function createWord(formData: FormData) {
       languageId,
       userId: user.id,
     },
-  })
+  });
 
   if (synonyms.length > 0) {
     const existingSynonyms = await prisma.word.findMany({
@@ -68,41 +94,39 @@ export async function createWord(formData: FormData) {
         languageId: languageId,
         word: { in: synonyms, mode: 'insensitive' },
       },
-    })
+    });
 
     for (const existing of existingSynonyms) {
       if (!existing.synonyms.includes(word)) {
         await prisma.word.update({
           where: { id: existing.id },
           data: { synonyms: { push: word } },
-        })
+        });
       }
     }
   }
 
-  revalidatePath('/')
-  revalidatePath('/words')
+  revalidatePath('/');
+  revalidatePath('/words');
 }
 
 export async function searchWords(query: string, languageId: string) {
-  if (!query) return []
+  const normalizedQuery = normalizeText(query);
+  if (!normalizedQuery) return [];
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await requireAuthenticatedUser();
 
-  if (!user) return []
-
-  const normalizedQuery = query.normalize('NFC').trim()
-
-  let activeLangId = languageId
+  let activeLangId = normalizeText(languageId);
   if (!activeLangId) {
     const firstLang = await prisma.language.findFirst({
       where: { userId: user.id },
-    })
-    if (!firstLang) return []
-    activeLangId = firstLang.id
+    });
+    if (!firstLang) return [];
+    activeLangId = firstLang.id;
+  } else {
+    const parsedLanguageId = languageIdSchema.parse(activeLangId);
+    await verifyLanguageOwnership(parsedLanguageId, user.id);
+    activeLangId = parsedLanguageId;
   }
 
   const words = await prisma.word.findMany({
@@ -118,76 +142,63 @@ export async function searchWords(query: string, languageId: string) {
     orderBy: {
       word: 'asc',
     },
-  })
+  });
 
-  return words
+  return words;
 }
 
 export async function getWordByTextAction(text: string, languageId: string) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) throw new Error('Non autorisé')
+  const user = await requireAuthenticatedUser();
+  const validatedLanguageId = languageIdSchema.parse(normalizeText(languageId));
+  await verifyLanguageOwnership(validatedLanguageId, user.id);
 
   const word = await prisma.word.findFirst({
     where: {
       userId: user.id,
-      languageId: languageId,
+      languageId: validatedLanguageId,
       word: {
-        equals: text,
+        equals: normalizeText(text),
         mode: 'insensitive',
       },
     },
-  })
+  });
 
-  return word
+  return word;
 }
 
 export async function deleteWordAction(wordId: string) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) throw new Error('Non autorisé')
-
-  const word = await prisma.word.findUnique({
-    where: { id: wordId },
-  })
-
-  if (!word || word.userId !== user.id) {
-    throw new Error('Mot introuvable ou accès refusé')
-  }
+  const user = await requireAuthenticatedUser();
+  const validatedWordId = wordIdSchema.parse(normalizeText(wordId));
+  await verifyWordOwnership(validatedWordId, user.id);
 
   await prisma.word.delete({
-    where: { id: wordId },
-  })
+    where: { id: validatedWordId },
+  });
 
-  revalidatePath('/')
-  revalidatePath('/words')
+  revalidatePath('/');
+  revalidatePath('/words');
 }
 
 export async function updateWordAction(wordId: string, formData: FormData) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await requireAuthenticatedUser();
+  const supabase = await createClient();
 
-  if (!user) throw new Error('Non autorisé')
+  const validatedWordId = wordIdSchema.parse(normalizeText(wordId));
+  const word = nonEmptyTextSchema.parse(
+    normalizeText(String(formData.get('word') ?? '')),
+  );
+  const translation = nonEmptyTextSchema.parse(
+    normalizeText(String(formData.get('translation') ?? '')),
+  );
+  const tags = getNormalizedStringArray(formData.getAll('tags'));
+  const synonyms = getNormalizedStringArray(formData.getAll('synonyms'));
 
-  const word = formData.get('word') as string
-  const translation = formData.get('translation') as string
-  const tags = formData.getAll('tags') as string[]
-  const synonyms = formData.getAll('synonyms') as string[]
-
-  const audioFile = formData.get('audioFile') as File | null
-  let customAudioUrl: string | undefined = undefined
+  const audioFile = formData.get('audioFile') as File | null;
+  let customAudioUrl: string | undefined = undefined;
 
   if (audioFile && audioFile.size > 0) {
-    const fileExtension = audioFile.name.split('.').pop() || 'webm'
-    const fileName = `${user.id}-${Date.now()}.${fileExtension}`
+    const fileExtension = audioFile.name.split('.').pop() || 'webm';
+    const fileName = `${user.id}-${Date.now()}.${fileExtension}`;
 
     const { error: uploadError } = await supabase.storage
       .from('audio-files')
@@ -195,26 +206,20 @@ export async function updateWordAction(wordId: string, formData: FormData) {
         contentType: audioFile.type,
         cacheControl: '3600',
         upsert: false,
-      })
+      });
 
-    if (uploadError) throw new Error("Impossible de sauvegarder l'audio")
+    if (uploadError) throw new Error("Impossible de sauvegarder l'audio");
 
     const {
       data: { publicUrl },
-    } = supabase.storage.from('audio-files').getPublicUrl(fileName)
-    customAudioUrl = publicUrl
+    } = supabase.storage.from('audio-files').getPublicUrl(fileName);
+    customAudioUrl = publicUrl;
   }
 
-  const existingWord = await prisma.word.findUnique({
-    where: { id: wordId },
-  })
-
-  if (!existingWord || existingWord.userId !== user.id) {
-    throw new Error('Mot introuvable ou accès refusé')
-  }
+  await verifyWordOwnership(validatedWordId, user.id);
 
   await prisma.word.update({
-    where: { id: wordId },
+    where: { id: validatedWordId },
     data: {
       word,
       translation,
@@ -222,8 +227,8 @@ export async function updateWordAction(wordId: string, formData: FormData) {
       synonyms,
       ...(customAudioUrl !== undefined && { customAudio: customAudioUrl }),
     },
-  })
+  });
 
-  revalidatePath('/')
-  revalidatePath('/words')
+  revalidatePath('/');
+  revalidatePath('/words');
 }

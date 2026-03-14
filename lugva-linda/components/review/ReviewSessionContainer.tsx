@@ -12,12 +12,18 @@ import type { SessionStats } from '@/hooks/useReviewSession';
 
 type SessionState = 'pre' | 'active' | 'post';
 
+export type ReviewSessionIntent =
+  | { mode: 'DUE_ONLY' }
+  | { mode: 'FORCED_FILL'; targetCount: number };
+
 type ReviewSessionContainerProps = {
   initialWords: Word[];
+  sessionIntent?: ReviewSessionIntent;
 };
 
 export const ReviewSessionContainer = ({
   initialWords,
+  sessionIntent = { mode: 'DUE_ONLY' },
 }: ReviewSessionContainerProps) => {
   const router = useRouter();
   const [sessionState, setSessionState] = useState<SessionState>('pre');
@@ -32,7 +38,9 @@ export const ReviewSessionContainer = ({
     return (
       <PreSessionScreen
         wordCount={initialWords.length}
+        sessionIntent={sessionIntent}
         onStart={() => setSessionState('active')}
+        onQuit={handleGoHome}
       />
     );
 
