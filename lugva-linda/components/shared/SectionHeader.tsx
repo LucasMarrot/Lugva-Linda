@@ -16,7 +16,9 @@ export const SectionHeader = ({
       <h2 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
         {title}
       </h2>
-      {description && <p className="text-muted-foreground text-sm">{description}</p>}
+      {description && (
+        <p className="text-muted-foreground text-sm">{description}</p>
+      )}
     </div>
   );
 };
