@@ -5,6 +5,7 @@ import { useWordModal } from '../providers/WordModalProvider';
 import { AlphabetNav } from './AlphabetNav';
 import { WordListItem } from './WordListItem';
 import { TagFilter } from './TagFilter';
+import { StateMessage } from '@/components/shared/StateMessage';
 import { Word } from '@prisma/client';
 
 type EncyclopediaClientProps = {
@@ -87,11 +88,16 @@ export const EncyclopediaClient = ({ words }: EncyclopediaClientProps) => {
         ))}
 
         {filteredWords.length === 0 && (
-          <div className="text-muted-foreground py-20 text-center text-sm font-medium">
-            {selectedTags.length > 0
-              ? 'Aucun mot trouvé pour la sélection actuelle.'
-              : 'Votre encyclopédie est vide.'}
-          </div>
+          <StateMessage
+            tone="neutral"
+            title="Aucun resultat"
+            message={
+              selectedTags.length > 0
+                ? 'Aucun mot trouve pour la selection actuelle.'
+                : 'Votre encyclopedie est vide.'
+            }
+            className="mx-auto max-w-md"
+          />
         )}
       </div>
     </div>

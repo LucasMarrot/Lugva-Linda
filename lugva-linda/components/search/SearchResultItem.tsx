@@ -1,39 +1,39 @@
-import { useRouter } from 'next/navigation'
-import { Word } from '@prisma/client'
-import { useWordModal } from '../providers/WordModalProvider'
-import { WordListItem } from '../encyclopedia/WordListItem'
+import { useRouter } from 'next/navigation';
+import { Word } from '@prisma/client';
+import { useWordModal } from '../providers/WordModalProvider';
+import { WordListItem } from '../encyclopedia/WordListItem';
 
 type SearchResultItemProps = {
-  word: Word
-}
+  word: Word;
+};
 
 export const SearchResultItem = ({ word }: SearchResultItemProps) => {
-  const router = useRouter()
-  const { openWord } = useWordModal()
+  const router = useRouter();
+  const { openWord } = useWordModal();
 
   const handleAction = (action: 'modal' | 'redirect', e?: React.MouseEvent) => {
-    if (e) e.stopPropagation()
+    if (e) e.stopPropagation();
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
 
     setTimeout(() => {
       if (action === 'modal') {
-        openWord(word)
+        openWord(word);
       } else if (action === 'redirect') {
-        router.push(`/words?lang=${word.languageId}#word-${word.id}`)
+        router.push(`/words?lang=${word.languageId}#word-${word.id}`);
 
         setTimeout(() => {
-          const element = document.getElementById(`word-${word.id}`)
+          const element = document.getElementById(`word-${word.id}`);
           if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            element.classList.add('bg-accent')
-            setTimeout(() => element.classList.remove('bg-accent'), 1500)
+            element.classList.add('bg-accent');
+            setTimeout(() => element.classList.remove('bg-accent'), 1500);
           }
-        }, 100)
+        }, 100);
       }
-    }, 50)
-  }
+    }, 50);
+  };
 
   return (
     <WordListItem
@@ -41,5 +41,5 @@ export const SearchResultItem = ({ word }: SearchResultItemProps) => {
       onClick={() => handleAction('modal')}
       onRedirect={(e) => handleAction('redirect', e)}
     />
-  )
-}
+  );
+};

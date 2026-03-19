@@ -39,6 +39,7 @@ export const CreateWordView = ({
     initialData?.synonyms || [],
   );
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const langId = isEditing ? initialData.languageId : currentLangId;
   const defaultWord = isEditing ? initialData.term : initialQuery;
@@ -72,6 +73,8 @@ export const CreateWordView = ({
     }
 
     try {
+      setIsSubmitting(true);
+
       if (isEditing) {
         await updateWordAction(initialData.id, formData);
         toast.success('Mot modifie avec succes.');
@@ -84,6 +87,8 @@ export const CreateWordView = ({
     } catch (error) {
       console.error('Erreur lors de la validation du mot:', error);
       toast.error('La validation a echoue. Merci de reessayer.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -195,9 +200,13 @@ export const CreateWordView = ({
           type="submit"
           size="lg"
           className="mt-2 h-14 w-full text-base shadow-md"
-          disabled={!formValidation.success}
+          disabled={!formValidation.success || isSubmitting}
         >
-          {isEditing ? 'Enregistrer les modifications' : 'Enregistrer la fiche'}
+          {isSubmitting
+            ? 'Enregistrement...'
+            : isEditing
+              ? 'Enregistrer les modifications'
+              : 'Enregistrer la fiche'}
         </Button>
       </form>
     </div>

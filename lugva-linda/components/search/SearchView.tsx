@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { searchWords } from '@/actions/word-actions';
 import { SearchResultItem } from './SearchResultItem';
+import { SectionHeader } from '@/components/shared/SectionHeader';
+import { StateMessage } from '@/components/shared/StateMessage';
 import { Word } from '@prisma/client';
 
 type SearchViewProps = {
@@ -23,22 +25,49 @@ export const SearchView = ({
 }: SearchViewProps) => {
   const [searchResults, setSearchResults] = useState<Word[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const latestRequestRef = useRef(0);
 
   useEffect(() => {
-    if (query.trim().length === 0) {
+    const trimmedQuery = query.trim();
+
+    if (trimmedQuery.length === 0) {
+      latestRequestRef.current += 1;
       setSearchResults([]);
+      setSearchError(null);
+      setIsSearching(false);
       return;
     }
 
+    const requestId = latestRequestRef.current + 1;
+    latestRequestRef.current = requestId;
+
     const delayDebounceFn = setTimeout(async () => {
       setIsSearching(true);
+      setSearchError(null);
+
       try {
-        const results = await searchWords(query.trim(), currentLangId);
+        const results = await searchWords(trimmedQuery, currentLangId);
+
+        if (latestRequestRef.current !== requestId) {
+          return;
+        }
+
         setSearchResults(results);
       } catch (error) {
         console.error('Erreur lors de la recherche:', error);
+        if (latestRequestRef.current !== requestId) {
+          return;
+        }
+
+        setSearchResults([]);
+        setSearchError(
+          'Impossible de lancer la recherche. Merci de reessayer.',
+        );
       } finally {
-        setIsSearching(false);
+        if (latestRequestRef.current === requestId) {
+          setIsSearching(false);
+        }
       }
     }, 300);
 
@@ -83,21 +112,25 @@ export const SearchView = ({
           )}
 
           {exactMatchExists && (
-            <div className="text-primary bg-primary/10 rounded-lg py-3 text-center text-sm font-medium">
-              Ce mot est déjà dans votre encyclopédie.
-            </div>
+            <StateMessage
+              tone="info"
+              message="Ce mot est deja dans votre encyclopedie."
+            />
           )}
 
           <div className="px-2 pt-2">
-            <p className="text-muted-foreground mb-3 text-xs font-medium tracking-wider uppercase">
-              {isSearching ? 'Recherche en cours...' : 'Résultats'}
-            </p>
+            <SectionHeader title="Resultats" className="mb-3" />
 
             <div className="space-y-2">
-              {searchResults.length === 0 && !isSearching ? (
-                <div className="text-muted-foreground bg-muted/30 rounded-lg py-4 text-center text-sm">
-                  Aucun mot similaire trouvé.
-                </div>
+              {searchError ? (
+                <StateMessage tone="error" message={searchError} />
+              ) : isSearching ? (
+                <StateMessage tone="info" message="Recherche en cours..." />
+              ) : searchResults.length === 0 ? (
+                <StateMessage
+                  tone="neutral"
+                  message="Aucun mot similaire trouve."
+                />
               ) : (
                 searchResults.map((word) => (
                   <SearchResultItem key={word.id} word={word} />

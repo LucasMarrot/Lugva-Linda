@@ -10,7 +10,7 @@ export default async function LoginPage({
   const hasError = params.error === 'true';
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4 dark:bg-zinc-950">
+    <div className="bg-background flex min-h-screen items-center justify-center p-4">
       <LoginForm hasError={hasError} action={login} />
     </div>
   );

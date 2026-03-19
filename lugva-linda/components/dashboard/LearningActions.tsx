@@ -1,5 +1,6 @@
 import { DueTodayReviewButton } from '@/components/dashboard/DueTodayReviewButton';
 import { ReviewBatchButton } from '@/components/dashboard/ReviewBatchButton';
+import { SectionHeader } from '@/components/shared/SectionHeader';
 
 type LearningActionsProps = {
   languageId: string;
@@ -14,9 +15,7 @@ export const LearningActions = ({ languageId }: LearningActionsProps) => {
         <DueTodayReviewButton languageId={languageId} />
       </div>
 
-      <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-        Sessions forcées
-      </p>
+      <SectionHeader title="Sessions forcees" className="mb-2" />
 
       <div className="grid grid-cols-3 gap-2">
         {reviewBatches.map((count) => (

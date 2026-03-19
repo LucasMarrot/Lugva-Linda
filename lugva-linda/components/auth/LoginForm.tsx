@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { loginFormSchema } from '@/lib/validation/schemas';
+import { StateMessage } from '@/components/shared/StateMessage';
 
 type LoginFormProps = {
   hasError: boolean;
@@ -50,9 +51,10 @@ export const LoginForm = ({ hasError, action }: LoginFormProps) => {
       <form action={action} noValidate>
         <CardContent className="space-y-4">
           {hasError && (
-            <div className="text-destructive border-destructive/30 bg-destructive/10 rounded-md border p-2 text-sm font-medium">
-              Email ou mot de passe incorrect.
-            </div>
+            <StateMessage
+              tone="error"
+              message="Email ou mot de passe incorrect."
+            />
           )}
 
           <div className="space-y-2">
