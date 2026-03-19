@@ -11,6 +11,7 @@ import { AudioRecorder } from './AudioRecorder';
 import { TagSelector } from './TagSelector';
 import { Word } from '@prisma/client';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/providers/ToastProvider';
 import { createWordFormSchema } from '@/lib/validation/schemas';
 
 type CreateWordViewProps = {
@@ -29,6 +30,7 @@ export const CreateWordView = ({
   onSuccess,
 }: CreateWordViewProps) => {
   const isEditing = !!initialData;
+  const toast = useToast();
 
   const [selectedTag, setSelectedTag] = useState<string | null>(
     initialData?.tags?.[0] || null,
@@ -69,13 +71,20 @@ export const CreateWordView = ({
       formData.append('audioFile', audioFile);
     }
 
-    if (isEditing) {
-      await updateWordAction(initialData.id, formData);
-    } else {
-      await createWord(formData);
-    }
+    try {
+      if (isEditing) {
+        await updateWordAction(initialData.id, formData);
+        toast.success('Mot modifie avec succes.');
+      } else {
+        await createWord(formData);
+        toast.success('Mot cree avec succes.');
+      }
 
-    onSuccess();
+      onSuccess();
+    } catch (error) {
+      console.error('Erreur lors de la validation du mot:', error);
+      toast.error('La validation a echoue. Merci de reessayer.');
+    }
   };
 
   return (

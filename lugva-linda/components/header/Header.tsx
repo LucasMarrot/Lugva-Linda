@@ -1,19 +1,19 @@
-import Link from 'next/link'
-import { Settings } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { LanguageSelector } from './LanguageSelector'
-import type { Language } from '@prisma/client'
+import Link from 'next/link';
+import { Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { LanguageSelector } from './LanguageSelector';
+import type { Language } from '@prisma/client';
 
 interface HeaderProps {
-  languages: Language[]
-  title?: string
+  languages: Language[];
+  title?: string;
 }
 
 export const Header = ({ languages, title }: HeaderProps) => {
   return (
     <header className="border-border bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b px-4 backdrop-blur">
       <div className="z-10 flex items-center gap-2">
-        <h1 className="text-xl font-bold tracking-tight">Lugva Linda</h1>
+        <p className="text-xl font-bold tracking-tight">Lugva Linda</p>
       </div>
 
       {title && (
@@ -34,5 +34,5 @@ export const Header = ({ languages, title }: HeaderProps) => {
         </Button>
       </div>
     </header>
-  )
-}
+  );
+};

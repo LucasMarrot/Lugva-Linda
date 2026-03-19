@@ -1,51 +1,60 @@
-'use client'
+'use client';
 
-import { useState, useRef } from 'react'
-import { Mic, Square, Trash2, Play, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useAudioRecorder } from '@/hooks/useAudioRecorder' // <-- Import du Hook
+import { useEffect, useRef, useState } from 'react';
+import { Mic, Square, Trash2, Play, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/providers/ToastProvider';
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 
 type AudioRecorderProps = {
-  onAudioReady: (file: File | null) => void
-}
+  onAudioReady: (file: File | null) => void;
+};
 
 export const AudioRecorder = ({ onAudioReady }: AudioRecorderProps) => {
   const {
     isRecording,
     audioUrl,
     duration,
+    errorEvent,
     startRecording,
     stopRecording,
     deleteAudio,
-  } = useAudioRecorder(onAudioReady)
+  } = useAudioRecorder(onAudioReady);
+  const toast = useToast();
 
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isAudioLoaded, setIsAudioLoaded] = useState(false)
-  const audioPlayerRef = useRef<HTMLAudioElement | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isAudioLoaded, setIsAudioLoaded] = useState(false);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   const togglePlay = () => {
-    if (!audioPlayerRef.current || !isAudioLoaded) return
+    if (!audioPlayerRef.current || !isAudioLoaded) return;
 
     if (isPlaying) {
-      audioPlayerRef.current.pause()
-      setIsPlaying(false)
+      audioPlayerRef.current.pause();
+      setIsPlaying(false);
     } else {
-      audioPlayerRef.current.play()
-      setIsPlaying(true)
+      audioPlayerRef.current.play();
+      setIsPlaying(true);
     }
-  }
+  };
 
   const handleDelete = () => {
-    setIsPlaying(false)
-    setIsAudioLoaded(false)
-    deleteAudio()
-  }
+    setIsPlaying(false);
+    setIsAudioLoaded(false);
+    deleteAudio();
+  };
 
   const formatDuration = (totalSeconds: number) => {
-    const minutes = Math.floor(totalSeconds / 60)
-    const seconds = totalSeconds % 60
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
-  }
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  useEffect(() => {
+    if (errorEvent) {
+      toast.error(errorEvent.message);
+    }
+  }, [errorEvent, toast]);
 
   return (
     <div className="space-y-2">
@@ -59,7 +68,7 @@ export const AudioRecorder = ({ onAudioReady }: AudioRecorderProps) => {
           {isRecording ? (
             <>
               <Square className="h-4 w-4 fill-current" /> Arrêter
-              l'enregistrement
+              l&apos;enregistrement
             </>
           ) : (
             <>
@@ -113,5 +122,5 @@ export const AudioRecorder = ({ onAudioReady }: AudioRecorderProps) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
