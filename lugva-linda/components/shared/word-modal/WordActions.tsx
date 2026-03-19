@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trash2, Edit2, AlertCircle } from 'lucide-react';
+import { Trash2, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '../ConfirmButton';
 

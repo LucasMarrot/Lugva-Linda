@@ -47,9 +47,16 @@ export const ConfirmButton = ({
   useEffect(() => {
     if (!isConfirming) return;
 
-    const timer = setTimeout(() => handleSetConfirming(false), timeoutMs);
+    const timer = setTimeout(() => {
+      if (onConfirmingChange) {
+        onConfirmingChange(false);
+        return;
+      }
+
+      setInternalIsConfirming(false);
+    }, timeoutMs);
     return () => clearTimeout(timer);
-  }, [isConfirming, timeoutMs]);
+  }, [isConfirming, timeoutMs, onConfirmingChange]);
 
   if (isConfirming) {
     return (
