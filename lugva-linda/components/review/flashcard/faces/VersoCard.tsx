@@ -40,9 +40,9 @@ export const VersoCard = ({ word }: VersoCardProps) => {
         </div>
       )}
 
-      {word.customAudio && (
+      {word.customAudioUrl && (
         <div className="mt-4" onClick={(e) => e.stopPropagation()}>
-          <AudioPlayer audioUrl={word.customAudio} />
+          <AudioPlayer audioUrl={word.customAudioUrl} />
         </div>
       )}
     </CardFace>

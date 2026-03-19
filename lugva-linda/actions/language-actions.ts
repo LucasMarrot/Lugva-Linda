@@ -1,53 +1,56 @@
 'use server';
 
 import { requireAuthenticatedUser } from '@/lib/auth/server';
-import prisma from '@/lib/prisma';
 import { createLanguageFormSchema } from '@/lib/validation/schemas';
 import { revalidatePath } from 'next/cache';
+import {
+  createLanguageForUser,
+  listUserLanguages,
+} from '@/lib/services/language-service';
+import {
+  logActionError,
+  logActionSuccess,
+  toActionError,
+} from '@/lib/actions/action-error';
+import { DuplicateError } from '@/lib/errors';
+import { assertRateLimit } from '@/lib/security/rate-limit';
+import { assertCsrfForAction } from '@/lib/security/csrf';
 
 export async function createLanguage(formData: FormData) {
-  const user = await requireAuthenticatedUser();
+  let userId: string | null = null;
+  const startedAt = Date.now();
 
-  // Synchronisation utilisateur Supabase -> Prisma
-  await prisma.user.upsert({
-    where: { id: user.id },
-    update: {},
-    create: {
-      id: user.id,
-      email: user.email ?? `user-${user.id}@example.invalid`,
-    },
-  });
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    await assertCsrfForAction({
+      formData,
+      subject: user.id,
+    });
+    assertRateLimit(`create-language:${user.id}`, 10, 60_000);
 
-  const parsedForm = createLanguageFormSchema.parse({
-    name: String(formData.get('name') ?? ''),
-  });
-  const name = parsedForm.name;
+    const parsedForm = createLanguageFormSchema.parse({
+      name: String(formData.get('name') ?? ''),
+    });
 
-  const existingLanguage = await prisma.language.findFirst({
-    where: {
-      userId: user.id,
-      name: {
-        equals: name,
-        mode: 'insensitive',
-      },
-    },
-  });
-
-  if (existingLanguage) {
-    throw new Error(
-      'La langue doit etre differente des langues deja existantes.',
+    const existingLanguages = await listUserLanguages(user.id);
+    const hasExistingLanguage = existingLanguages.some(
+      (language) =>
+        language.name.localeCompare(parsedForm.name, undefined, {
+          sensitivity: 'accent',
+        }) === 0,
     );
+
+    if (hasExistingLanguage) {
+      throw new DuplicateError('La langue existe deja pour cet utilisateur.');
+    }
+
+    await createLanguageForUser(user, parsedForm.name);
+
+    revalidatePath('/');
+    logActionSuccess('createLanguage', userId, startedAt);
+  } catch (error) {
+    logActionError('createLanguage', userId, error, startedAt);
+    throw toActionError(error);
   }
-
-  const code = name.substring(0, 2).toUpperCase();
-
-  await prisma.language.create({
-    data: {
-      name,
-      code,
-      userId: user.id,
-    },
-  });
-
-  revalidatePath('/');
 }

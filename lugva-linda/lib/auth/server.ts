@@ -1,6 +1,10 @@
 import prisma from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { ForbiddenError, NotFoundError, UnauthorizedError } from '@/lib/errors';
+import {
+  assertUserLanguageAccess,
+  ensureUserRecord,
+} from '@/lib/services/language-service';
 
 export const requireAuthenticatedUser = async () => {
   const supabase = await createClient();
@@ -12,6 +16,8 @@ export const requireAuthenticatedUser = async () => {
   if (error || !user) {
     throw new UnauthorizedError();
   }
+
+  await ensureUserRecord({ id: user.id, email: user.email });
 
   return user;
 };
@@ -28,9 +34,7 @@ export const verifyLanguageOwnership = async (
     throw new NotFoundError('Langue introuvable.');
   }
 
-  if (language.userId !== userId) {
-    throw new ForbiddenError('Acces refuse pour cette langue.');
-  }
+  await assertUserLanguageAccess(userId, languageId);
 
   return language;
 };
@@ -44,7 +48,7 @@ export const verifyWordOwnership = async (wordId: string, userId: string) => {
     throw new NotFoundError('Mot introuvable.');
   }
 
-  if (word.userId !== userId) {
+  if (word.ownerId !== userId) {
     throw new ForbiddenError('Acces refuse pour ce mot.');
   }
 

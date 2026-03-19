@@ -1,12 +1,12 @@
-import { Word } from '@prisma/client'
-import { BookOpen } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Word } from '@prisma/client';
+import { BookOpen } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type WordListItemProps = {
-  word: Word
-  onClick: () => void
-  onRedirect?: (e: React.MouseEvent) => void
-}
+  word: Word;
+  onClick: () => void;
+  onRedirect?: (e: React.MouseEvent) => void;
+};
 
 export const WordListItem = ({
   word,
@@ -23,7 +23,7 @@ export const WordListItem = ({
     >
       <div className="flex min-w-0 flex-col gap-1.5">
         <span className="text-foreground truncate text-lg font-semibold">
-          {word.word}
+          {word.term}
         </span>
         <span className="text-muted-foreground truncate text-sm">
           {word.translation}
@@ -43,8 +43,8 @@ export const WordListItem = ({
             size="icon"
             className="hover:bg-primary/10 hover:text-primary h-8 w-8 rounded-full transition-colors"
             onClick={(e) => {
-              e.stopPropagation()
-              onRedirect(e)
+              e.stopPropagation();
+              onRedirect(e);
             }}
           >
             <BookOpen className="h-4 w-4" />
@@ -52,5 +52,5 @@ export const WordListItem = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};

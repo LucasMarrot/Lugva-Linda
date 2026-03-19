@@ -14,7 +14,7 @@ type FlashcardProps = {
 export const Flashcard = ({ word, isFlipped, onFlip }: FlashcardProps) => {
   return (
     <FlashcardMotion isFlipped={isFlipped} onFlip={onFlip}>
-      <RectoCard word={word.word} />
+      <RectoCard word={word.term} />
       <VersoCard word={word} />
     </FlashcardMotion>
   );

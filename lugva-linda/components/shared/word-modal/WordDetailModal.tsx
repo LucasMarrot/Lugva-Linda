@@ -1,26 +1,26 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { X, Tag } from 'lucide-react'
+import { useState, useEffect } from 'react';
+import { X, Tag } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogClose,
-} from '@/components/ui/dialog'
-import { SynonymsList } from './SynonymsList'
-import { WordActions } from './WordActions'
-import { AudioPlayer } from '@/components/shared/AudioPlayer'
-import { Word } from '@prisma/client'
-import { CreateWordView } from '@/components/search/CreateWordView'
+} from '@/components/ui/dialog';
+import { SynonymsList } from './SynonymsList';
+import { WordActions } from './WordActions';
+import { AudioPlayer } from '@/components/shared/AudioPlayer';
+import { Word } from '@prisma/client';
+import { CreateWordView } from '@/components/search/CreateWordView';
 
 type WordDetailModalProps = {
-  word: Word | null
-  isOpen: boolean
-  onClose: () => void
-  onSynonymSelect: (synonym: string) => void
-  onDelete: (wordId: string) => void
-}
+  word: Word | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSynonymSelect: (synonym: string) => void;
+  onDelete: (wordId: string) => void;
+};
 
 export const WordDetailModal = ({
   word,
@@ -29,14 +29,14 @@ export const WordDetailModal = ({
   onSynonymSelect,
   onDelete,
 }: WordDetailModalProps) => {
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
-      const timeout = setTimeout(() => setIsEditing(false), 300)
-      return () => clearTimeout(timeout)
+      const timeout = setTimeout(() => setIsEditing(false), 300);
+      return () => clearTimeout(timeout);
     }
-  }, [isOpen, word])
+  }, [isOpen, word]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -46,8 +46,8 @@ export const WordDetailModal = ({
             <div className="border-border/50 flex shrink-0 items-center justify-between border-b p-4">
               <DialogTitle className="sr-only">
                 {isEditing
-                  ? `Modifier ${word.word}`
-                  : `Détails de ${word.word}`}
+                  ? `Modifier ${word.term}`
+                  : `Détails de ${word.term}`}
               </DialogTitle>
               <div className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
                 {isEditing ? 'Modification' : 'Fiche de vocabulaire'}
@@ -62,7 +62,7 @@ export const WordDetailModal = ({
                 <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-6">
                   <div className="space-y-2 text-center">
                     <h2 className="text-foreground text-4xl font-extrabold">
-                      {word.word}
+                      {word.term}
                     </h2>
                     <p className="text-primary text-xl font-medium">
                       {word.translation}
@@ -78,14 +78,14 @@ export const WordDetailModal = ({
                     </div>
                   )}
 
-                  {word.customAudio && (
+                  {word.customAudioUrl && (
                     <>
                       <hr className="border-border/50" />
                       <div className="space-y-3">
                         <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
                           Prononciation
                         </h3>
-                        <AudioPlayer audioUrl={word.customAudio} />
+                        <AudioPlayer audioUrl={word.customAudioUrl} />
                       </div>
                     </>
                   )}
@@ -114,8 +114,8 @@ export const WordDetailModal = ({
                   initialData={word}
                   onCancel={() => setIsEditing(false)}
                   onSuccess={() => {
-                    setIsEditing(false)
-                    onClose()
+                    setIsEditing(false);
+                    onClose();
                   }}
                 />
               </div>
@@ -124,5 +124,5 @@ export const WordDetailModal = ({
         )}
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};

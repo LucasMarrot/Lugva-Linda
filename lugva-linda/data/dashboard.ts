@@ -1,28 +1,37 @@
-import { createClient } from '@/lib/supabase/server'
-import type { Language } from '@prisma/client'
+import prisma from '@/lib/prisma';
 
 export async function getDashboardData(userId: string) {
-  const supabase = await createClient()
+  const userLanguages = await prisma.userLanguage.findMany({
+    where: { userId },
+    include: { language: true },
+    orderBy: { createdAt: 'asc' },
+  });
 
-  // Récupération des langues
-  const { data: rawLanguages, error: langError } = await supabase
-    .from('Language')
-    .select('id, name, code')
-    .eq('userId', userId)
+  const languages = userLanguages.map((userLanguage) => userLanguage.language);
 
-  // Comptage des mots
-  const { count: totalWords, error: wordError } = await supabase
-    .from('Word')
-    .select('*', { count: 'exact', head: true })
-    .eq('userId', userId)
+  const totalWords = await prisma.word.count({
+    where: {
+      ownerId: userId,
+      isDeleted: false,
+      deleteToken: BigInt(0),
+    },
+  });
 
-  if (langError)
-    console.error('Erreur de récupération des langues :', langError)
-  if (wordError) console.error('Erreur de comptage des mots :', wordError)
+  const wordsToReview = await prisma.card.count({
+    where: {
+      ownerId: userId,
+      due: { lte: new Date() },
+      state: { not: 0 },
+      word: {
+        isDeleted: false,
+        deleteToken: BigInt(0),
+      },
+    },
+  });
 
   return {
-    languages: (rawLanguages as Language[]) || [],
-    totalWords: totalWords ?? 0,
-    wordsToReview: 0, // Valeur statique pour l'instant
-  }
+    languages,
+    totalWords,
+    wordsToReview,
+  };
 }

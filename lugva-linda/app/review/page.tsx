@@ -59,8 +59,9 @@ const resolveLanguageId = async (requestedLanguageId?: string) => {
     redirect('/auth/login');
   }
 
-  const defaultLanguage = await prisma.language.findFirst({
+  const defaultLanguage = await prisma.userLanguage.findFirst({
     where: { userId: user.id },
+    include: { language: true },
     orderBy: { createdAt: 'asc' },
   });
 
@@ -68,7 +69,7 @@ const resolveLanguageId = async (requestedLanguageId?: string) => {
     redirect('/setup');
   }
 
-  return defaultLanguage.id;
+  return defaultLanguage.language.id;
 };
 
 export default async function ReviewPage({ searchParams }: ReviewPageProps) {

@@ -1,5 +1,12 @@
-import { fsrs, Card, State, Rating, createEmptyCard } from 'ts-fsrs';
-import type { Word } from '@prisma/client';
+import {
+  fsrs,
+  Card as FsrsCard,
+  State,
+  Rating,
+  createEmptyCard,
+} from 'ts-fsrs';
+import type { Card as DbCard } from '@prisma/client';
+import { ValidationError } from '@/lib/errors';
 
 const RETENTION_RATE = 0.9; // Standard optimal pour une mémorisation efficace
 
@@ -14,42 +21,38 @@ export const FSRSRating = {
   Easy: Rating.Easy, // 4 : Facile
 } as const;
 
-export const mapWordToCard = (word: Word): Card => {
+const assertFiniteNumber = (value: number, fieldName: string) => {
+  if (!Number.isFinite(value)) {
+    throw new ValidationError(
+      `Valeur FSRS invalide pour ${fieldName}.`,
+      'INVALID_FSRS_OUTPUT',
+    );
+  }
+};
+
+export const mapDbCardToFsrsCard = (card: DbCard): FsrsCard => {
   const defaultCard = createEmptyCard();
 
   return {
     ...defaultCard,
-    due: word.due,
-    stability: word.stability,
-    difficulty: word.difficulty,
-    scheduled_days: word.scheduledDays,
-    reps: word.reps,
-    lapses: word.lapses,
-    state: word.state as State,
-    last_review: word.lastReview ?? undefined,
-  };
-};
-
-export interface FSRSUpdateData {
-  due: Date;
-  stability: number;
-  difficulty: number;
-  scheduledDays: number;
-  reps: number;
-  lapses: number;
-  state: number;
-  lastReview: Date | null;
-}
-
-export const mapCardToWordUpdate = (card: Card): FSRSUpdateData => {
-  return {
     due: card.due,
     stability: card.stability,
     difficulty: card.difficulty,
-    scheduledDays: card.scheduled_days,
+    scheduled_days: card.scheduledDays,
     reps: card.reps,
     lapses: card.lapses,
-    state: card.state as number,
-    lastReview: card.last_review ? card.last_review : null,
+    state: card.state as State,
+    last_review: card.lastReview ?? undefined,
   };
+};
+
+export const validateFsrsCard = (card: FsrsCard): FsrsCard => {
+  assertFiniteNumber(card.stability, 'stability');
+  assertFiniteNumber(card.difficulty, 'difficulty');
+  assertFiniteNumber(card.scheduled_days, 'scheduled_days');
+  assertFiniteNumber(card.reps, 'reps');
+  assertFiniteNumber(card.lapses, 'lapses');
+  assertFiniteNumber(Number(card.state), 'state');
+
+  return card;
 };

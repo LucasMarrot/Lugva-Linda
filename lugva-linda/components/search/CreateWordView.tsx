@@ -39,7 +39,7 @@ export const CreateWordView = ({
   const [audioFile, setAudioFile] = useState<File | null>(null);
 
   const langId = isEditing ? initialData.languageId : currentLangId;
-  const defaultWord = isEditing ? initialData.word : initialQuery;
+  const defaultWord = isEditing ? initialData.term : initialQuery;
   const defaultTranslation = initialData?.translation || '';
 
   const [wordValue, setWordValue] = useState(defaultWord);
@@ -168,7 +168,7 @@ export const CreateWordView = ({
 
         <div className="space-y-3">
           <Label className="text-foreground font-medium">
-            {isEditing && initialData?.customAudio
+            {isEditing && initialData?.customAudioUrl
               ? "Nouvel audio (remplacera l'actuel)"
               : 'Prononciation'}
           </Label>

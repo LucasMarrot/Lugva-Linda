@@ -1,60 +1,60 @@
-'use client'
+'use client';
 
-import { useState, useMemo } from 'react'
-import { useWordModal } from '../providers/WordModalProvider'
-import { AlphabetNav } from './AlphabetNav'
-import { WordListItem } from './WordListItem'
-import { TagFilter } from './TagFilter'
-import { Word } from '@prisma/client'
+import { useState, useMemo } from 'react';
+import { useWordModal } from '../providers/WordModalProvider';
+import { AlphabetNav } from './AlphabetNav';
+import { WordListItem } from './WordListItem';
+import { TagFilter } from './TagFilter';
+import { Word } from '@prisma/client';
 
 type EncyclopediaClientProps = {
-  words: Word[]
-}
+  words: Word[];
+};
 
 export const EncyclopediaClient = ({ words }: EncyclopediaClientProps) => {
-  const { openWord } = useWordModal()
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const { openWord } = useWordModal();
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const allTags = useMemo(() => {
-    const tags = new Set<string>()
+    const tags = new Set<string>();
     words.forEach((word) => {
       if (word.tags && word.tags.length > 0) {
-        word.tags.forEach((tag) => tags.add(tag))
+        word.tags.forEach((tag) => tags.add(tag));
       }
-    })
-    return Array.from(tags).sort()
-  }, [words])
+    });
+    return Array.from(tags).sort();
+  }, [words]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
-    )
-  }
+    );
+  };
 
   const filteredWords = useMemo(() => {
-    if (selectedTags.length === 0) return words
+    if (selectedTags.length === 0) return words;
     return words.filter((word) =>
       word.tags?.some((tag) => selectedTags.includes(tag)),
-    )
-  }, [words, selectedTags])
+    );
+  }, [words, selectedTags]);
 
   const groupedWords = useMemo(() => {
     return filteredWords.reduce(
       (acc, word) => {
-        const firstLetter = word.word
+        const firstLetter = word.term
           .normalize('NFD')
           .replace(/[\u0300-\u036f]/g, '')
           .charAt(0)
-          .toUpperCase()
-        if (!acc[firstLetter]) acc[firstLetter] = []
-        acc[firstLetter].push(word)
-        return acc
+          .toUpperCase();
+        if (!acc[firstLetter]) acc[firstLetter] = [];
+        acc[firstLetter].push(word);
+        return acc;
       },
       {} as Record<string, Word[]>,
-    )
-  }, [filteredWords])
+    );
+  }, [filteredWords]);
 
-  const sortedLetters = Object.keys(groupedWords).sort()
+  const sortedLetters = Object.keys(groupedWords).sort();
 
   return (
     <div className="relative min-h-screen pb-24">
@@ -95,5 +95,5 @@ export const EncyclopediaClient = ({ words }: EncyclopediaClientProps) => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};

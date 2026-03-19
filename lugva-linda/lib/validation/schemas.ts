@@ -95,6 +95,33 @@ export const createWordFormSchema = z.object({
   ),
 });
 
+const stringArraySchema = z.array(
+  nonEmptyTextSchema.max(
+    64,
+    'Chaque valeur ne doit pas depasser 64 caracteres.',
+  ),
+);
+
+export const wordWriteSchema = z.object({
+  term: nonEmptyTextSchema.max(
+    128,
+    'Le terme ne doit pas depasser 128 caracteres.',
+  ),
+  translation: nonEmptyTextSchema.max(
+    256,
+    'La traduction ne doit pas depasser 256 caracteres.',
+  ),
+  tags: stringArraySchema.max(20, 'Maximum 20 tags.'),
+  synonyms: stringArraySchema.max(20, 'Maximum 20 synonymes.'),
+  relatedWords: stringArraySchema.max(20, 'Maximum 20 mots lies.'),
+  notes: z
+    .string()
+    .trim()
+    .max(2000, 'Les notes ne doivent pas depasser 2000 caracteres.')
+    .nullable(),
+  languageId: languageIdSchema.optional(),
+});
+
 export const reviewPageSearchSchema = z.object({
   lang: languageIdSchema.optional(),
   fill: z.coerce

@@ -1,19 +1,19 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { Search, Link as LinkIcon, X } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { searchWords } from '@/actions/word-actions'
-import { Word } from '@prisma/client'
+import { useState, useEffect } from 'react';
+import { Search, Link as LinkIcon, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { searchWords } from '@/actions/word-actions';
+import { Word } from '@prisma/client';
 
 type SynonymSelectorProps = {
-  currentLangId: string
-  currentWord: string
-  selectedSynonyms: string[]
-  setSelectedSynonyms: React.Dispatch<React.SetStateAction<string[]>>
-}
+  currentLangId: string;
+  currentWord: string;
+  selectedSynonyms: string[];
+  setSelectedSynonyms: React.Dispatch<React.SetStateAction<string[]>>;
+};
 
 export const SynonymSelector = ({
   currentLangId,
@@ -21,42 +21,41 @@ export const SynonymSelector = ({
   selectedSynonyms,
   setSelectedSynonyms,
 }: SynonymSelectorProps) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<Word[]>([])
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<Word[]>([]);
 
   useEffect(() => {
     if (query.trim().length === 0) {
-      setResults([])
-      return
+      return;
     }
 
     const delayDebounceFn = setTimeout(async () => {
       try {
-        const res = await searchWords(query.trim(), currentLangId)
+        const res = await searchWords(query.trim(), currentLangId);
         const filtered = res.filter(
           (r) =>
-            r.word.toLowerCase() !== currentWord.trim().toLowerCase() &&
-            !selectedSynonyms.includes(r.word),
-        )
-        setResults(filtered)
+            r.term.toLowerCase() !== currentWord.trim().toLowerCase() &&
+            !selectedSynonyms.includes(r.term),
+        );
+        setResults(filtered);
       } catch (error) {
-        console.error('Erreur recherche synonymes:', error)
+        console.error('Erreur recherche synonymes:', error);
       }
-    }, 300)
+    }, 300);
 
-    return () => clearTimeout(delayDebounceFn)
-  }, [query, currentLangId, currentWord, selectedSynonyms])
+    return () => clearTimeout(delayDebounceFn);
+  }, [query, currentLangId, currentWord, selectedSynonyms]);
 
   const addSynonym = (word: string) => {
-    setSelectedSynonyms((prev) => [...prev, word])
-    setQuery('')
-    setIsOpen(false)
-  }
+    setSelectedSynonyms((prev) => [...prev, word]);
+    setQuery('');
+    setIsOpen(false);
+  };
 
   const removeSynonym = (synToRemove: string) => {
-    setSelectedSynonyms((prev) => prev.filter((syn) => syn !== synToRemove))
-  }
+    setSelectedSynonyms((prev) => prev.filter((syn) => syn !== synToRemove));
+  };
 
   return (
     <div className="space-y-3">
@@ -99,7 +98,13 @@ export const SynonymSelector = ({
               placeholder="Tapez un mot..."
               className="bg-background h-9 pl-9"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                const nextQuery = e.target.value;
+                if (nextQuery.trim().length === 0) {
+                  setResults([]);
+                }
+                setQuery(nextQuery);
+              }}
               autoFocus
             />
           </div>
@@ -110,11 +115,11 @@ export const SynonymSelector = ({
                 <button
                   key={res.id}
                   type="button"
-                  onClick={() => addSynonym(res.word)}
+                  onClick={() => addSynonym(res.term)}
                   className="hover:bg-accent flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors"
                 >
                   <span className="text-foreground font-medium">
-                    {res.word}
+                    {res.term}
                   </span>
                   <span className="text-muted-foreground text-xs">
                     {res.translation}
@@ -132,5 +137,5 @@ export const SynonymSelector = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};

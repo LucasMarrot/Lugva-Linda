@@ -1,19 +1,19 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { Search, Plus, BookOpen } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { searchWords } from '@/actions/word-actions'
-import { SearchResultItem } from './SearchResultItem'
-import { Word } from '@prisma/client'
+import { useState, useEffect } from 'react';
+import { Search, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { searchWords } from '@/actions/word-actions';
+import { SearchResultItem } from './SearchResultItem';
+import { Word } from '@prisma/client';
 
 type SearchViewProps = {
-  query: string
-  setQuery: (q: string) => void
-  currentLangId: string
-  onCreateClick: () => void
-}
+  query: string;
+  setQuery: (q: string) => void;
+  currentLangId: string;
+  onCreateClick: () => void;
+};
 
 export const SearchView = ({
   query,
@@ -21,33 +21,33 @@ export const SearchView = ({
   currentLangId,
   onCreateClick,
 }: SearchViewProps) => {
-  const [searchResults, setSearchResults] = useState<Word[]>([])
-  const [isSearching, setIsSearching] = useState(false)
+  const [searchResults, setSearchResults] = useState<Word[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (query.trim().length === 0) {
-      setSearchResults([])
-      return
+      setSearchResults([]);
+      return;
     }
 
     const delayDebounceFn = setTimeout(async () => {
-      setIsSearching(true)
+      setIsSearching(true);
       try {
-        const results = await searchWords(query.trim(), currentLangId)
-        setSearchResults(results)
+        const results = await searchWords(query.trim(), currentLangId);
+        setSearchResults(results);
       } catch (error) {
-        console.error('Erreur lors de la recherche:', error)
+        console.error('Erreur lors de la recherche:', error);
       } finally {
-        setIsSearching(false)
+        setIsSearching(false);
       }
-    }, 300)
+    }, 300);
 
-    return () => clearTimeout(delayDebounceFn)
-  }, [query, currentLangId])
+    return () => clearTimeout(delayDebounceFn);
+  }, [query, currentLangId]);
 
   const exactMatchExists = searchResults.some(
-    (w) => w.word.toLowerCase() === query.trim().toLowerCase(),
-  )
+    (w) => w.term.toLowerCase() === query.trim().toLowerCase(),
+  );
 
   return (
     <div className="space-y-6">
@@ -108,5 +108,5 @@ export const SearchView = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};

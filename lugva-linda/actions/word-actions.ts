@@ -3,232 +3,206 @@
 import {
   requireAuthenticatedUser,
   verifyLanguageOwnership,
-  verifyWordOwnership,
 } from '@/lib/auth/server';
-import prisma from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
-import {
-  languageIdSchema,
-  nonEmptyTextSchema,
-  wordIdSchema,
-} from '@/lib/validation/schemas';
+import { languageIdSchema, wordIdSchema } from '@/lib/validation/schemas';
 import { revalidatePath } from 'next/cache';
-
-const normalizeText = (value: string) => value.normalize('NFC').trim();
-
-const getNormalizedStringArray = (values: FormDataEntryValue[]) => {
-  return values
-    .filter((value): value is string => typeof value === 'string')
-    .map((value) => normalizeText(value))
-    .filter((value) => value.length > 0);
-};
+import {
+  createWordForUser,
+  findWordByTermForOwner,
+  hardDeleteWordForOwner,
+  parseWordFormData,
+  restoreWordForOwner,
+  searchWordsInLanguage,
+  softDeleteWordForOwner,
+  updateWordForOwner,
+} from '@/lib/services/word-service';
+import { getFirstUserLanguage } from '@/lib/services/language-service';
+import { normalizeText } from '@/lib/words/normalization';
+import {
+  logActionError,
+  logActionSuccess,
+  toActionError,
+} from '@/lib/actions/action-error';
+import { assertRateLimit } from '@/lib/security/rate-limit';
+import { assertCsrfForAction } from '@/lib/security/csrf';
 
 export async function createWord(formData: FormData) {
-  const user = await requireAuthenticatedUser();
-  const supabase = await createClient();
+  let userId: string | null = null;
+  const startedAt = Date.now();
 
-  const word = nonEmptyTextSchema.parse(
-    normalizeText(String(formData.get('word') ?? '')),
-  );
-  const translation = nonEmptyTextSchema.parse(
-    normalizeText(String(formData.get('translation') ?? '')),
-  );
-  const tags = getNormalizedStringArray(formData.getAll('tags'));
-  const synonyms = getNormalizedStringArray(formData.getAll('synonyms'));
-
-  const audioFile = formData.get('audioFile') as File | null;
-  let customAudioUrl: string | null = null;
-
-  if (audioFile && audioFile.size > 0) {
-    const fileExtension = audioFile.name.split('.').pop() || 'webm';
-    const fileName = `${user.id}-${Date.now()}.${fileExtension}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('audio-files')
-      .upload(fileName, audioFile, {
-        contentType: audioFile.type,
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (uploadError) throw new Error("Impossible de sauvegarder l'audio");
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('audio-files').getPublicUrl(fileName);
-    customAudioUrl = publicUrl;
-  }
-
-  const languageIdEntry = formData.get('languageId');
-  let languageId =
-    typeof languageIdEntry === 'string' ? normalizeText(languageIdEntry) : '';
-
-  if (!languageId) {
-    const firstLang = await prisma.language.findFirst({
-      where: { userId: user.id },
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    await assertCsrfForAction({
+      formData,
+      subject: user.id,
     });
-    if (!firstLang) throw new Error('Aucune langue trouvée');
-    languageId = firstLang.id;
-  } else {
-    const parsedLanguageId = languageIdSchema.parse(languageId);
-    await verifyLanguageOwnership(parsedLanguageId, user.id);
-    languageId = parsedLanguageId;
-  }
+    assertRateLimit(`create-word:${user.id}`, 30, 60_000);
+    const supabase = await createClient();
 
-  await prisma.word.create({
-    data: {
-      word,
-      translation,
-      tags,
-      synonyms,
-      customAudio: customAudioUrl,
-      languageId,
-      userId: user.id,
-    },
-  });
+    const input = parseWordFormData(formData);
+    const audioFile = formData.get('audioFile') as File | null;
 
-  if (synonyms.length > 0) {
-    const existingSynonyms = await prisma.word.findMany({
-      where: {
-        userId: user.id,
-        languageId: languageId,
-        word: { in: synonyms, mode: 'insensitive' },
-      },
+    await createWordForUser(user.id, input, {
+      audioFile,
+      supabase,
     });
 
-    for (const existing of existingSynonyms) {
-      if (!existing.synonyms.includes(word)) {
-        await prisma.word.update({
-          where: { id: existing.id },
-          data: { synonyms: { push: word } },
-        });
-      }
-    }
+    revalidatePath('/');
+    revalidatePath('/words');
+    logActionSuccess('createWord', userId, startedAt);
+  } catch (error) {
+    logActionError('createWord', userId, error, startedAt);
+    throw toActionError(error);
   }
-
-  revalidatePath('/');
-  revalidatePath('/words');
 }
 
 export async function searchWords(query: string, languageId: string) {
-  const normalizedQuery = normalizeText(query);
-  if (!normalizedQuery) return [];
+  let userId: string | null = null;
 
-  const user = await requireAuthenticatedUser();
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
 
-  let activeLangId = normalizeText(languageId);
-  if (!activeLangId) {
-    const firstLang = await prisma.language.findFirst({
-      where: { userId: user.id },
-    });
-    if (!firstLang) return [];
-    activeLangId = firstLang.id;
-  } else {
-    const parsedLanguageId = languageIdSchema.parse(activeLangId);
-    await verifyLanguageOwnership(parsedLanguageId, user.id);
-    activeLangId = parsedLanguageId;
+    let activeLanguageId = normalizeText(languageId);
+    if (!activeLanguageId) {
+      const firstLanguage = await getFirstUserLanguage(user.id);
+      if (!firstLanguage) return [];
+      activeLanguageId = firstLanguage.id;
+    } else {
+      const parsedLanguageId = languageIdSchema.parse(activeLanguageId);
+      await verifyLanguageOwnership(parsedLanguageId, user.id);
+      activeLanguageId = parsedLanguageId;
+    }
+
+    return searchWordsInLanguage(activeLanguageId, query);
+  } catch (error) {
+    logActionError('searchWords', userId, error);
+    throw toActionError(error);
   }
-
-  const words = await prisma.word.findMany({
-    where: {
-      userId: user.id,
-      languageId: activeLangId,
-      OR: [
-        { word: { contains: normalizedQuery, mode: 'insensitive' } },
-        { translation: { contains: normalizedQuery, mode: 'insensitive' } },
-      ],
-    },
-    take: 10,
-    orderBy: {
-      word: 'asc',
-    },
-  });
-
-  return words;
 }
 
 export async function getWordByTextAction(text: string, languageId: string) {
-  const user = await requireAuthenticatedUser();
-  const validatedLanguageId = languageIdSchema.parse(normalizeText(languageId));
-  await verifyLanguageOwnership(validatedLanguageId, user.id);
+  let userId: string | null = null;
 
-  const word = await prisma.word.findFirst({
-    where: {
-      userId: user.id,
-      languageId: validatedLanguageId,
-      word: {
-        equals: normalizeText(text),
-        mode: 'insensitive',
-      },
-    },
-  });
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
 
-  return word;
+    const validatedLanguageId = languageIdSchema.parse(
+      normalizeText(languageId),
+    );
+    await verifyLanguageOwnership(validatedLanguageId, user.id);
+
+    return findWordByTermForOwner(user.id, validatedLanguageId, text);
+  } catch (error) {
+    logActionError('getWordByTextAction', userId, error);
+    throw toActionError(error);
+  }
 }
 
 export async function deleteWordAction(wordId: string) {
-  const user = await requireAuthenticatedUser();
-  const validatedWordId = wordIdSchema.parse(normalizeText(wordId));
-  await verifyWordOwnership(validatedWordId, user.id);
+  let userId: string | null = null;
+  const startedAt = Date.now();
 
-  await prisma.word.delete({
-    where: { id: validatedWordId },
-  });
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    await assertCsrfForAction({
+      subject: user.id,
+    });
+    assertRateLimit(`delete-word:${user.id}`, 30, 60_000);
 
-  revalidatePath('/');
-  revalidatePath('/words');
+    const validatedWordId = wordIdSchema.parse(normalizeText(wordId));
+    await softDeleteWordForOwner(user.id, validatedWordId);
+
+    revalidatePath('/');
+    revalidatePath('/words');
+    logActionSuccess('deleteWordAction', userId, startedAt);
+  } catch (error) {
+    logActionError('deleteWordAction', userId, error, startedAt);
+    throw toActionError(error);
+  }
 }
 
 export async function updateWordAction(wordId: string, formData: FormData) {
-  const user = await requireAuthenticatedUser();
-  const supabase = await createClient();
+  let userId: string | null = null;
+  const startedAt = Date.now();
 
-  const validatedWordId = wordIdSchema.parse(normalizeText(wordId));
-  const word = nonEmptyTextSchema.parse(
-    normalizeText(String(formData.get('word') ?? '')),
-  );
-  const translation = nonEmptyTextSchema.parse(
-    normalizeText(String(formData.get('translation') ?? '')),
-  );
-  const tags = getNormalizedStringArray(formData.getAll('tags'));
-  const synonyms = getNormalizedStringArray(formData.getAll('synonyms'));
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    await assertCsrfForAction({
+      formData,
+      subject: user.id,
+    });
+    assertRateLimit(`update-word:${user.id}`, 40, 60_000);
+    const supabase = await createClient();
 
-  const audioFile = formData.get('audioFile') as File | null;
-  let customAudioUrl: string | undefined = undefined;
+    const validatedWordId = wordIdSchema.parse(normalizeText(wordId));
+    const input = parseWordFormData(formData);
+    const audioFile = formData.get('audioFile') as File | null;
 
-  if (audioFile && audioFile.size > 0) {
-    const fileExtension = audioFile.name.split('.').pop() || 'webm';
-    const fileName = `${user.id}-${Date.now()}.${fileExtension}`;
+    await updateWordForOwner(user.id, validatedWordId, input, {
+      audioFile,
+      supabase,
+    });
 
-    const { error: uploadError } = await supabase.storage
-      .from('audio-files')
-      .upload(fileName, audioFile, {
-        contentType: audioFile.type,
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (uploadError) throw new Error("Impossible de sauvegarder l'audio");
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('audio-files').getPublicUrl(fileName);
-    customAudioUrl = publicUrl;
+    revalidatePath('/');
+    revalidatePath('/words');
+    logActionSuccess('updateWordAction', userId, startedAt);
+  } catch (error) {
+    logActionError('updateWordAction', userId, error, startedAt);
+    throw toActionError(error);
   }
+}
 
-  await verifyWordOwnership(validatedWordId, user.id);
+export async function restoreWordAction(wordId: string) {
+  let userId: string | null = null;
+  const startedAt = Date.now();
 
-  await prisma.word.update({
-    where: { id: validatedWordId },
-    data: {
-      word,
-      translation,
-      tags,
-      synonyms,
-      ...(customAudioUrl !== undefined && { customAudio: customAudioUrl }),
-    },
-  });
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    await assertCsrfForAction({
+      subject: user.id,
+    });
+    assertRateLimit(`restore-word:${user.id}`, 30, 60_000);
 
-  revalidatePath('/');
-  revalidatePath('/words');
+    const validatedWordId = wordIdSchema.parse(normalizeText(wordId));
+    await restoreWordForOwner(user.id, validatedWordId);
+
+    revalidatePath('/');
+    revalidatePath('/words');
+    logActionSuccess('restoreWordAction', userId, startedAt);
+  } catch (error) {
+    logActionError('restoreWordAction', userId, error, startedAt);
+    throw toActionError(error);
+  }
+}
+
+export async function hardDeleteWordAction(wordId: string) {
+  let userId: string | null = null;
+  const startedAt = Date.now();
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    await assertCsrfForAction({
+      subject: user.id,
+    });
+    assertRateLimit(`hard-delete-word:${user.id}`, 15, 60_000);
+    const supabase = await createClient();
+
+    const validatedWordId = wordIdSchema.parse(normalizeText(wordId));
+    await hardDeleteWordForOwner(user.id, validatedWordId, supabase);
+
+    revalidatePath('/');
+    revalidatePath('/words');
+    logActionSuccess('hardDeleteWordAction', userId, startedAt);
+  } catch (error) {
+    logActionError('hardDeleteWordAction', userId, error, startedAt);
+    throw toActionError(error);
+  }
 }

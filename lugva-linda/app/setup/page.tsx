@@ -20,7 +20,13 @@ export default async function SetupPage() {
   if (!user) redirect('/auth/login');
 
   const languageCount = await prisma.language.count({
-    where: { userId: user.id },
+    where: {
+      learningUsers: {
+        some: {
+          userId: user.id,
+        },
+      },
+    },
   });
 
   if (languageCount > 0) redirect('/');
