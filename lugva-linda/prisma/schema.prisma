@@ -6,103 +6,206 @@ datasource db {
   provider = "postgresql"
 }
 
-// ------------------------------------------------------
-// 1. UTILISATEURS (Système sur invitation)
-// ------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Core enums
+// -----------------------------------------------------------------------------
 enum Role {
   ADMIN
   USER
+  CONTRIBUTOR
 }
 
+enum ExerciseCategory {
+  READING
+  WRITING
+  PRONUNCIATION
+}
+
+enum ExerciseType {
+  RECOGNITION
+  REVERSE
+  SPELLING
+  SPEAKING
+}
+
+enum ReviewGrade {
+  AGAIN
+  HARD
+  GOOD
+  EASY
+}
+
+// -----------------------------------------------------------------------------
+// Identity and access
+// -----------------------------------------------------------------------------
 model User {
-  id         String     @id
-  email      String     @unique
-  role       Role       @default(USER)
-  createdAt  DateTime   @default(now())
-  
-  languages  Language[]
-  categories Category[]
-  words      Word[]
+  id        String   @id
+  email     String   @unique
+  role      Role     @default(USER)
+  colorHex  String   @default("#3B82F6") @db.VarChar(7)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  learningLanguages UserLanguage[]
+  ownedWords        Word[]      @relation("WordOwner")
+  createdWords      Word[]      @relation("WordCreator")
+  cards             Card[]      @relation("CardOwner")
+  reviewLogs        ReviewLog[] @relation("ReviewLogOwner")
+  createdLanguages  Language[]
 }
 
-// ------------------------------------------------------
-// 2. ORGANISATION
-// ------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Languages (global) + user enrollment/progression scope
+// -----------------------------------------------------------------------------
 model Language {
   id        String   @id @default(uuid())
-  name      String   
-  code      String?  
+  code      String?  @unique @db.VarChar(12)
+  name      String   @db.VarChar(64)
+  nameNorm  String   @unique @db.VarChar(64)
+  createdBy String
   createdAt DateTime @default(now())
-  
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  words     Word[]
-}
 
-model Category {
-  id        String   @id @default(uuid())
-  name      String   
-  
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  words     Word[]
-}
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
 
-// ------------------------------------------------------
-// 3. LES MOTS (Flashcards + État FSRS)
-// ------------------------------------------------------
-model Word {
-  id            String   @id @default(uuid())
-  
-  word          String   
-  translation   String   
-  synonyms      String[] 
-  tags          String[] 
-  example       String?  
-  notes         String?  
-  customAudio   String?  
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // PARAMÈTRES FSRS
-  due           DateTime @default(now()) 
-  stability     Float    @default(0)     
-  difficulty    Float    @default(0)     
-  scheduledDays Int      @default(0)     
-  reps          Int      @default(0)     
-  lapses        Int      @default(0)     
-  state         Int      @default(0)
-  lastReview    DateTime?     
-
-  userId        String
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  languageId    String
-  language      Language   @relation(fields: [languageId], references: [id], onDelete: Cascade)
-  categoryId    String?
-  category      Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  learningUsers UserLanguage[]
+  words         Word[]
+  cards         Card[]
   reviewLogs    ReviewLog[]
+
+  @@index([createdBy])
 }
 
-// ------------------------------------------------------
-// 4. HISTORIQUE DE RÉVISION
-// ------------------------------------------------------
+model UserLanguage {
+  id         String   @id @default(uuid())
+  userId     String
+  languageId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, languageId])
+  @@index([userId])
+  @@index([languageId])
+}
+
+// -----------------------------------------------------------------------------
+// Encyclopedia words (owned by user, globally searchable, copy-on-duplicate)
+// -----------------------------------------------------------------------------
+model Word {
+  id         String @id @default(uuid())
+  ownerId    String
+  languageId String
+  createdById String
+
+  term                  String
+  termNormalized        String
+  translation           String
+  translationNormalized String
+  tags                  String[] @default([])
+  synonyms              String[] @default([])
+  relatedWords          String[] @default([])
+  notes                 String?
+
+  // Supabase storage key/path, needed for reliable delete from bucket.
+  customAudioPath String?
+  // Public URL is optional cache/denormalization for client rendering.
+  customAudioUrl String?
+
+  // Duplication lineage when a user copies someone else's word.
+  sourceWordId String?
+
+  // Soft delete lifecycle.
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+  purgeAfter  DateTime?
+
+  // deleteToken=0 means active. On soft delete, set unix-ms timestamp.
+  // This enables a strict unique active term while allowing many trashed copies.
+  deleteToken BigInt @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner      User     @relation("WordOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  creator    User     @relation("WordCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  language   Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+  sourceWord Word?    @relation("WordSource", fields: [sourceWordId], references: [id], onDelete: SetNull)
+  copies     Word[]   @relation("WordSource")
+
+  cards Card[]
+
+  @@unique([id, ownerId, languageId])
+  @@unique([ownerId, languageId, termNormalized, deleteToken])
+  @@index([ownerId, languageId, isDeleted, createdAt])
+  @@index([ownerId, languageId, isDeleted, termNormalized])
+  @@index([languageId, isDeleted, termNormalized])
+  @@index([languageId, isDeleted, translationNormalized])
+  @@index([sourceWordId])
+  @@index([isDeleted, purgeAfter])
+}
+
+// -----------------------------------------------------------------------------
+// FSRS cards and review history
+// -----------------------------------------------------------------------------
+model Card {
+  id         String @id @default(uuid())
+  wordId     String
+  ownerId    String
+  languageId String
+
+  category ExerciseCategory
+  type     ExerciseType
+
+  due           DateTime @default(now())
+  stability     Float    @default(0)
+  difficulty    Float    @default(0)
+  scheduledDays Int      @default(0)
+  reps          Int      @default(0)
+  lapses        Int      @default(0)
+  state         Int      @default(0)
+  lastReview    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite FK guarantees card scope matches word scope.
+  word     Word     @relation(fields: [wordId, ownerId, languageId], references: [id, ownerId, languageId], onDelete: Cascade)
+  owner    User     @relation("CardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  reviewLogs ReviewLog[]
+
+  @@unique([wordId, type])
+  @@index([ownerId, languageId, due, state])
+  @@index([ownerId, due, state])
+  @@index([languageId, due])
+}
+
 model ReviewLog {
-  id              String   @id @default(uuid())
-  
-  grade           Int      
-  reviewDate      DateTime @default(now()) 
-  durationMs      Int?     
+  id         String @id @default(uuid())
+  cardId     String
+  ownerId    String
+  languageId String
 
-  // CAPTURE DE L'ÉTAT FSRS (Avant révision)
-  state           Int      
-  due             DateTime 
-  stability       Float    
-  difficulty      Float    
-  elapsedDays     Int      
-  lastElapsedDays Int      
-  scheduledDays   Int      
+  grade      ReviewGrade
+  reviewDate DateTime @default(now())
+  durationMs Int?
 
-  wordId          String
-  word            Word     @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  // Snapshot before card update.
+  state           Int
+  due             DateTime
+  stability       Float
+  difficulty      Float
+  elapsedDays     Int
+  lastElapsedDays Int
+  scheduledDays   Int
+
+  card     Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  owner    User     @relation("ReviewLogOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, reviewDate])
+  @@index([ownerId, reviewDate])
+  @@index([ownerId, languageId, reviewDate])
 }
