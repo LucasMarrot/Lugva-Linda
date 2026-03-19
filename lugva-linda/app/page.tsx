@@ -40,7 +40,7 @@ export default async function HomePage(props: HomePageProps) {
   const activeLanguageId = lang ?? languages[0].id;
 
   return (
-    <div className="bg-background min-h-screen pb-24">
+    <div className="bg-background min-h-screen pb-[calc(var(--bottom-nav-height)+1rem)]">
       <Header languages={languages} title="Dashboard" />
 
       <main className="space-y-8 px-4 pt-4">

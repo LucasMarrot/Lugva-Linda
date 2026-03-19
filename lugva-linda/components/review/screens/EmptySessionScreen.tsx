@@ -11,7 +11,7 @@ type EmptySessionScreenProps = {
 
 export const EmptySessionScreen = ({ onQuit }: EmptySessionScreenProps) => {
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col pt-2 pb-4">
+    <div className="flex h-[calc(100dvh-4rem)] flex-col pt-2 pb-4">
       <div className="flex flex-1 flex-col items-center justify-center">
         <div className="mb-6 w-full max-w-md">
           <StateMessage

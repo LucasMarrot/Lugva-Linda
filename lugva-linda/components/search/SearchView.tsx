@@ -97,7 +97,7 @@ export const SearchView = ({
             <Button
               variant="outline"
               onClick={onCreateClick}
-              className="hover:bg-primary/5 hover:border-primary/50 hover:text-primary h-16 w-full justify-start border-2 border-dashed text-left font-normal transition-colors"
+              className="ui-motion-interactive ui-tap-feedback hover:bg-primary/5 hover:border-primary/50 hover:text-primary h-16 w-full justify-start border-2 border-dashed text-left font-normal"
             >
               <Plus className="text-primary mr-3 h-6 w-6" />
               <div className="flex flex-col">

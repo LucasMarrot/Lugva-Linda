@@ -19,7 +19,7 @@ export const WordListItem = ({
       onClick={onClick}
       role="button"
       tabIndex={0}
-      className="bg-card border-border/50 hover:bg-accent hover:border-border active:bg-accent/80 flex w-full cursor-pointer items-center justify-between gap-3 overflow-hidden rounded-xl border p-4 text-left transition-all duration-200 ease-in-out active:scale-[0.98]"
+      className="ui-motion-interactive ui-tap-feedback bg-card border-border/50 hover:bg-accent hover:border-border active:bg-accent/80 flex w-full cursor-pointer items-center justify-between gap-3 overflow-hidden rounded-xl border p-4 text-left"
     >
       <div className="flex min-w-0 flex-col gap-1.5">
         <span className="text-foreground truncate text-lg font-semibold">
@@ -41,7 +41,7 @@ export const WordListItem = ({
           <Button
             variant="ghost"
             size="icon"
-            className="hover:bg-primary/10 hover:text-primary h-8 w-8 rounded-full transition-colors"
+            className="ui-motion-interactive ui-tap-feedback hover:bg-primary/10 hover:text-primary h-8 w-8 rounded-full"
             onClick={(e) => {
               e.stopPropagation();
               onRedirect(e);

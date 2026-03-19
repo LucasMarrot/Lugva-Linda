@@ -80,11 +80,11 @@ docs/
 
 ### P3 - Durcissement et polish
 
-- [ ] Uniformiser les micro-interactions (durees, easing, feedback de clic/tap).
-- [ ] Audit mobile iPhone 15 sur les parcours critiques (login, dashboard, words, review).
-- [ ] Nettoyer les incoherences de navigation secondaire.
-- [ ] Finaliser la documentation de handoff front (conventions + exemples de composition).
-- [ ] Preparer la phase theme switch (spec light/dark/system sans implementation immediate).
+- [x] Uniformiser les micro-interactions (durees, easing, feedback de clic/tap).
+- [x] Audit mobile iPhone 15 sur les parcours critiques (login, dashboard, words, review).
+- [x] Nettoyer les incoherences de navigation secondaire.
+- [x] Finaliser la documentation de handoff front (conventions + exemples de composition).
+- [x] Preparer la phase theme switch (spec light/dark/system sans implementation immediate).
 
 ## Plan d'execution en 3 phases
 
@@ -213,10 +213,24 @@ Critere de sortie:
 
 ### Lot 3
 
-- Statut: a faire
+- Statut: termine
 - Scope:
+  - Uniformisation des micro-interactions via utilitaires partages (`ui-motion-interactive`, `ui-tap-feedback`) et application sur boutons/CTA critiques.
+  - Stabilisation mobile iPhone 15: gestion safe-area bottom de la navigation fixe, espacement bas des ecrans avec bottom nav, et migration des shells review vers `100dvh`.
+  - Correction de navigation secondaire: changement de langue conserve la route courante au lieu de forcer un retour dashboard.
+  - Clarification de l'etat actif de la bottom nav sur les routes secondaires associees (`/words` rattache a l'entree dashboard).
+  - Production de la documentation de handoff front et de la spec de preparation du theme switch.
 - Risques:
+  - Validation visuelle iPhone 15 non executee sur appareil reel dans ce lot (corrections appliquees sur base des pratiques iOS/safe-area + dvh).
+  - Le mapping de navigation secondaire (`/words` sous dashboard) peut evoluer si la structure de navigation change en phase produit.
 - Validation:
+  - Verif code: classes de micro-interactions homogenes sur les composants interactifs principaux.
+  - Verif code: suppression de `pb-safe` non standard au profit d'une variable CSS safe-area explicite.
+  - Verif code: ecrans review convertis en `100dvh` pour limiter les sauts de layout iOS.
+  - Verif fonctionnelle attendue: changement de langue conserve le contexte de page (`/` ou `/words`).
+  - Documentation ajoutee:
+    - `docs/frontend-handoff.md`
+    - `docs/theme-switch-spec.md`
 
 ## Definition of Done (refactor front)
 

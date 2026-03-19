@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { Language } from '@prisma/client';
 import { createLanguage } from '@/actions/language-actions';
 
@@ -30,6 +30,7 @@ type LanguageSelectorProps = {
 
 export const LanguageSelector = ({ languages }: LanguageSelectorProps) => {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [languageName, setLanguageName] = useState('');
@@ -55,7 +56,7 @@ export const LanguageSelector = ({ languages }: LanguageSelectorProps) => {
   const handleLanguageChange = (langId: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('lang', langId);
-    router.push(`/?${params.toString()}`);
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   const handleCreateLanguage = async (formData: FormData) => {

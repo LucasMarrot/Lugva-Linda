@@ -40,7 +40,7 @@ export const ActiveSessionScreen = ({
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-2xl flex-col overflow-hidden p-4">
+    <div className="mx-auto flex h-[calc(100dvh-4rem)] w-full max-w-2xl flex-col overflow-hidden p-4">
       <SessionHeader languageName={languageName} onQuit={onQuit} />
       <div className="mb-2 flex shrink-0 flex-col gap-3 py-4">
         <DynamicProgressBar

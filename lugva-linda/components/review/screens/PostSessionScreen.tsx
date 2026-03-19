@@ -19,7 +19,7 @@ export const PostSessionScreen = ({
   const totalWords = stats.easy + stats.good + stats.hard;
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-4rem)] w-full max-w-2xl flex-col overflow-hidden p-4 text-center">
+    <div className="mx-auto flex h-[calc(100dvh-4rem)] w-full max-w-2xl flex-col overflow-hidden p-4 text-center">
       <SessionHeader languageName={languageName} />
 
       <div className="animate-in fade-in zoom-in mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center duration-500">

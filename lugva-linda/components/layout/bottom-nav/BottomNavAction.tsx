@@ -1,6 +1,6 @@
-import React from 'react'
-import { Search } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import React from 'react';
+import { Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export const BottomNavAction = React.forwardRef<
   HTMLButtonElement,
@@ -11,16 +11,15 @@ export const BottomNavAction = React.forwardRef<
       ref={ref}
       {...props}
       className={cn(
-        'flex h-14 w-14 -translate-y-4 items-center justify-center rounded-full shadow-lg ring-4',
+        'ui-motion-interactive ui-tap-feedback flex h-14 w-14 -translate-y-4 items-center justify-center rounded-full shadow-lg ring-4',
         'bg-primary text-primary-foreground ring-background',
-        'transition-transform active:scale-95',
         className,
       )}
       aria-label="Rechercher ou ajouter un mot"
     >
       <Search className="h-6 w-6" />
     </button>
-  )
-})
+  );
+});
 
-BottomNavAction.displayName = 'BottomNavAction'
+BottomNavAction.displayName = 'BottomNavAction';

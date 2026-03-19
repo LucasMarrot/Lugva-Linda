@@ -16,7 +16,7 @@ export const LapseTransitionScreen = ({
   languageName = 'Anglais',
 }: LapseTransitionScreenProps) => {
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col p-4 text-center">
+    <div className="flex h-[calc(100dvh-4rem)] flex-col p-4 text-center">
       <SessionHeader languageName={languageName} onQuit={onQuit} />
 
       <div className="animate-in fade-in zoom-in flex flex-1 flex-col items-center justify-center duration-500">

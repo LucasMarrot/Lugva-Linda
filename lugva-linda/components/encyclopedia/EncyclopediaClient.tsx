@@ -58,7 +58,7 @@ export const EncyclopediaClient = ({ words }: EncyclopediaClientProps) => {
   const sortedLetters = Object.keys(groupedWords).sort();
 
   return (
-    <div className="relative min-h-screen pb-24">
+    <div className="relative min-h-screen pb-[calc(var(--bottom-nav-height)+1rem)]">
       <TagFilter
         allTags={allTags}
         selectedTags={selectedTags}
