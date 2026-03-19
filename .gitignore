@@ -92,7 +92,3 @@ docker-compose.override.yml
 
 # Git
 .git/
-
-# Projets spécifiques
-_bmad-output/
-epics.md
