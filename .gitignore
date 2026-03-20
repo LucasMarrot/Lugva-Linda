@@ -48,6 +48,9 @@ coverage/
 
 # Logs
 logs/
+
+# Documentation
+lugva-linda/docs/
 *.log
 npm-debug.log*
 pnpm-debug.log*
