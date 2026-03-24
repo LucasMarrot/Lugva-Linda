@@ -30,6 +30,7 @@ export async function login(formData: FormData) {
     });
 
     if (error) {
+      logActionError('login', null, error, startedAt);
       redirect('/auth/login?error=true');
     }
 
@@ -37,6 +38,16 @@ export async function login(formData: FormData) {
     revalidatePath('/', 'layout');
     redirect('/');
   } catch (error) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'digest' in error &&
+      typeof (error as { digest?: unknown }).digest === 'string' &&
+      (error as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+    ) {
+      throw error;
+    }
+
     logActionError('login', null, error, startedAt);
     throw toActionError(error);
   }

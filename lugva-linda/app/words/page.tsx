@@ -1,6 +1,11 @@
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
+import {
+  getFirstUserLanguage,
+  listUserLanguages,
+  syncGlobalLanguagesForUser,
+} from '@/lib/services/language-service';
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
 import { Header } from '@/components/header/Header';
 import { EncyclopediaClient } from '@/components/encyclopedia/EncyclopediaClient';
@@ -20,23 +25,15 @@ export default async function WordsPage(props: WordsPageProps) {
 
   if (!user) redirect('/auth/login');
 
+  await syncGlobalLanguagesForUser({ id: user.id, email: user.email });
+
   if (!lang) {
-    const firstLang = await prisma.userLanguage.findFirst({
-      where: { userId: user.id },
-      include: { language: true },
-      orderBy: { createdAt: 'asc' },
-    });
-    if (firstLang) redirect(`/words?lang=${firstLang.language.id}`);
+    const firstLang = await getFirstUserLanguage(user.id);
+    if (firstLang) redirect(`/words?lang=${firstLang.id}`);
     else redirect('/setup');
   }
 
-  const userLanguages = await prisma.userLanguage.findMany({
-    where: { userId: user.id },
-    include: { language: true },
-    orderBy: { createdAt: 'asc' },
-  });
-
-  const languages = userLanguages.map((item) => item.language);
+  const languages = await listUserLanguages(user.id);
 
   const words = await prisma.word.findMany({
     where: {

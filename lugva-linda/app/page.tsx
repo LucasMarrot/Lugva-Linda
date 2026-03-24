@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDashboardData } from '@/data/dashboard';
+import { syncGlobalLanguagesForUser } from '@/lib/services/language-service';
 
 import { Button } from '@/components/ui/button';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
@@ -25,9 +26,12 @@ export default async function HomePage(props: HomePageProps) {
 
   if (!user) redirect('/auth/login');
 
-  const { languages, totalWords, wordsToReview } = await getDashboardData(
-    user.id,
-  );
+  await syncGlobalLanguagesForUser({ id: user.id, email: user.email });
+
+  const { languages, totalWords, wordsToReview } = await getDashboardData({
+    id: user.id,
+    email: user.email,
+  });
 
   if (languages.length === 0) {
     redirect('/setup');

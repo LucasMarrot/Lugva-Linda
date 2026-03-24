@@ -5,7 +5,7 @@ import { createLanguageFormSchema } from '@/lib/validation/schemas';
 import { revalidatePath } from 'next/cache';
 import {
   createLanguageForUser,
-  listUserLanguages,
+  listGlobalLanguages,
 } from '@/lib/services/language-service';
 import {
   logActionError,
@@ -33,7 +33,7 @@ export async function createLanguage(formData: FormData) {
       name: String(formData.get('name') ?? ''),
     });
 
-    const existingLanguages = await listUserLanguages(user.id);
+    const existingLanguages = await listGlobalLanguages();
     const hasExistingLanguage = existingLanguages.some(
       (language) =>
         language.name.localeCompare(parsedForm.name, undefined, {
@@ -42,7 +42,7 @@ export async function createLanguage(formData: FormData) {
     );
 
     if (hasExistingLanguage) {
-      throw new DuplicateError('La langue existe deja pour cet utilisateur.');
+      throw new DuplicateError("La langue existe deja dans l'application.");
     }
 
     await createLanguageForUser(user, parsedForm.name);

@@ -4,9 +4,12 @@ import { getDueWords } from '@/actions/review-actions';
 import { ReviewSessionContainer } from '@/components/review/ReviewSessionContainer';
 import { SimulationModeBanner } from '@/components/review/SimulationModeBanner';
 import { generateMockWords } from '@/lib/mock-data';
-import prisma from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { reviewPageSearchSchema } from '@/lib/validation/schemas';
+import {
+  getFirstUserLanguage,
+  syncGlobalLanguagesForUser,
+} from '@/lib/services/language-service';
 
 export const metadata = {
   title: 'Révision | Lugva Linda',
@@ -59,17 +62,15 @@ const resolveLanguageId = async (requestedLanguageId?: string) => {
     redirect('/auth/login');
   }
 
-  const defaultLanguage = await prisma.userLanguage.findFirst({
-    where: { userId: user.id },
-    include: { language: true },
-    orderBy: { createdAt: 'asc' },
-  });
+  await syncGlobalLanguagesForUser({ id: user.id, email: user.email });
+
+  const defaultLanguage = await getFirstUserLanguage(user.id);
 
   if (!defaultLanguage) {
     redirect('/setup');
   }
 
-  return defaultLanguage.language.id;
+  return defaultLanguage.id;
 };
 
 export default async function ReviewPage({ searchParams }: ReviewPageProps) {

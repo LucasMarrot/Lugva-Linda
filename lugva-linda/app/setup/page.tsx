@@ -1,7 +1,10 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import prisma from '@/lib/prisma';
 import { createLanguage } from '@/actions/language-actions';
+import {
+  listGlobalLanguages,
+  syncGlobalLanguagesForUser,
+} from '@/lib/services/language-service';
 
 import {
   Card,
@@ -19,17 +22,12 @@ export default async function SetupPage() {
 
   if (!user) redirect('/auth/login');
 
-  const languageCount = await prisma.language.count({
-    where: {
-      learningUsers: {
-        some: {
-          userId: user.id,
-        },
-      },
-    },
-  });
+  const globalLanguages = await listGlobalLanguages();
 
-  if (languageCount > 0) redirect('/');
+  if (globalLanguages.length > 0) {
+    await syncGlobalLanguagesForUser({ id: user.id, email: user.email });
+    redirect('/');
+  }
 
   return (
     <div className="bg-background flex min-h-screen items-center justify-center p-4">
