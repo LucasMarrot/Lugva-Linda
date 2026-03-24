@@ -6,10 +6,7 @@ import { SimulationModeBanner } from '@/components/review/SimulationModeBanner';
 import { generateMockWords } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/server';
 import { reviewPageSearchSchema } from '@/lib/validation/schemas';
-import {
-  getFirstUserLanguage,
-  syncGlobalLanguagesForUser,
-} from '@/lib/services/language-service';
+import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 
 export const metadata = {
   title: 'Révision | Lugva Linda',
@@ -49,10 +46,6 @@ const buildReviewHref = (state: ReviewUrlState) => {
 };
 
 const resolveLanguageId = async (requestedLanguageId?: string) => {
-  if (requestedLanguageId) {
-    return requestedLanguageId;
-  }
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -62,15 +55,16 @@ const resolveLanguageId = async (requestedLanguageId?: string) => {
     redirect('/auth/login');
   }
 
-  await syncGlobalLanguagesForUser({ id: user.id, email: user.email });
+  const { activeLanguageId } = await resolveActiveLanguageForUser(
+    { id: user.id, email: user.email },
+    requestedLanguageId,
+  );
 
-  const defaultLanguage = await getFirstUserLanguage(user.id);
-
-  if (!defaultLanguage) {
+  if (!activeLanguageId) {
     redirect('/setup');
   }
 
-  return defaultLanguage.id;
+  return activeLanguageId;
 };
 
 export default async function ReviewPage({ searchParams }: ReviewPageProps) {

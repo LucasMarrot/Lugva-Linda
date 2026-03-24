@@ -17,7 +17,7 @@ import {
   softDeleteWordForOwner,
   updateWordForOwner,
 } from '@/lib/services/word-service';
-import { getFirstUserLanguage } from '@/lib/services/language-service';
+import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 import { normalizeText } from '@/lib/words/normalization';
 import {
   logActionError,
@@ -65,16 +65,15 @@ export async function searchWords(query: string, languageId: string) {
     const user = await requireAuthenticatedUser();
     userId = user.id;
 
-    let activeLanguageId = normalizeText(languageId);
-    if (!activeLanguageId) {
-      const firstLanguage = await getFirstUserLanguage(user.id);
-      if (!firstLanguage) return [];
-      activeLanguageId = firstLanguage.id;
-    } else {
-      const parsedLanguageId = languageIdSchema.parse(activeLanguageId);
+    const requestedLanguageId = normalizeText(languageId);
+    if (requestedLanguageId) {
+      const parsedLanguageId = languageIdSchema.parse(requestedLanguageId);
       await verifyLanguageOwnership(parsedLanguageId, user.id);
-      activeLanguageId = parsedLanguageId;
+      return searchWordsInLanguage(parsedLanguageId, query);
     }
+
+    const { activeLanguageId } = await resolveActiveLanguageForUser(user.id);
+    if (!activeLanguageId) return [];
 
     return searchWordsInLanguage(activeLanguageId, query);
   } catch (error) {

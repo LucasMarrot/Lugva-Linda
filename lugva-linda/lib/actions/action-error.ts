@@ -70,17 +70,6 @@ export const logActionSuccess = (
     userId,
     timestamp: Date.now(),
   });
-
-  console.info(
-    JSON.stringify({
-      level: 'info',
-      action: actionName,
-      userId,
-      durationMs,
-      result: 'success',
-      timestamp: new Date().toISOString(),
-    }),
-  );
 };
 
 export const toActionError = (error: unknown) => {

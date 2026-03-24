@@ -3,13 +3,14 @@ import { redirect } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDashboardData } from '@/data/dashboard';
-import { syncGlobalLanguagesForUser } from '@/lib/services/language-service';
+import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 
 import { Button } from '@/components/ui/button';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { LearningActions } from '@/components/dashboard/LearningActions';
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
 import { Header } from '@/components/header/Header';
+import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
 
 type HomePageProps = {
   searchParams: Promise<{ lang?: string }>;
@@ -26,44 +27,59 @@ export default async function HomePage(props: HomePageProps) {
 
   if (!user) redirect('/auth/login');
 
-  await syncGlobalLanguagesForUser({ id: user.id, email: user.email });
-
-  const { languages, totalWords, wordsToReview } = await getDashboardData({
-    id: user.id,
-    email: user.email,
-  });
+  const { languages, activeLanguageId } = await resolveActiveLanguageForUser(
+    { id: user.id, email: user.email },
+    lang,
+  );
 
   if (languages.length === 0) {
     redirect('/setup');
   }
 
-  if (!lang && languages.length > 0) {
-    redirect(`/?lang=${languages[0].id}`);
+  if (lang !== activeLanguageId) {
+    redirect(`/?lang=${activeLanguageId}`);
   }
 
-  const activeLanguageId = lang ?? languages[0].id;
+  const { totalWords, wordsToReview } = await getDashboardData(
+    {
+      id: user.id,
+      email: user.email,
+    },
+    activeLanguageId,
+  );
 
   return (
-    <div className="bg-background min-h-screen pb-[calc(var(--bottom-nav-height)+1rem)]">
-      <Header languages={languages} title="Dashboard" />
+    <ActiveLanguageProvider
+      languages={languages.map((language) => ({
+        id: language.id,
+        name: language.name,
+      }))}
+      activeLanguageId={activeLanguageId}
+    >
+      <div className="bg-background min-h-screen pb-[calc(var(--bottom-nav-height)+1rem)]">
+        <Header title="Dashboard" />
 
-      <main className="space-y-8 px-4 pt-4">
-        <DashboardStats totalWords={totalWords} wordsToReview={wordsToReview} />
-        <LearningActions languageId={activeLanguageId} />
+        <main className="space-y-8 px-4 pt-4">
+          <DashboardStats
+            totalWords={totalWords}
+            wordsToReview={wordsToReview}
+          />
+          <LearningActions languageId={activeLanguageId} />
 
-        <Button
-          variant="outline"
-          className="bg-card border-border text-foreground hover:bg-accent hover:text-accent-foreground h-14 w-full justify-center gap-3 font-medium shadow-sm"
-          asChild
-        >
-          <Link href="/words">
-            <BookOpen className="text-primary h-5 w-5" />
-            Parcourir l&apos;encyclopedie
-          </Link>
-        </Button>
-      </main>
+          <Button
+            variant="outline"
+            className="bg-card border-border text-foreground hover:bg-accent hover:text-accent-foreground h-14 w-full justify-center gap-3 font-medium shadow-sm"
+            asChild
+          >
+            <Link href="/words">
+              <BookOpen className="text-primary h-5 w-5" />
+              Parcourir l&apos;encyclopedie
+            </Link>
+          </Button>
+        </main>
 
-      <BottomNav />
-    </div>
+        <BottomNav />
+      </div>
+    </ActiveLanguageProvider>
   );
 }

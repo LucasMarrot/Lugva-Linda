@@ -43,9 +43,11 @@ model User {
   email     String   @unique
   role      Role     @default(USER)
   colorHex  String   @default("#3B82F6") @db.VarChar(7)
+  activeLanguageId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  activeLanguage   Language?   @relation("UserActiveLanguage", fields: [activeLanguageId], references: [id], onDelete: SetNull)
   learningLanguages UserLanguage[]
   ownedWords        Word[]      @relation("WordOwner")
   createdWords      Word[]      @relation("WordCreator")
@@ -67,6 +69,7 @@ model Language {
 
   creator User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
 
+  activeUsers   User[]       @relation("UserActiveLanguage")
   learningUsers UserLanguage[]
   words         Word[]
   cards         Card[]

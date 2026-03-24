@@ -5,10 +5,13 @@ import {
   syncGlobalLanguagesForUser,
 } from '@/lib/services/language-service';
 
-export async function getDashboardData(user: {
-  id: string;
-  email?: string | null;
-}) {
+export async function getDashboardData(
+  user: {
+    id: string;
+    email?: string | null;
+  },
+  languageId: string,
+) {
   let languages = await listUserLanguages(user);
   if (languages.length === 0) {
     const globalLanguages = await listGlobalLanguages();
@@ -21,6 +24,7 @@ export async function getDashboardData(user: {
   const totalWords = await prisma.word.count({
     where: {
       ownerId: user.id,
+      languageId,
       isDeleted: false,
       deleteToken: BigInt(0),
     },
@@ -29,6 +33,7 @@ export async function getDashboardData(user: {
   const wordsToReview = await prisma.card.count({
     where: {
       ownerId: user.id,
+      languageId,
       due: { lte: new Date() },
       state: { not: 0 },
       word: {

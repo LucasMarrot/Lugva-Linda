@@ -1,14 +1,11 @@
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
-import {
-  getFirstUserLanguage,
-  listUserLanguages,
-  syncGlobalLanguagesForUser,
-} from '@/lib/services/language-service';
+import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
 import { Header } from '@/components/header/Header';
 import { EncyclopediaClient } from '@/components/encyclopedia/EncyclopediaClient';
+import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
 
 type WordsPageProps = {
   searchParams: Promise<{ lang?: string }>;
@@ -25,20 +22,23 @@ export default async function WordsPage(props: WordsPageProps) {
 
   if (!user) redirect('/auth/login');
 
-  await syncGlobalLanguagesForUser({ id: user.id, email: user.email });
+  const { languages, activeLanguageId } = await resolveActiveLanguageForUser(
+    { id: user.id, email: user.email },
+    lang,
+  );
 
-  if (!lang) {
-    const firstLang = await getFirstUserLanguage(user.id);
-    if (firstLang) redirect(`/words?lang=${firstLang.id}`);
-    else redirect('/setup');
+  if (languages.length === 0 || !activeLanguageId) {
+    redirect('/setup');
   }
 
-  const languages = await listUserLanguages(user.id);
+  if (lang !== activeLanguageId) {
+    redirect(`/words?lang=${activeLanguageId}`);
+  }
 
   const words = await prisma.word.findMany({
     where: {
       ownerId: user.id,
-      languageId: lang,
+      languageId: activeLanguageId,
       isDeleted: false,
       deleteToken: BigInt(0),
     },
@@ -48,14 +48,22 @@ export default async function WordsPage(props: WordsPageProps) {
   });
 
   return (
-    <div className="bg-background min-h-screen">
-      <Header languages={languages} title="Encyclopédie" />
+    <ActiveLanguageProvider
+      languages={languages.map((language) => ({
+        id: language.id,
+        name: language.name,
+      }))}
+      activeLanguageId={activeLanguageId}
+    >
+      <div className="bg-background min-h-screen">
+        <Header title="Encyclopédie" />
 
-      <main className="pt-4">
-        <EncyclopediaClient words={words} />
-      </main>
+        <main className="pt-4">
+          <EncyclopediaClient words={words} />
+        </main>
 
-      <BottomNav />
-    </div>
+        <BottomNav />
+      </div>
+    </ActiveLanguageProvider>
   );
 }

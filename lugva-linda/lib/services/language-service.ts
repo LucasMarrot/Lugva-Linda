@@ -7,6 +7,11 @@ type UserRecordInput = {
   email?: string | null;
 };
 
+type ResolveActiveLanguageResult = {
+  languages: Awaited<ReturnType<typeof listUserLanguages>>;
+  activeLanguageId: string | null;
+};
+
 const toUserRecord = (userOrId: string | UserRecordInput): UserRecordInput =>
   typeof userOrId === 'string' ? { id: userOrId } : userOrId;
 
@@ -55,6 +60,8 @@ export const syncGlobalLanguagesForUser = async (user: UserRecordInput) => {
       skipDuplicates: true,
     });
   }
+
+  await ensureActiveLanguageForUser(user.id);
 };
 
 export const listGlobalLanguages = async () =>
@@ -88,6 +95,127 @@ export const getFirstUserLanguage = async (
   });
 
   return first?.language ?? null;
+};
+
+const ensureActiveLanguageForUser = async (userId: string) => {
+  const userRecord = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { activeLanguageId: true },
+  });
+
+  const firstLinkedLanguage = await prisma.userLanguage.findFirst({
+    where: { userId },
+    select: { languageId: true },
+    orderBy: [{ createdAt: 'asc' }],
+  });
+
+  if (!firstLinkedLanguage) {
+    if (userRecord?.activeLanguageId) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { activeLanguageId: null },
+      });
+    }
+    return null;
+  }
+
+  if (userRecord?.activeLanguageId) {
+    const activeLink = await prisma.userLanguage.findUnique({
+      where: {
+        userId_languageId: {
+          userId,
+          languageId: userRecord.activeLanguageId,
+        },
+      },
+      select: { languageId: true },
+    });
+
+    if (activeLink) {
+      return activeLink.languageId;
+    }
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { activeLanguageId: firstLinkedLanguage.languageId },
+  });
+
+  return firstLinkedLanguage.languageId;
+};
+
+export const setActiveLanguageForUser = async (
+  userId: string,
+  languageId: string,
+) => {
+  await assertUserLanguageAccess(userId, languageId);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { activeLanguageId: languageId },
+  });
+
+  return languageId;
+};
+
+export const resolveActiveLanguageForUser = async (
+  userOrId: string | UserRecordInput,
+  requestedLanguageId?: string | null,
+): Promise<ResolveActiveLanguageResult> => {
+  const user = toUserRecord(userOrId);
+
+  await syncGlobalLanguagesForUser(user);
+
+  const links = await prisma.userLanguage.findMany({
+    where: { userId: user.id },
+    include: { language: true },
+    orderBy: [{ language: { createdAt: 'asc' } }, { createdAt: 'asc' }],
+  });
+
+  const languages = links.map((link) => link.language);
+  if (languages.length === 0) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { activeLanguageId: null },
+    });
+
+    return {
+      languages,
+      activeLanguageId: null,
+    };
+  }
+
+  const languageIds = new Set(languages.map((language) => language.id));
+  const requested = (requestedLanguageId ?? '').trim();
+
+  let activeLanguageId =
+    requested.length > 0 && languageIds.has(requested) ? requested : null;
+
+  const userRecord = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { activeLanguageId: true },
+  });
+
+  if (!activeLanguageId && userRecord?.activeLanguageId) {
+    if (languageIds.has(userRecord.activeLanguageId)) {
+      activeLanguageId = userRecord.activeLanguageId;
+    }
+  }
+
+  if (!activeLanguageId) {
+    activeLanguageId = languages[0].id;
+  }
+
+  if (userRecord?.activeLanguageId !== activeLanguageId) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { activeLanguageId },
+    });
+  }
+
+  return {
+    languages,
+    activeLanguageId,
+  };
 };
 
 export const assertUserLanguageAccess = async (
@@ -168,6 +296,13 @@ export const createLanguageForUser = async (
       create: {
         userId: user.id,
         languageId: language.id,
+      },
+    });
+
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        activeLanguageId: language.id,
       },
     });
 

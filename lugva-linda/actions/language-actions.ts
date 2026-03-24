@@ -1,11 +1,15 @@
 'use server';
 
 import { requireAuthenticatedUser } from '@/lib/auth/server';
-import { createLanguageFormSchema } from '@/lib/validation/schemas';
+import {
+  createLanguageFormSchema,
+  languageIdSchema,
+} from '@/lib/validation/schemas';
 import { revalidatePath } from 'next/cache';
 import {
   createLanguageForUser,
   listGlobalLanguages,
+  setActiveLanguageForUser,
 } from '@/lib/services/language-service';
 import {
   logActionError,
@@ -51,6 +55,31 @@ export async function createLanguage(formData: FormData) {
     logActionSuccess('createLanguage', userId, startedAt);
   } catch (error) {
     logActionError('createLanguage', userId, error, startedAt);
+    throw toActionError(error);
+  }
+}
+
+export async function setActiveLanguage(languageId: string) {
+  let userId: string | null = null;
+  const startedAt = Date.now();
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    await assertCsrfForAction({
+      subject: user.id,
+    });
+    assertRateLimit(`set-active-language:${user.id}`, 120, 60_000);
+
+    const validatedLanguageId = languageIdSchema.parse(languageId.trim());
+    await setActiveLanguageForUser(user.id, validatedLanguageId);
+
+    revalidatePath('/');
+    revalidatePath('/words');
+    revalidatePath('/review');
+    logActionSuccess('setActiveLanguage', userId, startedAt);
+  } catch (error) {
+    logActionError('setActiveLanguage', userId, error, startedAt);
     throw toActionError(error);
   }
 }

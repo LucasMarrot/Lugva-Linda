@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import type { Language } from '@prisma/client';
+import { useRouter } from 'next/navigation';
 import { createLanguage } from '@/actions/language-actions';
 
 import {
@@ -23,15 +22,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { buildCreateLanguageFormSchema } from '@/lib/validation/schemas';
 import { cn } from '@/lib/utils';
+import { useActiveLanguage } from '@/components/providers/ActiveLanguageProvider';
 
-type LanguageSelectorProps = {
-  languages: Language[];
-};
-
-export const LanguageSelector = ({ languages }: LanguageSelectorProps) => {
+export const LanguageSelector = () => {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { languages, activeLanguageId, isSwitchingLanguage, setLanguage } =
+    useActiveLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [languageName, setLanguageName] = useState('');
   const [createLanguageError, setCreateLanguageError] = useState<string | null>(
@@ -50,13 +46,10 @@ export const LanguageSelector = ({ languages }: LanguageSelectorProps) => {
       'Nom de langue invalide.');
   const isLanguageValid = languageValidation.success;
 
-  const currentLangId =
-    searchParams.get('lang') || (languages.length > 0 ? languages[0].id : '');
+  const currentLangId = activeLanguageId;
 
-  const handleLanguageChange = (langId: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('lang', langId);
-    router.push(`${pathname}?${params.toString()}`);
+  const handleLanguageChange = async (langId: string) => {
+    await setLanguage(langId);
   };
 
   const handleCreateLanguage = async (formData: FormData) => {
@@ -81,6 +74,7 @@ export const LanguageSelector = ({ languages }: LanguageSelectorProps) => {
       await createLanguage(normalizedFormData);
       setLanguageName('');
       setIsDialogOpen(false);
+      router.refresh();
     } catch (error) {
       const fallbackMessage = 'Impossible de creer la langue.';
       setCreateLanguageError(
@@ -102,7 +96,11 @@ export const LanguageSelector = ({ languages }: LanguageSelectorProps) => {
   };
 
   return (
-    <Select value={currentLangId} onValueChange={handleLanguageChange}>
+    <Select
+      value={currentLangId}
+      onValueChange={handleLanguageChange}
+      disabled={isSwitchingLanguage}
+    >
       <SelectTrigger className="border-border bg-background h-9 w-[130px] focus:ring-0">
         <SelectValue placeholder="Langue" />
       </SelectTrigger>

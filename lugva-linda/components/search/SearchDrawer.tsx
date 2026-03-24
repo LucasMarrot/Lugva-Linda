@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useMaybeActiveLanguage } from '@/components/providers/ActiveLanguageProvider';
 import {
   Drawer,
   DrawerContent,
@@ -18,7 +19,10 @@ export const SearchDrawer = ({ children }: { children: React.ReactNode }) => {
   const [query, setQuery] = useState('');
 
   const searchParams = useSearchParams();
-  const currentLangId = searchParams.get('lang') || '';
+  const context = useMaybeActiveLanguage();
+
+  const currentLangId =
+    context?.activeLanguageId ?? searchParams.get('lang') ?? '';
 
   const handleSuccess = () => {
     setQuery('');
