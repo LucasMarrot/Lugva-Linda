@@ -10,7 +10,11 @@ import { revalidatePath } from 'next/cache';
 import {
   createWordForUser,
   findWordByTermForOwner,
+  getCommunityWordImportPreview,
   hardDeleteWordForOwner,
+  importCommunityWordForUser,
+  listCommunityMembers,
+  listMemberWordsInLanguage,
   parseWordFormData,
   restoreWordForOwner,
   searchWordsInLanguage,
@@ -26,6 +30,32 @@ import {
 } from '@/lib/actions/action-error';
 import { assertRateLimit } from '@/lib/security/rate-limit';
 import { assertCsrfForAction } from '@/lib/security/csrf';
+import {
+  defaultCopyFieldOptions,
+  defaultWordMergeStrategy,
+  type CopyFieldOptions,
+  type WordMergeStrategy,
+} from '@/lib/words/community';
+
+const parseCopyOptions = (
+  input?: Partial<CopyFieldOptions>,
+): CopyFieldOptions => ({
+  translation: input?.translation ?? defaultCopyFieldOptions.translation,
+  tags: input?.tags ?? defaultCopyFieldOptions.tags,
+  notes: input?.notes ?? defaultCopyFieldOptions.notes,
+  synonyms: input?.synonyms ?? defaultCopyFieldOptions.synonyms,
+  audio: input?.audio ?? defaultCopyFieldOptions.audio,
+});
+
+const parseMergeStrategy = (
+  input?: Partial<WordMergeStrategy>,
+): WordMergeStrategy => ({
+  translation: input?.translation ?? defaultWordMergeStrategy.translation,
+  tags: input?.tags ?? defaultWordMergeStrategy.tags,
+  notes: input?.notes ?? defaultWordMergeStrategy.notes,
+  synonyms: input?.synonyms ?? defaultWordMergeStrategy.synonyms,
+  audio: input?.audio ?? defaultWordMergeStrategy.audio,
+});
 
 export async function createWord(formData: FormData) {
   let userId: string | null = null;
@@ -69,15 +99,114 @@ export async function searchWords(query: string, languageId: string) {
     if (requestedLanguageId) {
       const parsedLanguageId = languageIdSchema.parse(requestedLanguageId);
       await verifyLanguageOwnership(parsedLanguageId, user.id);
-      return searchWordsInLanguage(parsedLanguageId, query);
+      return searchWordsInLanguage(user.id, parsedLanguageId, query);
     }
 
     const { activeLanguageId } = await resolveActiveLanguageForUser(user.id);
     if (!activeLanguageId) return [];
 
-    return searchWordsInLanguage(activeLanguageId, query);
+    return searchWordsInLanguage(user.id, activeLanguageId, query);
   } catch (error) {
     logActionError('searchWords', userId, error);
+    throw toActionError(error);
+  }
+}
+
+export async function listCommunityMembersAction() {
+  let userId: string | null = null;
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+
+    const members = await listCommunityMembers();
+    return members.filter((member) => member.id !== user.id);
+  } catch (error) {
+    logActionError('listCommunityMembersAction', userId, error);
+    throw toActionError(error);
+  }
+}
+
+export async function listMemberWordsAction(
+  memberId: string,
+  languageId: string,
+  query?: string,
+) {
+  let userId: string | null = null;
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+
+    const validatedLanguageId = languageIdSchema.parse(
+      normalizeText(languageId),
+    );
+    await verifyLanguageOwnership(validatedLanguageId, user.id);
+
+    return listMemberWordsInLanguage(
+      user.id,
+      wordIdSchema.parse(normalizeText(memberId)),
+      validatedLanguageId,
+      query,
+    );
+  } catch (error) {
+    logActionError('listMemberWordsAction', userId, error);
+    throw toActionError(error);
+  }
+}
+
+export async function previewWordImportAction(
+  sourceWordId: string,
+  options?: Partial<CopyFieldOptions>,
+) {
+  let userId: string | null = null;
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+
+    return getCommunityWordImportPreview(
+      user.id,
+      wordIdSchema.parse(normalizeText(sourceWordId)),
+      parseCopyOptions(options),
+    );
+  } catch (error) {
+    logActionError('previewWordImportAction', userId, error);
+    throw toActionError(error);
+  }
+}
+
+export async function importWordFromCommunityAction(
+  sourceWordId: string,
+  options?: Partial<CopyFieldOptions>,
+  mergeStrategy?: Partial<WordMergeStrategy>,
+) {
+  let userId: string | null = null;
+  const startedAt = Date.now();
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    await assertCsrfForAction({
+      subject: user.id,
+    });
+    assertRateLimit(`import-word:${user.id}`, 25, 60_000);
+
+    const result = await importCommunityWordForUser(
+      user.id,
+      wordIdSchema.parse(normalizeText(sourceWordId)),
+      parseCopyOptions(options),
+      mergeStrategy ? parseMergeStrategy(mergeStrategy) : undefined,
+    );
+
+    revalidatePath('/');
+    revalidatePath('/words');
+    revalidatePath('/community');
+    logActionSuccess('importWordFromCommunityAction', userId, startedAt);
+
+    return result;
+  } catch (error) {
+    logActionError('importWordFromCommunityAction', userId, error, startedAt);
     throw toActionError(error);
   }
 }

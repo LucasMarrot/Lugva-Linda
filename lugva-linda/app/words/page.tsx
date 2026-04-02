@@ -55,7 +55,7 @@ export default async function WordsPage(props: WordsPageProps) {
       }))}
       activeLanguageId={activeLanguageId}
     >
-      <div className="bg-background min-h-screen">
+      <div className="bg-background min-h-dvh">
         <Header title="Encyclopédie" />
 
         <main className="pt-4">

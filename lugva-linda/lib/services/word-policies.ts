@@ -10,3 +10,6 @@ export const canEditWord = (word: Pick<Word, 'ownerId'>, userId: string) =>
 
 export const canDeleteWord = (word: Pick<Word, 'ownerId'>, userId: string) =>
   word.ownerId === userId;
+
+export const canImportWord = (word: Pick<Word, 'ownerId'>, userId: string) =>
+  word.ownerId !== userId;

@@ -1,19 +1,33 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import type { FC } from 'react';
+import { useMemo, useState } from 'react';
+import type { Word } from '@prisma/client';
 import { useWordModal } from '../providers/WordModalProvider';
 import { AlphabetNav } from './AlphabetNav';
-import { WordListItem } from './WordListItem';
+import { WordListItem } from '../shared/WordListItem';
 import { TagFilter } from './TagFilter';
 import { StateMessage } from '@/components/shared/StateMessage';
-import { Word } from '@prisma/client';
+import { useCommunityImport } from '@/hooks/useCommunityImport';
+import { getWordVisualMeta, toWordSnapshot } from '@/hooks/useWordSnapshot';
 
 type EncyclopediaClientProps = {
   words: Word[];
+  mode?: 'owner' | 'external';
+  showTagFilter?: boolean;
+  showAlphabetNav?: boolean;
+  emptyMessage?: string;
 };
 
-export const EncyclopediaClient = ({ words }: EncyclopediaClientProps) => {
+export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
+  words,
+  mode = 'owner',
+  showTagFilter = true,
+  showAlphabetNav = true,
+  emptyMessage = 'Votre encyclopedie est vide.',
+}: EncyclopediaClientProps) => {
   const { openWord } = useWordModal();
+  const { addingWordId, importWord } = useCommunityImport();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const allTags = useMemo(() => {
@@ -59,14 +73,16 @@ export const EncyclopediaClient = ({ words }: EncyclopediaClientProps) => {
 
   return (
     <div className="relative min-h-screen pb-[calc(var(--bottom-nav-height)+1rem)]">
-      <TagFilter
-        allTags={allTags}
-        selectedTags={selectedTags}
-        onToggleTag={toggleTag}
-        onClearTags={() => setSelectedTags([])}
-      />
+      {showTagFilter && (
+        <TagFilter
+          allTags={allTags}
+          selectedTags={selectedTags}
+          onToggleTag={toggleTag}
+          onClearTags={() => setSelectedTags([])}
+        />
+      )}
 
-      <AlphabetNav availableLetters={sortedLetters} />
+      {showAlphabetNav && <AlphabetNav availableLetters={sortedLetters} />}
 
       <div className="space-y-8 px-4 pt-2 pr-14">
         {sortedLetters.map((letter) => (
@@ -76,13 +92,24 @@ export const EncyclopediaClient = ({ words }: EncyclopediaClientProps) => {
             </h2>
 
             <div className="space-y-3">
-              {groupedWords[letter].map((word) => (
-                <WordListItem
-                  key={word.id}
-                  word={word}
-                  onClick={() => openWord(word)}
-                />
-              ))}
+              {groupedWords[letter].map((word) => {
+                const visualMeta = getWordVisualMeta(word, mode);
+
+                return (
+                  <WordListItem
+                    key={word.id}
+                    word={word}
+                    ownerName={visualMeta.ownerName}
+                    primaryColor={visualMeta.primaryColor}
+                    onAdd={
+                      visualMeta.isExternal && addingWordId !== word.id
+                        ? () => importWord(word.id)
+                        : undefined
+                    }
+                    onClick={() => openWord(toWordSnapshot(word, mode))}
+                  />
+                );
+              })}
             </div>
           </div>
         ))}
@@ -94,7 +121,7 @@ export const EncyclopediaClient = ({ words }: EncyclopediaClientProps) => {
             message={
               selectedTags.length > 0
                 ? 'Aucun mot trouve pour la selection actuelle.'
-                : 'Votre encyclopedie est vide.'
+                : emptyMessage
             }
             className="mx-auto max-w-md"
           />

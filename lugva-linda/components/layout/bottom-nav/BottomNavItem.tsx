@@ -17,7 +17,11 @@ export const BottomNavItem = ({
   matchPaths = [],
 }: BottomNavItemProps) => {
   const pathname = usePathname();
-  const isActive = pathname === href || matchPaths.includes(pathname);
+  const isActive =
+    pathname === href ||
+    matchPaths.some(
+      (path) => pathname === path || pathname.startsWith(`${path}/`),
+    );
 
   return (
     <Link

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { searchWords } from '@/actions/word-actions';
-import { Word } from '@prisma/client';
+import { type WordCommunityView } from '@/lib/words/community';
 
 type SynonymSelectorProps = {
   currentLangId: string;
@@ -23,7 +23,7 @@ export const SynonymSelector = ({
 }: SynonymSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Word[]>([]);
+  const [results, setResults] = useState<WordCommunityView[]>([]);
 
   useEffect(() => {
     if (query.trim().length === 0) {
@@ -35,6 +35,7 @@ export const SynonymSelector = ({
         const res = await searchWords(query.trim(), currentLangId);
         const filtered = res.filter(
           (r) =>
+            r.isOwnedByCurrentUser &&
             r.term.toLowerCase() !== currentWord.trim().toLowerCase() &&
             !selectedSynonyms.includes(r.term),
         );

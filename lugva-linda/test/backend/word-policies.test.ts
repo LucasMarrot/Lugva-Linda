@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   canDeleteWord,
   canEditWord,
+  canImportWord,
   canReadWord,
 } from '../../lib/services/word-policies';
 
@@ -20,4 +21,9 @@ test('canEditWord checks owner scope', () => {
 test('canDeleteWord checks owner scope', () => {
   assert.equal(canDeleteWord({ ownerId: 'user-1' }, 'user-1'), true);
   assert.equal(canDeleteWord({ ownerId: 'user-1' }, 'user-2'), false);
+});
+
+test('canImportWord forbids importing own word', () => {
+  assert.equal(canImportWord({ ownerId: 'user-1' }, 'user-1'), false);
+  assert.equal(canImportWord({ ownerId: 'user-1' }, 'user-2'), true);
 });

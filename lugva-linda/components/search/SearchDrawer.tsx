@@ -6,6 +6,7 @@ import { useMaybeActiveLanguage } from '@/components/providers/ActiveLanguagePro
 import {
   Drawer,
   DrawerContent,
+  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
@@ -44,11 +45,16 @@ export const SearchDrawer = ({ children }: { children: React.ReactNode }) => {
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       <DrawerTrigger asChild>{children}</DrawerTrigger>
 
-      <DrawerContent className="bg-background pb-[var(--safe-area-bottom)]">
+      <DrawerContent className="bg-background pb-(--safe-area-bottom)">
         <DrawerHeader className="sr-only">
           <DrawerTitle>
             {isCreating ? 'Ajouter un mot' : 'Rechercher ou ajouter'}
           </DrawerTitle>
+          <DrawerDescription>
+            {isCreating
+              ? 'Formulaire de creation d un nouveau mot.'
+              : 'Recherche de mots existants et acces a la creation.'}
+          </DrawerDescription>
         </DrawerHeader>
 
         <div className="flex h-full flex-col overflow-y-auto p-4">

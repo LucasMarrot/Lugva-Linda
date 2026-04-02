@@ -1,35 +1,48 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import type { FC } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Tag } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
   DialogClose,
 } from '@/components/ui/dialog';
 import { SynonymsList } from './SynonymsList';
 import { WordActions } from './WordActions';
 import { AudioPlayer } from '@/components/shared/AudioPlayer';
-import { Word } from '@prisma/client';
 import { CreateWordView } from '@/components/search/CreateWordView';
+import { type EditableWordSnapshot } from '@/lib/words/community';
 
 type WordDetailModalProps = {
-  word: Word | null;
+  word: EditableWordSnapshot | null;
   isOpen: boolean;
   onClose: () => void;
   onSynonymSelect: (synonym: string) => void;
-  onDelete: (wordId: string) => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canAdd?: boolean;
+  onDelete?: (wordId: string) => void;
+  onAddExternalWord?: (word: EditableWordSnapshot) => Promise<void>;
+  isAddingExternalWord?: boolean;
 };
 
-export const WordDetailModal = ({
+export const WordDetailModal: FC<WordDetailModalProps> = ({
   word,
   isOpen,
   onClose,
   onSynonymSelect,
+  canEdit = false,
+  canDelete = false,
+  canAdd = false,
   onDelete,
+  onAddExternalWord,
+  isAddingExternalWord = false,
 }: WordDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const isExternalWord = !!word && canAdd;
 
   useEffect(() => {
     if (!isOpen) {
@@ -40,33 +53,58 @@ export const WordDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-background m-0 flex h-[100dvh] w-full max-w-none flex-col overflow-hidden rounded-none border-none p-0 sm:m-4 sm:h-auto sm:max-w-md sm:rounded-2xl [&>button.absolute]:hidden">
+      <DialogContent className="bg-background m-0 flex h-dvh w-full max-w-none flex-col overflow-hidden rounded-none border-none p-0 sm:m-4 sm:h-auto sm:max-w-md sm:rounded-2xl [&>button.absolute]:hidden">
+        <DialogTitle className="sr-only">
+          {word
+            ? isEditing
+              ? `Modifier ${word.term}`
+              : `Détails de ${word.term}`
+            : 'Détails du mot'}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          {word
+            ? `Affiche les détails, les actions et les informations liées au mot ${word.term}.`
+            : 'Affiche les détails du mot sélectionné.'}
+        </DialogDescription>
+
         {word && (
           <div className="flex h-full flex-col">
             <div className="border-border/50 flex shrink-0 items-center justify-between border-b p-4">
-              <DialogTitle className="sr-only">
-                {isEditing
-                  ? `Modifier ${word.term}`
-                  : `Détails de ${word.term}`}
-              </DialogTitle>
               <div className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-                {isEditing ? 'Modification' : 'Fiche de vocabulaire'}
+                {isEditing
+                  ? 'Modification'
+                  : isExternalWord
+                    ? 'Fiche communautaire'
+                    : 'Fiche de vocabulaire'}
               </div>
               <DialogClose className="hover:bg-muted rounded-full p-2 transition-colors">
                 <X className="h-6 w-6" />
               </DialogClose>
             </div>
 
-            {!isEditing ? (
+            {!isEditing || !canEdit ? (
               <>
                 <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-6">
                   <div className="space-y-2 text-center">
-                    <h2 className="text-foreground text-4xl font-extrabold">
+                    <h2
+                      className="text-4xl font-extrabold"
+                      style={
+                        isExternalWord && word.ownerColorHex
+                          ? { color: word.ownerColorHex }
+                          : undefined
+                      }
+                    >
                       {word.term}
                     </h2>
                     <p className="text-primary text-xl font-medium">
                       {word.translation}
                     </p>
+
+                    {isExternalWord && word.ownerName && (
+                      <p className="text-muted-foreground text-xs">
+                        Propriétaire: {word.ownerName}
+                      </p>
+                    )}
                   </div>
 
                   {word.tags && word.tags.length > 0 && (
@@ -103,8 +141,21 @@ export const WordDetailModal = ({
 
                 <div className="border-border/50 bg-background/95 shrink-0 border-t p-4 backdrop-blur-sm sm:rounded-b-2xl">
                   <WordActions
-                    onEdit={() => setIsEditing(true)}
-                    onDelete={() => onDelete(word.id)}
+                    canEdit={canEdit}
+                    canDelete={canDelete}
+                    canAdd={canAdd}
+                    onEdit={canEdit ? () => setIsEditing(true) : undefined}
+                    onDelete={
+                      canDelete && onDelete
+                        ? () => onDelete(word.id)
+                        : undefined
+                    }
+                    onAdd={
+                      canAdd && onAddExternalWord
+                        ? () => onAddExternalWord(word)
+                        : undefined
+                    }
+                    isAdding={isAddingExternalWord}
                   />
                 </div>
               </>

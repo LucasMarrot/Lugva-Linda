@@ -1,7 +1,6 @@
-import Link from 'next/link';
-import { Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { LanguageSelector } from './LanguageSelector';
+import { MembersPopoverButton } from './MembersPopoverButton';
+import SettingsButton from './SettingsButton';
 
 interface HeaderProps {
   title?: string;
@@ -9,7 +8,7 @@ interface HeaderProps {
 
 export const Header = ({ title }: HeaderProps) => {
   return (
-    <header className="border-border bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b px-4 backdrop-blur">
+    <header className="border-border bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-49 flex h-16 w-full items-center justify-between border-b px-4 backdrop-blur">
       <div className="z-10 flex items-center gap-2">
         <p className="text-xl font-bold tracking-tight">Lugva Linda</p>
       </div>
@@ -24,12 +23,8 @@ export const Header = ({ title }: HeaderProps) => {
 
       <div className="z-10 flex items-center gap-2">
         <LanguageSelector />
-
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/settings">
-            <Settings className="text-muted-foreground hover:text-foreground h-5 w-5 transition-colors" />
-          </Link>
-        </Button>
+        <MembersPopoverButton />
+        <SettingsButton />
       </div>
     </header>
   );

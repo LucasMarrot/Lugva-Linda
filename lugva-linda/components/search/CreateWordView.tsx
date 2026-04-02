@@ -9,15 +9,15 @@ import { createWord, updateWordAction } from '@/actions/word-actions';
 import { SynonymSelector } from './SynonymSelector';
 import { AudioRecorder } from './AudioRecorder';
 import { TagSelector } from './TagSelector';
-import { Word } from '@prisma/client';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/providers/ToastProvider';
 import { createWordFormSchema } from '@/lib/validation/schemas';
+import { type EditableWordSnapshot } from '@/lib/words/community';
 
 type CreateWordViewProps = {
   initialQuery?: string;
   currentLangId?: string;
-  initialData?: Word;
+  initialData?: EditableWordSnapshot;
   onCancel: () => void;
   onSuccess: () => void;
 };

@@ -1,24 +1,32 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import type { FC, ReactNode } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { WordDetailModal } from '@/components/shared/word-modal/WordDetailModal';
 import { useToast } from '@/components/providers/ToastProvider';
 import { deleteWordAction, getWordByTextAction } from '@/actions/word-actions';
-import { Word } from '@prisma/client';
+import { type EditableWordSnapshot } from '@/lib/words/community';
+import { useCommunityImport } from '@/hooks/useCommunityImport';
+import { toWordSnapshot } from '@/hooks/useWordSnapshot';
 
 type WordModalContextType = {
-  openWord: (word: Word) => void;
+  openWord: (word: EditableWordSnapshot) => void;
 };
 
 const WordModalContext = createContext<WordModalContextType | undefined>(
   undefined,
 );
 
-export const WordModalProvider = ({ children }: { children: ReactNode }) => {
-  const [activeWord, setActiveWord] = useState<Word | null>(null);
+export const WordModalProvider: FC<{ children: ReactNode }> = ({
+  children,
+}) => {
+  const [activeWord, setActiveWord] = useState<EditableWordSnapshot | null>(
+    null,
+  );
+  const { addingWordId, importWord } = useCommunityImport();
   const toast = useToast();
 
-  const openWord = (word: Word) => {
+  const openWord = (word: EditableWordSnapshot) => {
     setActiveWord(word);
   };
 
@@ -36,7 +44,7 @@ export const WordModalProvider = ({ children }: { children: ReactNode }) => {
       );
 
       if (foundWord) {
-        setActiveWord(foundWord);
+        setActiveWord(toWordSnapshot(foundWord, 'owner'));
       } else {
         toast.info(
           `Le mot "${synonymText}" n'a pas encore de fiche dans votre encyclopedie.`,
@@ -60,6 +68,14 @@ export const WordModalProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const handleAddExternalWord = async (word: EditableWordSnapshot) => {
+    if (word.isOwnedByCurrentUser) {
+      return;
+    }
+
+    await importWord(word.id, closeWord);
+  };
+
   return (
     <WordModalContext.Provider value={{ openWord }}>
       {children}
@@ -68,7 +84,12 @@ export const WordModalProvider = ({ children }: { children: ReactNode }) => {
         word={activeWord}
         onClose={closeWord}
         onSynonymSelect={handleSynonymSelect}
+        canEdit={!!activeWord?.isOwnedByCurrentUser}
+        canDelete={!!activeWord?.isOwnedByCurrentUser}
+        canAdd={!!activeWord && !activeWord.isOwnedByCurrentUser}
         onDelete={handleDelete}
+        onAddExternalWord={handleAddExternalWord}
+        isAddingExternalWord={addingWordId === activeWord?.id}
       />
     </WordModalContext.Provider>
   );

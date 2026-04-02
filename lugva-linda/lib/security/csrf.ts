@@ -21,7 +21,7 @@ export const assertSameOriginRequest = async () => {
   }
 
   if (!host || !origin) {
-    // Graceful fallback for environments that omit these headers.
+    // Fallback for environments that omit these headers.
     return;
   }
 
@@ -38,6 +38,6 @@ export const assertCsrfForAction = async (options?: {
 }) => {
   await assertSameOriginRequest();
 
-  // For this private app, same-origin enforcement is the primary CSRF protection.
+  // Same-origin enforcement is the primary CSRF protection.
   void options;
 };

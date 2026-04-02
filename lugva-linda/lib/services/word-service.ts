@@ -3,6 +3,13 @@ import { ExerciseCategory, ExerciseType } from '@prisma/client';
 
 import prisma from '@/lib/prisma';
 import {
+  type CopyFieldOptions,
+  type CommunityMemberSummary,
+  type WordCommunityView,
+  type WordMergeStrategy,
+  toDisplayName,
+} from '@/lib/words/community';
+import {
   DuplicateError,
   NotFoundError,
   StorageError,
@@ -18,6 +25,11 @@ import {
   normalizeFormStringArray,
   normalizeText,
 } from '@/lib/words/normalization';
+import {
+  mergeArrayValues,
+  mergeNotesValue,
+  scoreSearchResult,
+} from '@/lib/services/community-merge';
 
 const AUDIO_BUCKET = 'audio-files';
 const AUDIO_MAX_BYTES = 10 * 1024 * 1024;
@@ -39,6 +51,10 @@ type WordInput = {
   notes: string | null;
   languageId?: string;
 };
+
+type WordWithOwner = Awaited<ReturnType<typeof findWordWithOwnerById>>;
+
+const ACTIVE_DELETE_TOKEN = BigInt(0);
 
 const retentionDate = () => {
   const now = new Date();
@@ -148,6 +164,20 @@ const buildInput = (input: WordInput) => {
   };
 };
 
+const toCommunityView = (
+  word: NonNullable<WordWithOwner>,
+  viewerId: string,
+): WordCommunityView => ({
+  ...word,
+  owner: {
+    id: word.owner.id,
+    email: word.owner.email,
+    colorHex: word.owner.colorHex,
+    displayName: toDisplayName(word.owner.email, word.owner.id),
+  },
+  isOwnedByCurrentUser: word.ownerId === viewerId,
+});
+
 const assertNoActiveDuplicate = async (
   ownerId: string,
   languageId: string,
@@ -159,7 +189,7 @@ const assertNoActiveDuplicate = async (
       ownerId,
       languageId,
       termNormalized,
-      deleteToken: BigInt(0),
+      deleteToken: ACTIVE_DELETE_TOKEN,
       ...(excludeWordId ? { id: { not: excludeWordId } } : {}),
     },
     select: { id: true },
@@ -209,7 +239,7 @@ export const createWordForUser = async (
         createdById: userId,
         languageId,
         ...normalizedInput,
-        deleteToken: BigInt(0),
+        deleteToken: ACTIVE_DELETE_TOKEN,
         ...(audioData ?? {}),
       },
     });
@@ -234,7 +264,7 @@ export const createWordForUser = async (
               normalizeForLookup(item),
             ),
           },
-          deleteToken: BigInt(0),
+          deleteToken: ACTIVE_DELETE_TOKEN,
           isDeleted: false,
         },
       });
@@ -254,27 +284,50 @@ export const createWordForUser = async (
 };
 
 export const searchWordsInLanguage = async (
+  viewerId: string,
   languageId: string,
   query: string,
 ) => {
   const normalizedQuery = normalizeText(query);
   if (!normalizedQuery) return [];
 
-  return prisma.word.findMany({
+  const words = await prisma.word.findMany({
     where: {
       languageId,
       isDeleted: false,
-      deleteToken: BigInt(0),
+      deleteToken: ACTIVE_DELETE_TOKEN,
       OR: [
         { term: { contains: normalizedQuery, mode: 'insensitive' } },
         { translation: { contains: normalizedQuery, mode: 'insensitive' } },
+        { notes: { contains: normalizedQuery, mode: 'insensitive' } },
       ],
     },
-    take: 10,
-    orderBy: {
-      term: 'asc',
+    include: {
+      owner: {
+        select: {
+          id: true,
+          email: true,
+          colorHex: true,
+        },
+      },
     },
+    take: 60,
   });
+
+  const mapped = words.map((word) => toCommunityView(word, viewerId));
+
+  return mapped
+    .sort((left, right) => {
+      const scoreDiff =
+        scoreSearchResult(normalizedQuery, right) -
+        scoreSearchResult(normalizedQuery, left);
+      if (scoreDiff !== 0) return scoreDiff;
+
+      return left.term.localeCompare(right.term, 'fr', {
+        sensitivity: 'base',
+      });
+    })
+    .slice(0, 20);
 };
 
 export const findWordByTermForOwner = async (
@@ -290,9 +343,264 @@ export const findWordByTermForOwner = async (
       languageId,
       termNormalized: normalized,
       isDeleted: false,
-      deleteToken: BigInt(0),
+      deleteToken: ACTIVE_DELETE_TOKEN,
     },
   });
+};
+
+const findWordWithOwnerById = async (wordId: string) =>
+  prisma.word.findUnique({
+    where: { id: wordId },
+    include: {
+      owner: {
+        select: {
+          id: true,
+          email: true,
+          colorHex: true,
+        },
+      },
+    },
+  });
+
+const buildIncomingCopyData = (
+  sourceWord: NonNullable<WordWithOwner>,
+  options: CopyFieldOptions,
+) => ({
+  term: sourceWord.term,
+  termNormalized: sourceWord.termNormalized,
+  translation: sourceWord.translation,
+  translationNormalized: sourceWord.translationNormalized,
+  tags: options.tags ? sourceWord.tags : [],
+  synonyms: options.synonyms ? sourceWord.synonyms : [],
+  notes: options.notes ? sourceWord.notes : null,
+  customAudioUrl: options.audio ? sourceWord.customAudioUrl : null,
+});
+
+export const listCommunityMembers = async (): Promise<
+  CommunityMemberSummary[]
+> => {
+  const members = await prisma.user.findMany({
+    select: {
+      id: true,
+      email: true,
+      colorHex: true,
+      createdAt: true,
+    },
+    orderBy: [{ createdAt: 'asc' }, { email: 'asc' }],
+  });
+
+  return members.map((member) => ({
+    id: member.id,
+    email: member.email,
+    colorHex: member.colorHex,
+    displayName: toDisplayName(member.email, member.id),
+  }));
+};
+
+export const listMemberWordsInLanguage = async (
+  viewerId: string,
+  memberId: string,
+  languageId: string,
+  query?: string,
+) => {
+  const normalizedQuery = normalizeText(query ?? '');
+
+  const words = await prisma.word.findMany({
+    where: {
+      ownerId: memberId,
+      languageId,
+      isDeleted: false,
+      deleteToken: ACTIVE_DELETE_TOKEN,
+      ...(normalizedQuery
+        ? {
+            OR: [
+              { term: { contains: normalizedQuery, mode: 'insensitive' } },
+              {
+                translation: {
+                  contains: normalizedQuery,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          }
+        : {}),
+    },
+    include: {
+      owner: {
+        select: {
+          id: true,
+          email: true,
+          colorHex: true,
+        },
+      },
+    },
+    orderBy: {
+      term: 'asc',
+    },
+  });
+
+  return words.map((word) => toCommunityView(word, viewerId));
+};
+
+export const getCommunityWordImportPreview = async (
+  viewerId: string,
+  sourceWordId: string,
+  options: CopyFieldOptions,
+) => {
+  const sourceWord = await findWordWithOwnerById(sourceWordId);
+  if (
+    !sourceWord ||
+    sourceWord.isDeleted ||
+    sourceWord.deleteToken !== ACTIVE_DELETE_TOKEN
+  ) {
+    throw new NotFoundError('Mot source introuvable.');
+  }
+
+  if (sourceWord.ownerId === viewerId) {
+    throw new ValidationError(
+      'Ce mot vous appartient deja.',
+      'OWN_WORD_IMPORT_FORBIDDEN',
+    );
+  }
+
+  await assertUserLanguageAccess(viewerId, sourceWord.languageId);
+
+  const existingWord = await prisma.word.findFirst({
+    where: {
+      ownerId: viewerId,
+      languageId: sourceWord.languageId,
+      termNormalized: sourceWord.termNormalized,
+      isDeleted: false,
+      deleteToken: ACTIVE_DELETE_TOKEN,
+    },
+    include: {
+      owner: {
+        select: {
+          id: true,
+          email: true,
+          colorHex: true,
+        },
+      },
+    },
+  });
+
+  return {
+    sourceWord: toCommunityView(sourceWord, viewerId),
+    existingWord: existingWord ? toCommunityView(existingWord, viewerId) : null,
+    incomingData: buildIncomingCopyData(sourceWord, options),
+  };
+};
+
+export const importCommunityWordForUser = async (
+  viewerId: string,
+  sourceWordId: string,
+  options: CopyFieldOptions,
+  mergeStrategy?: WordMergeStrategy,
+) => {
+  const preview = await getCommunityWordImportPreview(
+    viewerId,
+    sourceWordId,
+    options,
+  );
+
+  if (!preview.existingWord) {
+    const created = await prisma.$transaction(async (tx) => {
+      const word = await tx.word.create({
+        data: {
+          ownerId: viewerId,
+          createdById: viewerId,
+          sourceWordId: preview.sourceWord.id,
+          languageId: preview.sourceWord.languageId,
+          term: preview.incomingData.term,
+          termNormalized: preview.incomingData.termNormalized,
+          translation: preview.incomingData.translation,
+          translationNormalized: preview.incomingData.translationNormalized,
+          tags: preview.incomingData.tags,
+          synonyms: preview.incomingData.synonyms,
+          notes: preview.incomingData.notes,
+          customAudioUrl: preview.incomingData.customAudioUrl,
+          customAudioPath: null,
+          deleteToken: ACTIVE_DELETE_TOKEN,
+        },
+      });
+
+      await tx.card.create({
+        data: {
+          wordId: word.id,
+          ownerId: viewerId,
+          languageId: word.languageId,
+          category: ExerciseCategory.READING,
+          type: ExerciseType.RECOGNITION,
+        },
+      });
+
+      return findWordWithOwnerById(word.id);
+    });
+
+    if (!created) {
+      throw new NotFoundError('Impossible de finaliser la copie du mot.');
+    }
+
+    return {
+      mode: 'created' as const,
+      word: toCommunityView(created, viewerId),
+    };
+  }
+
+  if (!mergeStrategy) {
+    throw new ValidationError(
+      'Fusion requise: ce mot existe deja dans votre encyclopedie.',
+      'MERGE_REQUIRED',
+    );
+  }
+
+  const mergedWord = await prisma.word.update({
+    where: { id: preview.existingWord.id },
+    data: {
+      translation:
+        mergeStrategy.translation === 'replace'
+          ? preview.incomingData.translation
+          : preview.existingWord.translation,
+      translationNormalized:
+        mergeStrategy.translation === 'replace'
+          ? preview.incomingData.translationNormalized
+          : normalizeForLookup(preview.existingWord.translation),
+      tags: mergeArrayValues(
+        preview.existingWord.tags,
+        preview.incomingData.tags,
+        mergeStrategy.tags,
+      ),
+      synonyms: mergeArrayValues(
+        preview.existingWord.synonyms,
+        preview.incomingData.synonyms,
+        mergeStrategy.synonyms,
+      ),
+      notes: mergeNotesValue(
+        preview.existingWord.notes,
+        preview.incomingData.notes,
+        mergeStrategy.notes,
+      ),
+      customAudioUrl:
+        mergeStrategy.audio === 'replace'
+          ? preview.incomingData.customAudioUrl
+          : preview.existingWord.customAudioUrl,
+      sourceWordId: preview.sourceWord.id,
+    },
+    include: {
+      owner: {
+        select: {
+          id: true,
+          email: true,
+          colorHex: true,
+        },
+      },
+    },
+  });
+
+  return {
+    mode: 'merged' as const,
+    word: toCommunityView(mergedWord, viewerId),
+  };
 };
 
 export const updateWordForOwner = async (
@@ -377,7 +685,7 @@ export const restoreWordForOwner = async (ownerId: string, wordId: string) => {
       isDeleted: false,
       deletedAt: null,
       purgeAfter: null,
-      deleteToken: BigInt(0),
+      deleteToken: ACTIVE_DELETE_TOKEN,
     },
   });
 };

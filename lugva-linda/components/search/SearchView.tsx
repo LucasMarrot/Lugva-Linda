@@ -1,14 +1,19 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import type { FC } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Search, Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { searchWords } from '@/actions/word-actions';
-import { SearchResultItem } from './SearchResultItem';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { StateMessage } from '@/components/shared/StateMessage';
-import { Word } from '@prisma/client';
+import { type WordCommunityView } from '@/lib/words/community';
+import { WordListItem } from '@/components/shared/WordListItem';
+import { useWordModal } from '@/components/providers/WordModalProvider';
+import { useCommunityImport } from '@/hooks/useCommunityImport';
+import { getWordVisualMeta, toWordSnapshot } from '@/hooks/useWordSnapshot';
 
 type SearchViewProps = {
   query: string;
@@ -17,13 +22,16 @@ type SearchViewProps = {
   onCreateClick: () => void;
 };
 
-export const SearchView = ({
+export const SearchView: FC<SearchViewProps> = ({
   query,
   setQuery,
   currentLangId,
   onCreateClick,
 }: SearchViewProps) => {
-  const [searchResults, setSearchResults] = useState<Word[]>([]);
+  const router = useRouter();
+  const { openWord } = useWordModal();
+  const { addingWordId, importWord } = useCommunityImport();
+  const [searchResults, setSearchResults] = useState<WordCommunityView[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const latestRequestRef = useRef(0);
@@ -75,7 +83,9 @@ export const SearchView = ({
   }, [query, currentLangId]);
 
   const exactMatchExists = searchResults.some(
-    (w) => w.term.toLowerCase() === query.trim().toLowerCase(),
+    (word) =>
+      word.isOwnedByCurrentUser &&
+      word.term.toLowerCase() === query.trim().toLowerCase(),
   );
 
   return (
@@ -104,7 +114,7 @@ export const SearchView = ({
                 <span className="text-muted-foreground text-sm leading-tight">
                   Nouveau mot
                 </span>
-                <span className="max-w-[250px] truncate text-base font-semibold">
+                <span className="max-w-62.5 truncate text-base font-semibold">
                   {query}
                 </span>
               </div>
@@ -132,9 +142,38 @@ export const SearchView = ({
                   message="Aucun mot similaire trouve."
                 />
               ) : (
-                searchResults.map((word) => (
-                  <SearchResultItem key={word.id} word={word} />
-                ))
+                searchResults.map((word) =>
+                  (() => {
+                    const mode = word.isOwnedByCurrentUser
+                      ? 'owner'
+                      : 'external';
+                    const visualMeta = getWordVisualMeta(word, mode);
+
+                    return (
+                      <WordListItem
+                        key={word.id}
+                        word={word}
+                        ownerName={visualMeta.ownerName}
+                        primaryColor={visualMeta.primaryColor}
+                        onAdd={
+                          !word.isOwnedByCurrentUser && addingWordId !== word.id
+                            ? () => importWord(word.id)
+                            : undefined
+                        }
+                        onRedirect={
+                          word.isOwnedByCurrentUser
+                            ? () => {
+                                router.push(
+                                  `/words?lang=${word.languageId}#word-${word.id}`,
+                                );
+                              }
+                            : undefined
+                        }
+                        onClick={() => openWord(toWordSnapshot(word, mode))}
+                      />
+                    );
+                  })(),
+                )
               )}
             </div>
           </div>
