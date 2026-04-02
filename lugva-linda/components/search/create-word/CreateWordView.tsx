@@ -8,11 +8,12 @@ import { Label } from '@/components/ui/label';
 import { createWord, updateWordAction } from '@/actions/word-actions';
 import { SynonymSelector } from './SynonymSelector';
 import { AudioRecorder } from './AudioRecorder';
-import { TagSelector } from './TagSelector';
+import { MANDATORY_TAGS, TagSelector } from './TagSelector';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/providers/ToastProvider';
 import { createWordFormSchema } from '@/lib/validation/schemas';
 import { type EditableWordSnapshot } from '@/lib/words/community';
+import { CustomTagSelector } from './CustomTagSelector';
 
 type CreateWordViewProps = {
   initialQuery?: string;
@@ -32,9 +33,21 @@ export const CreateWordView = ({
   const isEditing = !!initialData;
   const toast = useToast();
 
-  const [selectedTag, setSelectedTag] = useState<string | null>(
-    initialData?.tags?.[0] || null,
-  );
+  const mandatoryTags =
+    initialData?.tags?.filter((tag) =>
+      MANDATORY_TAGS.includes(tag as (typeof MANDATORY_TAGS)[number]),
+    ) || MANDATORY_TAGS.slice(0, 1);
+  const customTags =
+    initialData?.tags?.filter(
+      (tag) => !MANDATORY_TAGS.includes(tag as (typeof MANDATORY_TAGS)[number]),
+    ) || [];
+
+  const [selectedMandatoryTag, setSelectedMandatoryTag] = useState<
+    string | null
+  >(mandatoryTags[0] ?? null);
+  const [selectedCustomTags, setSelectedCustomTags] =
+    useState<string[]>(customTags);
+
   const [selectedSynonyms, setSelectedSynonyms] = useState<string[]>(
     initialData?.synonyms || [],
   );
@@ -110,7 +123,12 @@ export const CreateWordView = ({
 
       <form action={handleSubmit} className="space-y-6">
         <input type="hidden" name="languageId" value={langId} />
-        {selectedTag && <input type="hidden" name="tags" value={selectedTag} />}
+        {selectedMandatoryTag && (
+          <input type="hidden" name="tags" value={selectedMandatoryTag} />
+        )}
+        {selectedCustomTags.map((tag) => (
+          <input key={tag} type="hidden" name="tags" value={tag} />
+        ))}
         {selectedSynonyms.map((syn) => (
           <input key={syn} type="hidden" name="synonyms" value={syn} />
         ))}
@@ -171,11 +189,24 @@ export const CreateWordView = ({
         </div>
 
         <div className="space-y-3">
-          <Label className="text-foreground font-medium">Catégorie</Label>
+          <Label className="text-foreground font-medium">Nature</Label>
           <TagSelector
-            selectedTag={selectedTag}
-            onSelectTag={(tag) =>
-              setSelectedTag((prev) => (prev === tag ? null : tag))
+            selectedTag={selectedMandatoryTag}
+            onSelectTag={setSelectedMandatoryTag}
+          />
+        </div>
+
+        <div className="space-y-3">
+          <Label className="text-foreground font-medium">
+            Tags personnalisés
+          </Label>
+          <CustomTagSelector
+            selectedCustomTags={selectedCustomTags}
+            onAddCustomTag={(tag) =>
+              setSelectedCustomTags((prev) => [...prev, tag])
+            }
+            onRemoveCustomTag={(tag) =>
+              setSelectedCustomTags((prev) => prev.filter((t) => t !== tag))
             }
           />
         </div>
