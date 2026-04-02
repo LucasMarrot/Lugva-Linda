@@ -1,11 +1,11 @@
-import { cn } from '@/lib/utils'
+import { Badge } from '../ui/badge';
 
 type TagFilterProps = {
-  allTags: string[]
-  selectedTags: string[]
-  onToggleTag: (tag: string) => void
-  onClearTags: () => void
-}
+  allTags: string[];
+  selectedTags: string[];
+  onToggleTag: (tag: string) => void;
+  onClearTags: () => void;
+};
 
 export const TagFilter = ({
   allTags,
@@ -13,39 +13,33 @@ export const TagFilter = ({
   onToggleTag,
   onClearTags,
 }: TagFilterProps) => {
-  if (allTags.length === 0) return null
+  if (allTags.length === 0) return null;
 
   return (
     <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto px-4 pb-2">
-      <button
+      <Badge
+        variant={selectedTags.length === 0 ? 'default' : 'outline'}
         onClick={onClearTags}
-        className={cn(
-          'shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-          selectedTags.length === 0
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground',
-        )}
+        className={
+          selectedTags.length === 0 ? undefined : 'opacity-70 hover:opacity-100'
+        }
       >
         Tous
-      </button>
+      </Badge>
 
       {allTags.map((tag) => {
-        const isSelected = selectedTags.includes(tag)
+        const isSelected = selectedTags.includes(tag);
         return (
-          <button
+          <Badge
             key={tag}
+            variant={isSelected ? 'default' : 'outline'}
             onClick={() => onToggleTag(tag)}
-            className={cn(
-              'shrink-0 rounded-full px-3 py-1 text-[10px] font-bold tracking-widest uppercase transition-colors sm:text-xs',
-              isSelected
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-primary/10 text-primary hover:bg-primary/20',
-            )}
+            className={isSelected ? undefined : 'opacity-70 hover:opacity-100'}
           >
             {tag}
-          </button>
-        )
+          </Badge>
+        );
       })}
     </div>
-  )
-}
+  );
+};
