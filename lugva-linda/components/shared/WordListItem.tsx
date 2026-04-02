@@ -2,6 +2,7 @@ import type { MouseEventHandler } from 'react';
 import type { Word } from '@prisma/client';
 import { BookOpen, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '../ui/badge';
 
 type WordListItemProps = {
   word: Word;
@@ -57,11 +58,16 @@ export const WordListItem = ({
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        {word.tags && word.tags.length > 0 && (
-          <span className="bg-primary/10 text-primary inline-flex h-5 items-center justify-center rounded-full px-2 text-[10px] font-bold tracking-widest whitespace-nowrap uppercase sm:h-6 sm:px-3 sm:text-xs">
-            {word.tags[0]}
-          </span>
-        )}
+        {word.tags &&
+          word.tags.length > 0 &&
+          word.tags.map((tag, index) => (
+            <Badge
+              key={tag}
+              variant={index === 0 ? 'secondaryOutline' : 'outline'}
+            >
+              {tag}
+            </Badge>
+          ))}
 
         {onAdd && (
           <Button
