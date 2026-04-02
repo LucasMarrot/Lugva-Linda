@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import {
   checkWordTermNatureAvailabilityAction,
   createWord,
+  listCustomTagsAction,
   updateWordAction,
 } from '@/actions/word-actions';
 import { SynonymSelector } from './SynonymSelector';
@@ -52,6 +53,7 @@ export const CreateWordView = ({
   >(mandatoryTags[0] ?? null);
   const [selectedCustomTags, setSelectedCustomTags] =
     useState<string[]>(customTags);
+  const [availableCustomTags, setAvailableCustomTags] = useState<string[]>([]);
 
   const [selectedSynonyms, setSelectedSynonyms] = useState<string[]>(
     initialData?.synonyms || [],
@@ -91,6 +93,56 @@ export const CreateWordView = ({
   const mandatoryTagError = validationIssues.find(
     (issue) => issue.path[0] === 'mandatoryTag',
   )?.message;
+
+  const addCustomTag = (tag: string) => {
+    const trimmedTag = tag.trim();
+    if (!trimmedTag) return;
+
+    setSelectedCustomTags((prev) => {
+      const alreadyExists = prev.some(
+        (existingTag) =>
+          existingTag.toLocaleLowerCase() === trimmedTag.toLocaleLowerCase(),
+      );
+
+      if (alreadyExists) {
+        return prev;
+      }
+
+      return [...prev, trimmedTag];
+    });
+  };
+
+  const removeCustomTag = (tag: string) => {
+    setSelectedCustomTags((prev) => prev.filter((value) => value !== tag));
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCustomTags = async () => {
+      if (!langId) {
+        setAvailableCustomTags([]);
+        return;
+      }
+
+      try {
+        const tags = await listCustomTagsAction(langId);
+        if (!cancelled) {
+          setAvailableCustomTags(tags);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvailableCustomTags([]);
+        }
+      }
+    };
+
+    void loadCustomTags();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [langId]);
 
   useEffect(() => {
     const trimmedWord = wordValue.trim();
@@ -271,13 +323,10 @@ export const CreateWordView = ({
             Tags personnalisés
           </Label>
           <CustomTagSelector
+            availableCustomTags={availableCustomTags}
             selectedCustomTags={selectedCustomTags}
-            onAddCustomTag={(tag) =>
-              setSelectedCustomTags((prev) => [...prev, tag])
-            }
-            onRemoveCustomTag={(tag) =>
-              setSelectedCustomTags((prev) => prev.filter((t) => t !== tag))
-            }
+            onAddCustomTag={addCustomTag}
+            onRemoveCustomTag={removeCustomTag}
           />
         </div>
 

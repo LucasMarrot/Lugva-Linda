@@ -18,6 +18,7 @@ import {
   getCommunityWordImportPreview,
   hardDeleteWordForOwner,
   importCommunityWordForUser,
+  listCustomTagsForOwnerInLanguage,
   listCommunityMembers,
   listMemberWordsInLanguage,
   parseWordFormData,
@@ -155,6 +156,30 @@ export async function searchWords(query: string, languageId: string) {
     return searchWordsInLanguage(user.id, activeLanguageId, query);
   } catch (error) {
     logActionError('searchWords', userId, error);
+    throw toActionError(error);
+  }
+}
+
+export async function listCustomTagsAction(languageId: string) {
+  let userId: string | null = null;
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+
+    const requestedLanguageId = normalizeText(languageId);
+    if (requestedLanguageId) {
+      const parsedLanguageId = languageIdSchema.parse(requestedLanguageId);
+      await verifyLanguageOwnership(parsedLanguageId, user.id);
+      return listCustomTagsForOwnerInLanguage(user.id, parsedLanguageId);
+    }
+
+    const { activeLanguageId } = await resolveActiveLanguageForUser(user.id);
+    if (!activeLanguageId) return [];
+
+    return listCustomTagsForOwnerInLanguage(user.id, activeLanguageId);
+  } catch (error) {
+    logActionError('listCustomTagsAction', userId, error);
     throw toActionError(error);
   }
 }

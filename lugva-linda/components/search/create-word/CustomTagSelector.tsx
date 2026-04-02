@@ -7,44 +7,92 @@ import { Badge } from '@/components/ui/badge';
 import { Plus } from 'lucide-react';
 
 type CustomTagSelectorProps = {
+  availableCustomTags: string[];
   selectedCustomTags: string[];
   onAddCustomTag: (tag: string) => void;
   onRemoveCustomTag: (tag: string) => void;
 };
 
 export const CustomTagSelector = ({
+  availableCustomTags,
   selectedCustomTags,
   onAddCustomTag,
   onRemoveCustomTag,
 }: CustomTagSelectorProps) => {
   const [value, setValue] = useState('');
 
+  const normalizeTag = (tag: string) => tag.trim().toLocaleLowerCase();
+
+  const findSelectedMatch = (tag: string) =>
+    selectedCustomTags.find(
+      (selectedTag) => normalizeTag(selectedTag) === normalizeTag(tag),
+    );
+
+  const findAvailableMatch = (tag: string) =>
+    availableCustomTags.find(
+      (availableTag) => normalizeTag(availableTag) === normalizeTag(tag),
+    );
+
   const addTag = () => {
     const next = value.trim();
     if (!next) return;
-    if (selectedCustomTags.includes(next)) {
+
+    if (findSelectedMatch(next)) {
       setValue('');
       return;
     }
 
-    onAddCustomTag(next);
+    const existingAvailableTag = findAvailableMatch(next);
+    onAddCustomTag(existingAvailableTag ?? next);
     setValue('');
   };
 
   return (
     <div className="space-y-3">
-      {selectedCustomTags.length > 0 && (
+      {availableCustomTags.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {selectedCustomTags.map((tag) => (
-            <Badge
-              key={tag}
-              variant="default"
-              onDelete={() => onRemoveCustomTag(tag)}
-              deleteLabel={'Retirer ' + tag}
-            >
-              {tag}
-            </Badge>
-          ))}
+          {availableCustomTags.map((tag) => {
+            const selectedMatch = findSelectedMatch(tag);
+            const isSelected = Boolean(selectedMatch);
+
+            return (
+              <Badge
+                key={tag}
+                variant={isSelected ? 'default' : 'outline'}
+                onClick={() => {
+                  if (selectedMatch) {
+                    onRemoveCustomTag(selectedMatch);
+                    return;
+                  }
+
+                  onAddCustomTag(tag);
+                }}
+              >
+                {tag}
+              </Badge>
+            );
+          })}
+
+          {selectedCustomTags.length > 0 && (
+            <>
+              {selectedCustomTags.map((tag) => {
+                const hasAvailableMatch = Boolean(findAvailableMatch(tag));
+
+                return (
+                  !hasAvailableMatch && (
+                    <Badge
+                      key={tag}
+                      variant="default"
+                      onDelete={() => onRemoveCustomTag(tag)}
+                      deleteLabel={'Retirer ' + tag}
+                    >
+                      {tag}
+                    </Badge>
+                  )
+                );
+              })}
+            </>
+          )}
         </div>
       )}
 

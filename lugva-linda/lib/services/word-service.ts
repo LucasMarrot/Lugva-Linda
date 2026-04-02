@@ -374,6 +374,40 @@ export const searchWordsInLanguage = async (
     .slice(0, 20);
 };
 
+export const listCustomTagsForOwnerInLanguage = async (
+  ownerId: string,
+  languageId: string,
+) => {
+  const words = await prisma.word.findMany({
+    where: {
+      ownerId,
+      languageId,
+      isDeleted: false,
+      deleteToken: ACTIVE_DELETE_TOKEN,
+    },
+    select: {
+      tags: true,
+    },
+  });
+
+  const customTagByNormalized = new Map<string, string>();
+
+  for (const word of words) {
+    for (const tag of word.tags) {
+      if (!MANDATORY_TAGS_SET.has(tag)) {
+        const normalizedTag = normalizeForLookup(tag);
+        if (!customTagByNormalized.has(normalizedTag)) {
+          customTagByNormalized.set(normalizedTag, tag);
+        }
+      }
+    }
+  }
+
+  return Array.from(customTagByNormalized.values()).sort((left, right) =>
+    left.localeCompare(right, 'fr', { sensitivity: 'base' }),
+  );
+};
+
 export const findWordByTermForOwner = async (
   ownerId: string,
   languageId: string,
