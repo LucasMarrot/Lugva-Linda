@@ -12,7 +12,7 @@ import {
   DrawerTrigger,
 } from '@/components/ui/drawer';
 import { SearchView } from './SearchView';
-import { CreateWordView } from './CreateWordView';
+import { CreateWordView } from './create-word/CreateWordView';
 
 export const SearchDrawer = ({ children }: { children: React.ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);

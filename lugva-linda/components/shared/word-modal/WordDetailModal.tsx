@@ -13,7 +13,7 @@ import {
 import { SynonymsList } from './SynonymsList';
 import { WordActions } from './WordActions';
 import { AudioPlayer } from '@/components/shared/AudioPlayer';
-import { CreateWordView } from '@/components/search/CreateWordView';
+import { CreateWordView } from '@/components/search/create-word/CreateWordView';
 import { type EditableWordSnapshot } from '@/lib/words/community';
 
 type WordDetailModalProps = {
