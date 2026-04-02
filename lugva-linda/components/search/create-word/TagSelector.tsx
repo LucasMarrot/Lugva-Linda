@@ -1,18 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-
-export const MANDATORY_TAGS = [
-  'Nom',
-  'Verbe',
-  'Adjectif',
-  'Adverbe',
-  'Pronom',
-  'Déterminant',
-  'Préposition',
-  'Conjonction',
-  'Interjection',
-  'Expression',
-  'Phrase',
-] as const;
+import { MANDATORY_TAGS } from '@/lib/words/tags';
 
 type TagSelectorProps = {
   selectedTag: string | null;

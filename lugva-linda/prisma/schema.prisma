@@ -96,35 +96,30 @@ model UserLanguage {
 // Encyclopedia words (owned by user, globally searchable, copy-on-duplicate)
 // -----------------------------------------------------------------------------
 model Word {
-  id         String @id @default(uuid())
-  ownerId    String
-  languageId String
+  id          String @id @default(uuid())
+  ownerId     String
+  languageId  String
   createdById String
 
   term                  String
   termNormalized        String
   translation           String
   translationNormalized String
+  mandatoryTag          String
   tags                  String[] @default([])
   synonyms              String[] @default([])
   relatedWords          String[] @default([])
   notes                 String?
 
-  // Supabase storage key/path, needed for reliable delete from bucket.
   customAudioPath String?
-  // Public URL is optional cache/denormalization for client rendering.
-  customAudioUrl String?
+  customAudioUrl  String?
 
-  // Duplication lineage when a user copies someone else's word.
   sourceWordId String?
 
-  // Soft delete lifecycle.
-  isDeleted   Boolean   @default(false)
-  deletedAt   DateTime?
-  purgeAfter  DateTime?
+  isDeleted  Boolean  @default(false)
+  deletedAt  DateTime?
+  purgeAfter DateTime?
 
-  // deleteToken=0 means active. On soft delete, set unix-ms timestamp.
-  // This enables a strict unique active term while allowing many trashed copies.
   deleteToken BigInt @default(0)
 
   createdAt DateTime @default(now())
@@ -139,9 +134,10 @@ model Word {
   cards Card[]
 
   @@unique([id, ownerId, languageId])
-  @@unique([ownerId, languageId, termNormalized, deleteToken])
+  @@unique([ownerId, languageId, termNormalized, mandatoryTag, deleteToken])
   @@index([ownerId, languageId, isDeleted, createdAt])
   @@index([ownerId, languageId, isDeleted, termNormalized])
+  @@index([ownerId, languageId, isDeleted, termNormalized, mandatoryTag])
   @@index([languageId, isDeleted, termNormalized])
   @@index([languageId, isDeleted, translationNormalized])
   @@index([sourceWordId])

@@ -69,8 +69,8 @@ export const CustomTagSelector = ({
           disabled={!value.trim()}
           className="absolute top-1/2 right-1 h-9 w-9 -translate-y-1/2 cursor-pointer"
         >
-          <Plus className="h-4 w-4" />{' '}
-          <span className="sr-only">Ajouter</span>{' '}
+          <Plus className="h-4 w-4" />
+          <span className="sr-only">Ajouter</span>
         </Button>
       </div>
     </div>

@@ -1,19 +1,24 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { createWord, updateWordAction } from '@/actions/word-actions';
+import {
+  checkWordTermNatureAvailabilityAction,
+  createWord,
+  updateWordAction,
+} from '@/actions/word-actions';
 import { SynonymSelector } from './SynonymSelector';
 import { AudioRecorder } from './AudioRecorder';
-import { MANDATORY_TAGS, TagSelector } from './TagSelector';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/providers/ToastProvider';
 import { createWordFormSchema } from '@/lib/validation/schemas';
 import { type EditableWordSnapshot } from '@/lib/words/community';
 import { CustomTagSelector } from './CustomTagSelector';
+import { MANDATORY_TAGS } from '@/lib/words/tags';
+import { TagSelector } from './TagSelector';
 
 type CreateWordViewProps = {
   initialQuery?: string;
@@ -53,6 +58,9 @@ export const CreateWordView = ({
   );
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const latestDuplicateRequestRef = useRef(0);
 
   const langId = isEditing ? initialData.languageId : currentLangId;
   const defaultWord = isEditing ? initialData.term : initialQuery;
@@ -66,8 +74,9 @@ export const CreateWordView = ({
       createWordFormSchema.safeParse({
         word: wordValue,
         translation: translationValue,
+        mandatoryTag: selectedMandatoryTag ?? '',
       }),
-    [wordValue, translationValue],
+    [wordValue, translationValue, selectedMandatoryTag],
   );
 
   const validationIssues = formValidation.success
@@ -79,6 +88,54 @@ export const CreateWordView = ({
   const translationError = validationIssues.find(
     (issue) => issue.path[0] === 'translation',
   )?.message;
+  const mandatoryTagError = validationIssues.find(
+    (issue) => issue.path[0] === 'mandatoryTag',
+  )?.message;
+
+  useEffect(() => {
+    const trimmedWord = wordValue.trim();
+
+    if (!trimmedWord || !selectedMandatoryTag || !langId) {
+      latestDuplicateRequestRef.current += 1;
+      setDuplicateError(null);
+      setIsCheckingDuplicate(false);
+      return;
+    }
+
+    const requestId = latestDuplicateRequestRef.current + 1;
+    latestDuplicateRequestRef.current = requestId;
+
+    const timer = setTimeout(async () => {
+      setIsCheckingDuplicate(true);
+
+      try {
+        const result = await checkWordTermNatureAvailabilityAction({
+          word: trimmedWord,
+          languageId: langId,
+          mandatoryTag: selectedMandatoryTag,
+          excludeWordId: isEditing ? initialData?.id : undefined,
+        });
+
+        if (latestDuplicateRequestRef.current !== requestId) {
+          return;
+        }
+
+        setDuplicateError(result.isDuplicate ? result.message : null);
+      } catch {
+        if (latestDuplicateRequestRef.current !== requestId) {
+          return;
+        }
+
+        setDuplicateError(null);
+      } finally {
+        if (latestDuplicateRequestRef.current === requestId) {
+          setIsCheckingDuplicate(false);
+        }
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [wordValue, selectedMandatoryTag, langId, isEditing, initialData?.id]);
 
   const handleSubmit = async (formData: FormData) => {
     if (audioFile) {
@@ -99,7 +156,15 @@ export const CreateWordView = ({
       onSuccess();
     } catch (error) {
       console.error('Erreur lors de la validation du mot:', error);
-      toast.error('La validation a echoue. Merci de reessayer.');
+      const rawMessage = error instanceof Error ? error.message : '';
+      const [code, ...rest] = rawMessage.split(':');
+      const message = rest.join(':').trim();
+
+      if (code === 'DUPLICATE') {
+        toast.error(message || 'Ce mot existe deja avec cette nature.');
+      } else {
+        toast.error('La validation a echoue. Merci de reessayer.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -194,6 +259,11 @@ export const CreateWordView = ({
             selectedTag={selectedMandatoryTag}
             onSelectTag={setSelectedMandatoryTag}
           />
+          {(mandatoryTagError || duplicateError) && (
+            <p className="text-destructive text-sm font-medium">
+              {mandatoryTagError ?? duplicateError}
+            </p>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -231,7 +301,12 @@ export const CreateWordView = ({
           type="submit"
           size="lg"
           className="mt-2 h-14 w-full text-base shadow-md"
-          disabled={!formValidation.success || isSubmitting}
+          disabled={
+            !formValidation.success ||
+            isSubmitting ||
+            isCheckingDuplicate ||
+            Boolean(duplicateError)
+          }
         >
           {isSubmitting
             ? 'Enregistrement...'

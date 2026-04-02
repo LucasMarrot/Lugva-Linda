@@ -103,28 +103,26 @@ export const SearchView: FC<SearchViewProps> = ({
 
       {query.trim().length > 0 && (
         <div className="space-y-4">
-          {!exactMatchExists && (
-            <Button
-              variant="outline"
-              onClick={onCreateClick}
-              className="ui-motion-interactive ui-tap-feedback hover:bg-primary/5 hover:border-primary/50 hover:text-primary h-16 w-full justify-start border-2 border-dashed text-left font-normal"
-            >
-              <Plus className="text-primary mr-3 h-6 w-6" />
-              <div className="flex flex-col">
-                <span className="text-muted-foreground text-sm leading-tight">
-                  Nouveau mot
-                </span>
-                <span className="max-w-62.5 truncate text-base font-semibold">
-                  {query}
-                </span>
-              </div>
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            onClick={onCreateClick}
+            className="ui-motion-interactive ui-tap-feedback hover:bg-primary/5 hover:border-primary/50 hover:text-primary h-16 w-full justify-start border-2 border-dashed text-left font-normal"
+          >
+            <Plus className="text-primary mr-3 h-6 w-6" />
+            <div className="flex flex-col">
+              <span className="text-muted-foreground text-sm leading-tight">
+                Nouveau mot
+              </span>
+              <span className="max-w-62.5 truncate text-base font-semibold">
+                {query}
+              </span>
+            </div>
+          </Button>
 
           {exactMatchExists && (
             <StateMessage
               tone="info"
-              message="Ce mot est deja dans votre encyclopedie."
+              message="Ce mot existe deja. Vous pouvez creer une autre nature."
             />
           )}
 

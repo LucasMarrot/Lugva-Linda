@@ -17,6 +17,7 @@ export const generateMockWords = (count: number = 10): Word[] => {
       termNormalized: term.toLowerCase(),
       translation: `Traduction simulée ${index + 1}`,
       translationNormalized: `traduction simulée ${index + 1}`,
+      mandatoryTag: isEven ? 'Verbe' : 'Nom',
       synonyms: isEven ? ['Synonyme A', 'Synonyme B'] : [],
       tags: ['Mock', isEven ? 'Verbe' : 'Nom'],
       relatedWords: isEven ? ['Mot lié A'] : [],

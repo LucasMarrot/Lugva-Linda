@@ -5,9 +5,14 @@ import {
   verifyLanguageOwnership,
 } from '@/lib/auth/server';
 import { createClient } from '@/lib/supabase/server';
-import { languageIdSchema, wordIdSchema } from '@/lib/validation/schemas';
+import {
+  checkWordTermNatureSchema,
+  languageIdSchema,
+  wordIdSchema,
+} from '@/lib/validation/schemas';
 import { revalidatePath } from 'next/cache';
 import {
+  checkWordTermNatureDuplicateForOwner,
   createWordForUser,
   findWordByTermForOwner,
   getCommunityWordImportPreview,
@@ -84,6 +89,48 @@ export async function createWord(formData: FormData) {
     logActionSuccess('createWord', userId, startedAt);
   } catch (error) {
     logActionError('createWord', userId, error, startedAt);
+    throw toActionError(error);
+  }
+}
+
+export async function checkWordTermNatureAvailabilityAction(input: {
+  word: string;
+  languageId: string;
+  mandatoryTag: string;
+  excludeWordId?: string;
+}) {
+  let userId: string | null = null;
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    assertRateLimit(`check-word-term-nature:${user.id}`, 120, 60_000);
+
+    const parsed = checkWordTermNatureSchema.parse({
+      word: normalizeText(input.word),
+      languageId: languageIdSchema.parse(normalizeText(input.languageId)),
+      mandatoryTag: normalizeText(input.mandatoryTag),
+      excludeWordId: input.excludeWordId
+        ? wordIdSchema.parse(normalizeText(input.excludeWordId))
+        : undefined,
+    });
+
+    await verifyLanguageOwnership(parsed.languageId, user.id);
+
+    const isDuplicate = await checkWordTermNatureDuplicateForOwner(
+      user.id,
+      parsed.languageId,
+      parsed.word,
+      parsed.mandatoryTag,
+      parsed.excludeWordId,
+    );
+
+    return {
+      isDuplicate,
+      message: isDuplicate ? 'Ce mot existe deja avec cette nature.' : null,
+    };
+  } catch (error) {
+    logActionError('checkWordTermNatureAvailabilityAction', userId, error);
     throw toActionError(error);
   }
 }

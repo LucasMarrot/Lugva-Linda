@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Rating } from 'ts-fsrs';
+import { MANDATORY_TAGS, MANDATORY_TAGS_SET } from '../words/tags';
 
 const validGrades = [
   Rating.Again,
@@ -84,6 +85,10 @@ export const loginFormSchema = z.object({
   ),
 });
 
+export const mandatoryTagSchema = z.enum(MANDATORY_TAGS, {
+  message: 'La nature du mot est obligatoire.',
+});
+
 export const createWordFormSchema = z.object({
   word: nonEmptyTextSchema.max(
     128,
@@ -93,6 +98,17 @@ export const createWordFormSchema = z.object({
     256,
     'La traduction ne doit pas depasser 256 caracteres.',
   ),
+  mandatoryTag: mandatoryTagSchema,
+});
+
+export const checkWordTermNatureSchema = z.object({
+  word: nonEmptyTextSchema.max(
+    128,
+    'Le mot ne doit pas depasser 128 caracteres.',
+  ),
+  languageId: languageIdSchema,
+  mandatoryTag: mandatoryTagSchema,
+  excludeWordId: wordIdSchema.optional(),
 });
 
 const stringArraySchema = z.array(
@@ -102,25 +118,45 @@ const stringArraySchema = z.array(
   ),
 );
 
-export const wordWriteSchema = z.object({
-  term: nonEmptyTextSchema.max(
-    128,
-    'Le terme ne doit pas depasser 128 caracteres.',
-  ),
-  translation: nonEmptyTextSchema.max(
-    256,
-    'La traduction ne doit pas depasser 256 caracteres.',
-  ),
-  tags: stringArraySchema.max(20, 'Maximum 20 tags.'),
-  synonyms: stringArraySchema.max(20, 'Maximum 20 synonymes.'),
-  relatedWords: stringArraySchema.max(20, 'Maximum 20 mots lies.'),
-  notes: z
-    .string()
-    .trim()
-    .max(2000, 'Les notes ne doivent pas depasser 2000 caracteres.')
-    .nullable(),
-  languageId: languageIdSchema.optional(),
-});
+export const wordWriteSchema = z
+  .object({
+    term: nonEmptyTextSchema.max(
+      128,
+      'Le terme ne doit pas depasser 128 caracteres.',
+    ),
+    translation: nonEmptyTextSchema.max(
+      256,
+      'La traduction ne doit pas depasser 256 caracteres.',
+    ),
+    tags: stringArraySchema.max(20, 'Maximum 20 tags.'),
+    synonyms: stringArraySchema.max(20, 'Maximum 20 synonymes.'),
+    relatedWords: stringArraySchema.max(20, 'Maximum 20 mots lies.'),
+    notes: z
+      .string()
+      .trim()
+      .max(2000, 'Les notes ne doivent pas depasser 2000 caracteres.')
+      .nullable(),
+    languageId: languageIdSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    const matches = data.tags.filter((tag) => MANDATORY_TAGS_SET.has(tag));
+
+    if (matches.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['tags'],
+        message: 'La nature du mot est obligatoire.',
+      });
+    }
+
+    if (matches.length > 1) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['tags'],
+        message: 'Une seule nature est autorisee.',
+      });
+    }
+  });
 
 export const reviewPageSearchSchema = z.object({
   lang: languageIdSchema.optional(),

@@ -30,6 +30,7 @@ import {
   mergeNotesValue,
   scoreSearchResult,
 } from '@/lib/services/community-merge';
+import { MANDATORY_TAGS_SET, type MandatoryTag } from '@/lib/words/tags';
 
 const AUDIO_BUCKET = 'audio-files';
 const AUDIO_MAX_BYTES = 10 * 1024 * 1024;
@@ -138,6 +139,17 @@ const resolveLanguageId = async (userId: string, languageId?: string) => {
   return firstLanguage.id;
 };
 
+const resolveMandatoryTag = (tags: string[]): MandatoryTag => {
+  const found = tags.find((tag): tag is MandatoryTag =>
+    MANDATORY_TAGS_SET.has(tag),
+  );
+
+  if (!found) {
+    throw new ValidationError('La nature du mot est obligatoire.');
+  }
+  return found;
+};
+
 const buildInput = (input: WordInput) => {
   const term = normalizeText(input.term);
   const translation = normalizeText(input.translation);
@@ -152,11 +164,14 @@ const buildInput = (input: WordInput) => {
     languageId: input.languageId,
   });
 
+  const mandatoryTag = resolveMandatoryTag(parsedInput.tags);
+
   return {
     term: parsedInput.term,
     termNormalized: normalizeForLookup(term),
     translation: parsedInput.translation,
     translationNormalized: normalizeForLookup(translation),
+    mandatoryTag,
     tags: parsedInput.tags,
     synonyms: parsedInput.synonyms,
     relatedWords: parsedInput.relatedWords,
@@ -182,6 +197,7 @@ const assertNoActiveDuplicate = async (
   ownerId: string,
   languageId: string,
   termNormalized: string,
+  mandatoryTag: MandatoryTag,
   excludeWordId?: string,
 ) => {
   const duplicate = await prisma.word.findFirst({
@@ -189,6 +205,8 @@ const assertNoActiveDuplicate = async (
       ownerId,
       languageId,
       termNormalized,
+      mandatoryTag,
+      isDeleted: false,
       deleteToken: ACTIVE_DELETE_TOKEN,
       ...(excludeWordId ? { id: { not: excludeWordId } } : {}),
     },
@@ -196,8 +214,33 @@ const assertNoActiveDuplicate = async (
   });
 
   if (duplicate) {
-    throw new DuplicateError('Ce terme existe deja dans votre encyclopedie.');
+    throw new DuplicateError('Ce mot existe deja avec cette nature.');
   }
+};
+
+export const checkWordTermNatureDuplicateForOwner = async (
+  ownerId: string,
+  languageId: string,
+  term: string,
+  mandatoryTag: MandatoryTag,
+  excludeWordId?: string,
+) => {
+  const termNormalized = normalizeForLookup(term);
+
+  const duplicate = await prisma.word.findFirst({
+    where: {
+      ownerId,
+      languageId,
+      termNormalized,
+      mandatoryTag,
+      isDeleted: false,
+      deleteToken: ACTIVE_DELETE_TOKEN,
+      ...(excludeWordId ? { id: { not: excludeWordId } } : {}),
+    },
+    select: { id: true },
+  });
+
+  return Boolean(duplicate);
 };
 
 export const parseWordFormData = (formData: FormData): WordInput => ({
@@ -223,6 +266,7 @@ export const createWordForUser = async (
     userId,
     languageId,
     normalizedInput.termNormalized,
+    normalizedInput.mandatoryTag,
   );
 
   let audioData:
@@ -370,7 +414,7 @@ const buildIncomingCopyData = (
   termNormalized: sourceWord.termNormalized,
   translation: sourceWord.translation,
   translationNormalized: sourceWord.translationNormalized,
-  tags: options.tags ? sourceWord.tags : [],
+  tags: options.tags ? sourceWord.tags : [sourceWord.mandatoryTag],
   synonyms: options.synonyms ? sourceWord.synonyms : [],
   notes: options.notes ? sourceWord.notes : null,
   customAudioUrl: options.audio ? sourceWord.customAudioUrl : null,
@@ -470,6 +514,7 @@ export const getCommunityWordImportPreview = async (
       ownerId: viewerId,
       languageId: sourceWord.languageId,
       termNormalized: sourceWord.termNormalized,
+      mandatoryTag: sourceWord.mandatoryTag,
       isDeleted: false,
       deleteToken: ACTIVE_DELETE_TOKEN,
     },
@@ -515,6 +560,7 @@ export const importCommunityWordForUser = async (
           termNormalized: preview.incomingData.termNormalized,
           translation: preview.incomingData.translation,
           translationNormalized: preview.incomingData.translationNormalized,
+          mandatoryTag: preview.sourceWord.mandatoryTag,
           tags: preview.incomingData.tags,
           synonyms: preview.incomingData.synonyms,
           notes: preview.incomingData.notes,
@@ -565,6 +611,7 @@ export const importCommunityWordForUser = async (
         mergeStrategy.translation === 'replace'
           ? preview.incomingData.translationNormalized
           : normalizeForLookup(preview.existingWord.translation),
+      mandatoryTag: preview.existingWord.mandatoryTag,
       tags: mergeArrayValues(
         preview.existingWord.tags,
         preview.incomingData.tags,
@@ -622,6 +669,7 @@ export const updateWordForOwner = async (
     ownerId,
     existingWord.languageId,
     normalizedInput.termNormalized,
+    normalizedInput.mandatoryTag,
     wordId,
   );
 
@@ -676,6 +724,7 @@ export const restoreWordForOwner = async (ownerId: string, wordId: string) => {
     ownerId,
     existingWord.languageId,
     existingWord.termNormalized,
+    resolveMandatoryTag(existingWord.tags),
     wordId,
   );
 
