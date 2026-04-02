@@ -15,6 +15,7 @@ import { WordActions } from './WordActions';
 import { AudioPlayer } from '@/components/shared/AudioPlayer';
 import { CreateWordView } from '@/components/search/create-word/CreateWordView';
 import { type EditableWordSnapshot } from '@/lib/words/community';
+import { sanitizeNotesHtml } from '@/lib/words/notes';
 
 type WordDetailModalProps = {
   word: EditableWordSnapshot | null;
@@ -43,6 +44,7 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
 }: WordDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const isExternalWord = !!word && canAdd;
+  const sanitizedNotes = word?.notes ? sanitizeNotesHtml(word.notes) : '';
 
   useEffect(() => {
     if (!isOpen) {
@@ -135,6 +137,23 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
                         synonyms={word.synonyms}
                         onSynonymClick={onSynonymSelect}
                       />
+                    </>
+                  )}
+
+                  {sanitizedNotes && (
+                    <>
+                      <hr className="border-border/50" />
+                      <div className="space-y-3">
+                        <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
+                          Notes
+                        </h3>
+                        <div
+                          className="text-foreground [&_em]:italic [&_strong]:font-semibold [&_u]:underline"
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizedNotes,
+                          }}
+                        />
+                      </div>
                     </>
                   )}
                 </div>

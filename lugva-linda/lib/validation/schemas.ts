@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { Rating } from 'ts-fsrs';
 import { MANDATORY_TAGS, MANDATORY_TAGS_SET } from '../words/tags';
+import { extractNotesText, NOTES_MAX_LENGTH } from '../words/notes';
 
 const validGrades = [
   Rating.Again,
@@ -134,7 +135,10 @@ export const wordWriteSchema = z
     notes: z
       .string()
       .trim()
-      .max(2000, 'Les notes ne doivent pas depasser 2000 caracteres.')
+      .refine(
+        (value) => extractNotesText(value).length <= NOTES_MAX_LENGTH,
+        `Les notes ne doivent pas depasser ${NOTES_MAX_LENGTH} caracteres.`,
+      )
       .nullable(),
     languageId: languageIdSchema.optional(),
   })

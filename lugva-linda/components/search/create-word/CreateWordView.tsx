@@ -20,6 +20,12 @@ import { type EditableWordSnapshot } from '@/lib/words/community';
 import { CustomTagSelector } from './CustomTagSelector';
 import { MANDATORY_TAGS } from '@/lib/words/tags';
 import { TagSelector } from './TagSelector';
+import { NotesEditor } from './NotesEditor';
+import {
+  extractNotesText,
+  NOTES_MAX_LENGTH,
+  sanitizeNotesHtml,
+} from '@/lib/words/notes';
 
 type CreateWordViewProps = {
   initialQuery?: string;
@@ -67,9 +73,20 @@ export const CreateWordView = ({
   const langId = isEditing ? initialData.languageId : currentLangId;
   const defaultWord = isEditing ? initialData.term : initialQuery;
   const defaultTranslation = initialData?.translation || '';
+  const defaultNotes = initialData?.notes ?? '';
 
   const [wordValue, setWordValue] = useState(defaultWord);
   const [translationValue, setTranslationValue] = useState(defaultTranslation);
+  const [notesValue, setNotesValue] = useState(defaultNotes);
+
+  const notesCharacterCount = useMemo(
+    () => extractNotesText(notesValue).length,
+    [notesValue],
+  );
+  const notesError =
+    notesCharacterCount > NOTES_MAX_LENGTH
+      ? `Les notes ne doivent pas depasser ${NOTES_MAX_LENGTH} caracteres.`
+      : null;
 
   const formValidation = useMemo(
     () =>
@@ -193,6 +210,8 @@ export const CreateWordView = ({
     if (audioFile) {
       formData.append('audioFile', audioFile);
     }
+
+    formData.set('notes', sanitizeNotesHtml(notesValue));
 
     try {
       setIsSubmitting(true);
@@ -346,12 +365,35 @@ export const CreateWordView = ({
           setSelectedSynonyms={setSelectedSynonyms}
         />
 
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-foreground font-medium">Notes</Label>
+            <span
+              className={cn(
+                'text-muted-foreground text-xs',
+                notesError && 'text-destructive font-medium',
+              )}
+            >
+              {notesCharacterCount}/{NOTES_MAX_LENGTH}
+            </span>
+          </div>
+          <NotesEditor
+            value={notesValue}
+            onChange={setNotesValue}
+            disabled={isSubmitting}
+          />
+          {notesError && (
+            <p className="text-destructive text-sm font-medium">{notesError}</p>
+          )}
+        </div>
+
         <Button
           type="submit"
           size="lg"
           className="mt-2 h-14 w-full text-base shadow-md"
           disabled={
             !formValidation.success ||
+            Boolean(notesError) ||
             isSubmitting ||
             isCheckingDuplicate ||
             Boolean(duplicateError)

@@ -25,6 +25,7 @@ import {
   normalizeFormStringArray,
   normalizeText,
 } from '@/lib/words/normalization';
+import { sanitizeNotesHtml } from '@/lib/words/notes';
 import {
   mergeArrayValues,
   mergeNotesValue,
@@ -249,7 +250,7 @@ export const parseWordFormData = (formData: FormData): WordInput => ({
   tags: normalizeFormStringArray(formData.getAll('tags')),
   synonyms: normalizeFormStringArray(formData.getAll('synonyms')),
   relatedWords: normalizeFormStringArray(formData.getAll('relatedWords')),
-  notes: normalizeText(String(formData.get('notes') ?? '')) || null,
+  notes: sanitizeNotesHtml(String(formData.get('notes') ?? '')) || null,
   languageId:
     normalizeText(String(formData.get('languageId') ?? '')) || undefined,
 });
