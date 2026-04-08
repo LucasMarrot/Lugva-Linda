@@ -17,15 +17,19 @@ export const TagFilter = ({
 
   return (
     <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto px-4 pb-2">
-      <Badge
-        variant={selectedTags.length === 0 ? 'default' : 'outline'}
-        onClick={onClearTags}
-        className={
-          selectedTags.length === 0 ? undefined : 'opacity-70 hover:opacity-100'
-        }
-      >
-        Tous
-      </Badge>
+      <div className="border-r pr-2">
+        <Badge
+          variant={selectedTags.length === 0 ? 'default' : 'outline'}
+          onClick={onClearTags}
+          className={
+            selectedTags.length === 0
+              ? undefined
+              : 'opacity-70 hover:opacity-100'
+          }
+        >
+          Tous
+        </Badge>
+      </div>
 
       {allTags.map((tag) => {
         const isSelected = selectedTags.includes(tag);
