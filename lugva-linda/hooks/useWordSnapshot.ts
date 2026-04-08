@@ -3,6 +3,7 @@ import type {
   EditableWordSnapshot,
   WordCommunityView,
 } from '@/lib/words/community';
+import { normalizeNotesBlocks } from '@/lib/words/notes';
 
 type SnapshotMode = 'owner' | 'external';
 
@@ -50,7 +51,7 @@ export const toWordSnapshot = (
     term: word.term,
     translation: word.translation,
     tags: word.tags,
-    notes: word.notes,
+    notesBlocks: normalizeNotesBlocks(word.notesBlocks),
     synonyms: word.synonyms,
     sourceWordId: word.sourceWordId,
     customAudioUrl: word.customAudioUrl,

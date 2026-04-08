@@ -1,4 +1,5 @@
 import type { Word } from '@prisma/client';
+import type { NotesBlock } from '@/lib/words/notes';
 
 export type WordOwnerSummary = {
   id: string;
@@ -23,7 +24,7 @@ export type EditableWordSnapshot = {
   translation: string;
   tags: string[];
   synonyms: string[];
-  notes?: string | null;
+  notesBlocks?: NotesBlock[] | null;
   sourceWordId?: string | null;
   customAudioUrl: string | null;
 };

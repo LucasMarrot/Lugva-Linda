@@ -1,202 +1,136 @@
+import { ValidationError } from '@/lib/errors';
+
 export const NOTES_MAX_LENGTH = 2000;
 
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+type JsonRecord = Record<string, unknown>;
 
-const decodeHtmlEntities = (value: string) =>
-  value
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, '&');
-
-const restorePlaceholders = (value: string, placeholders: string[]) => {
-  let restored = value;
-
-  placeholders.forEach((tag, index) => {
-    restored = restored.replaceAll(`__NOTES_TAG_${index}__`, tag);
-  });
-
-  return restored;
+export type NotesBlock = JsonRecord & {
+  id: string;
+  type: string;
+  children?: NotesBlock[];
 };
 
-const normalizePlainTextToHtml = (value: string) =>
-  escapeHtml(value).replace(/\n/g, '<br>');
+const isRecord = (value: unknown): value is JsonRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const ALLOWED_TAGS = new Set([
-  'br',
-  'strong',
-  'em',
-  'u',
-  's',
-  'mark',
-  'ul',
-  'ol',
-  'li',
-  'blockquote',
-  'p',
-  'h1',
-  'h2',
-  'h3',
-  'span',
-]);
+const buildNotesBlock = (value: unknown): NotesBlock | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
 
-const STYLE_TAGS = new Set(['p', 'h1', 'h2', 'h3', 'span']);
-const ALIGNMENTS = new Set(['left', 'center', 'right', 'justify']);
+  const id =
+    typeof value.id === 'string' && value.id.trim().length > 0
+      ? value.id
+      : `block-${crypto.randomUUID()}`;
+  const type =
+    typeof value.type === 'string' && value.type.trim().length > 0
+      ? value.type
+      : 'paragraph';
 
-const isSafeColor = (value: string) => {
-  const normalized = value.trim().toLowerCase();
+  const normalizedChildren = Array.isArray(value.children)
+    ? value.children
+        .map((child) => buildNotesBlock(child))
+        .filter((child): child is NotesBlock => child !== null)
+    : undefined;
 
-  return (
-    /^#[0-9a-f]{3,8}$/i.test(normalized) ||
-    /^rgba?\((?:[\d\s.,%]+)\)$/i.test(normalized) ||
-    /^[a-z]+$/i.test(normalized)
-  );
+  return {
+    ...value,
+    id,
+    type,
+    ...(normalizedChildren ? { children: normalizedChildren } : {}),
+  };
 };
 
-const sanitizeStyle = (rawAttributes: string) => {
-  const styleMatch = rawAttributes.match(/style\s*=\s*(["'])(.*?)\1/i);
-  if (!styleMatch) return '';
+export const normalizeNotesBlocks = (value: unknown): NotesBlock[] | null => {
+  if (!Array.isArray(value)) {
+    return null;
+  }
 
-  const declarations = styleMatch[2]
-    .split(';')
-    .map((declaration) => declaration.trim())
-    .filter(Boolean);
+  const normalized = value
+    .map((block) => buildNotesBlock(block))
+    .filter((block): block is NotesBlock => block !== null);
 
-  const safeDeclarations: string[] = [];
+  return normalized.length > 0 ? normalized : null;
+};
 
-  declarations.forEach((declaration) => {
-    const separatorIndex = declaration.indexOf(':');
-    if (separatorIndex === -1) return;
+export const parseNotesBlocks = (value: string): NotesBlock[] | null => {
+  const normalized = value.trim();
+  if (!normalized) {
+    return null;
+  }
 
-    const property = declaration.slice(0, separatorIndex).trim().toLowerCase();
-    const rawValue = declaration.slice(separatorIndex + 1).trim();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(normalized);
+  } catch {
+    throw new ValidationError(
+      'Le format des blocs de notes est invalide.',
+      'INVALID_NOTES_BLOCKS',
+    );
+  }
 
-    if (property === 'text-align') {
-      const alignment = rawValue.toLowerCase();
-      if (ALIGNMENTS.has(alignment)) {
-        safeDeclarations.push(`text-align:${alignment}`);
+  const blocks = normalizeNotesBlocks(parsed);
+  if (!blocks) {
+    throw new ValidationError(
+      'Le format des blocs de notes est invalide.',
+      'INVALID_NOTES_BLOCKS',
+    );
+  }
+
+  return blocks;
+};
+
+export const serializeNotesBlocks = (value: NotesBlock[] | null | undefined) =>
+  value && value.length > 0 ? JSON.stringify(value) : '';
+
+const collectTextTokens = (value: unknown, output: string[]) => {
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectTextTokens(item, output));
+    return;
+  }
+
+  if (!isRecord(value)) {
+    return;
+  }
+
+  Object.entries(value).forEach(([key, current]) => {
+    if (key === 'text' && typeof current === 'string') {
+      const trimmed = current.trim();
+      if (trimmed) {
+        output.push(trimmed);
       }
       return;
     }
 
-    if (property === 'color' && isSafeColor(rawValue)) {
-      safeDeclarations.push(`color:${rawValue}`);
-      return;
-    }
-
-    if (property === 'background-color' && isSafeColor(rawValue)) {
-      safeDeclarations.push(`background-color:${rawValue}`);
+    if (key === 'content' || key === 'children') {
+      collectTextTokens(current, output);
     }
   });
-
-  if (safeDeclarations.length === 0) {
-    return '';
-  }
-
-  return safeDeclarations.join(';');
 };
 
-const sanitizeTag = (
-  fullMatch: string,
-  slash: string,
-  tagName: string,
-  rawAttributes: string,
+export const extractNotesTextFromBlocks = (
+  value: NotesBlock[] | null | undefined,
 ) => {
-  const normalizedTag = tagName.toLowerCase();
-
-  if (!ALLOWED_TAGS.has(normalizedTag)) {
+  if (!value || value.length === 0) {
     return '';
   }
 
-  if (slash) {
-    return `</${normalizedTag}>`;
-  }
+  const tokens: string[] = [];
+  collectTextTokens(value, tokens);
 
-  if (normalizedTag === 'br') {
-    return '<br>';
-  }
-
-  if (!STYLE_TAGS.has(normalizedTag)) {
-    return `<${normalizedTag}>`;
-  }
-
-  const safeStyle = sanitizeStyle(rawAttributes);
-  if (!safeStyle) {
-    return `<${normalizedTag}>`;
-  }
-
-  return `<${normalizedTag} style="${safeStyle}">`;
-};
-
-export const sanitizeNotesHtml = (value: string) => {
-  const normalized = value.normalize('NFC').replace(/\r\n?/g, '\n').trim();
-  if (!normalized) return '';
-
-  const hasHtmlTag = /<[^>]+>/.test(normalized);
-  const base = hasHtmlTag ? normalized : normalizePlainTextToHtml(normalized);
-
-  const withoutScripts = base.replace(
-    /<\s*(script|style)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi,
-    '',
-  );
-
-  const canonicalTags = withoutScripts
-    .replace(/<\s*br\b[^>]*\/?\s*>/gi, '<br>')
-    .replace(/<\s*b\b[^>]*>/gi, '<strong>')
-    .replace(/<\s*\/\s*b\s*>/gi, '</strong>')
-    .replace(/<\s*strong\b[^>]*>/gi, '<strong>')
-    .replace(/<\s*\/\s*strong\s*>/gi, '</strong>')
-    .replace(/<\s*i\b[^>]*>/gi, '<em>')
-    .replace(/<\s*\/\s*i\s*>/gi, '</em>')
-    .replace(/<\s*em\b[^>]*>/gi, '<em>')
-    .replace(/<\s*\/\s*em\s*>/gi, '</em>')
-    .replace(/<\s*u\b[^>]*>/gi, '<u>')
-    .replace(/<\s*\/\s*u\s*>/gi, '</u>')
-    .replace(/<\s*(?:strike|del)\b[^>]*>/gi, '<s>')
-    .replace(/<\s*\/\s*(?:strike|del)\s*>/gi, '</s>')
-    .replace(/<\s*s\b[^>]*>/gi, '<s>')
-    .replace(/<\s*\/\s*s\s*>/gi, '</s>')
-    .replace(/<\s*mark\b[^>]*>/gi, '<mark>')
-    .replace(/<\s*\/\s*mark\s*>/gi, '</mark>');
-
-  const sanitizedTags = canonicalTags.replace(
-    /<(\/?)([a-z0-9]+)([^>]*)>/gi,
-    sanitizeTag,
-  );
-
-  const placeholders: string[] = [];
-  const withPlaceholders = sanitizedTags.replace(
-    /<\/?(?:br|strong|em|u|s|mark|ul|ol|li|blockquote|p|h1|h2|h3|span)(?:\s+style="[^"]*")?\s*>/gi,
-    (tag) => {
-      const key = `__NOTES_TAG_${placeholders.length}__`;
-      placeholders.push(tag.toLowerCase());
-      return key;
-    },
-  );
-
-  const escaped = escapeHtml(withPlaceholders);
-  const restored = restorePlaceholders(escaped, placeholders)
-    .replace(/(<br>){3,}/g, '<br><br>')
-    .replace(/^(?:\s|<br>)+|(?:\s|<br>)+$/g, '');
-
-  return restored;
-};
-
-export const extractNotesText = (value: string) =>
-  decodeHtmlEntities(
-    sanitizeNotesHtml(value)
-      .replace(/<\s*br\s*\/?\s*>/gi, '\n')
-      .replace(/<\/?(?:p|h1|h2|h3|blockquote|ul|ol|li)\b[^>]*>/gi, '\n')
-      .replace(/<\/?(?:strong|em|u|s|mark|span)\b[^>]*>/gi, '')
-      .replace(/<[^>]+>/g, ''),
-  )
-    .replace(/\n{3,}/g, '\n\n')
+  return tokens
+    .join(' ')
+    .replace(/\s{2,}/g, ' ')
     .trim();
+};
+
+export const normalizeNotesBlocksForPersistence = (
+  value: unknown,
+): NotesBlock[] | null => {
+  const normalized = normalizeNotesBlocks(value);
+  if (!normalized) {
+    return null;
+  }
+
+  return extractNotesTextFromBlocks(normalized).length > 0 ? normalized : null;
+};

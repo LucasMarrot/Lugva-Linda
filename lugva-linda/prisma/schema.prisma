@@ -109,7 +109,7 @@ model Word {
   tags                  String[] @default([])
   synonyms              String[] @default([])
   relatedWords          String[] @default([])
-  notes                 String?
+  notesBlocks           Json?
 
   customAudioPath String?
   customAudioUrl  String?

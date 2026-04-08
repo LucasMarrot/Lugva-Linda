@@ -21,7 +21,7 @@ export const generateMockWords = (count: number = 10): Word[] => {
       synonyms: isEven ? ['Synonyme A', 'Synonyme B'] : [],
       tags: ['Mock', isEven ? 'Verbe' : 'Nom'],
       relatedWords: isEven ? ['Mot lié A'] : [],
-      notes: null,
+      notesBlocks: null,
       customAudioPath: null,
       customAudioUrl: null,
       sourceWordId: null,

@@ -1,0 +1,2 @@
+ALTER TABLE "Word"
+DROP COLUMN IF EXISTS "notes";

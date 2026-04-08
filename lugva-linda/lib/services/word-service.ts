@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { ExerciseCategory, ExerciseType } from '@prisma/client';
 
 import prisma from '@/lib/prisma';
+import { toNullableJsonInput } from '@/lib/prisma-json';
 import {
   type CopyFieldOptions,
   type CommunityMemberSummary,
@@ -25,10 +26,13 @@ import {
   normalizeFormStringArray,
   normalizeText,
 } from '@/lib/words/normalization';
-import { sanitizeNotesHtml } from '@/lib/words/notes';
+import {
+  normalizeNotesBlocksForPersistence,
+  parseNotesBlocks,
+} from '@/lib/words/notes';
 import {
   mergeArrayValues,
-  mergeNotesValue,
+  mergeNotesBlocksValue,
   scoreSearchResult,
 } from '@/lib/services/community-merge';
 import { MANDATORY_TAGS_SET, type MandatoryTag } from '@/lib/words/tags';
@@ -50,7 +54,7 @@ type WordInput = {
   tags: string[];
   synonyms: string[];
   relatedWords: string[];
-  notes: string | null;
+  notesBlocks: ReturnType<typeof normalizeNotesBlocksForPersistence>;
   languageId?: string;
 };
 
@@ -161,7 +165,7 @@ const buildInput = (input: WordInput) => {
     tags: input.tags,
     synonyms: input.synonyms,
     relatedWords: input.relatedWords,
-    notes: input.notes,
+    notesBlocks: input.notesBlocks,
     languageId: input.languageId,
   });
 
@@ -176,7 +180,7 @@ const buildInput = (input: WordInput) => {
     tags: parsedInput.tags,
     synonyms: parsedInput.synonyms,
     relatedWords: parsedInput.relatedWords,
-    notes: parsedInput.notes,
+    notesBlocks: normalizeNotesBlocksForPersistence(parsedInput.notesBlocks),
   };
 };
 
@@ -244,16 +248,23 @@ export const checkWordTermNatureDuplicateForOwner = async (
   return Boolean(duplicate);
 };
 
-export const parseWordFormData = (formData: FormData): WordInput => ({
-  term: String(formData.get('word') ?? formData.get('term') ?? ''),
-  translation: String(formData.get('translation') ?? ''),
-  tags: normalizeFormStringArray(formData.getAll('tags')),
-  synonyms: normalizeFormStringArray(formData.getAll('synonyms')),
-  relatedWords: normalizeFormStringArray(formData.getAll('relatedWords')),
-  notes: sanitizeNotesHtml(String(formData.get('notes') ?? '')) || null,
-  languageId:
-    normalizeText(String(formData.get('languageId') ?? '')) || undefined,
-});
+export const parseWordFormData = (formData: FormData): WordInput => {
+  const notesBlocksRaw = String(formData.get('notesBlocks') ?? '').trim();
+  const parsedNotesBlocks = notesBlocksRaw
+    ? parseNotesBlocks(notesBlocksRaw)
+    : null;
+
+  return {
+    term: String(formData.get('word') ?? formData.get('term') ?? ''),
+    translation: String(formData.get('translation') ?? ''),
+    tags: normalizeFormStringArray(formData.getAll('tags')),
+    synonyms: normalizeFormStringArray(formData.getAll('synonyms')),
+    relatedWords: normalizeFormStringArray(formData.getAll('relatedWords')),
+    notesBlocks: normalizeNotesBlocksForPersistence(parsedNotesBlocks),
+    languageId:
+      normalizeText(String(formData.get('languageId') ?? '')) || undefined,
+  };
+};
 
 export const createWordForUser = async (
   userId: string,
@@ -262,6 +273,7 @@ export const createWordForUser = async (
 ) => {
   const languageId = await resolveLanguageId(userId, input.languageId);
   const normalizedInput = buildInput(input);
+  const { notesBlocks, ...wordData } = normalizedInput;
 
   await assertNoActiveDuplicate(
     userId,
@@ -283,7 +295,8 @@ export const createWordForUser = async (
         ownerId: userId,
         createdById: userId,
         languageId,
-        ...normalizedInput,
+        ...wordData,
+        notesBlocks: toNullableJsonInput(notesBlocks),
         deleteToken: ACTIVE_DELETE_TOKEN,
         ...(audioData ?? {}),
       },
@@ -344,7 +357,6 @@ export const searchWordsInLanguage = async (
       OR: [
         { term: { contains: normalizedQuery, mode: 'insensitive' } },
         { translation: { contains: normalizedQuery, mode: 'insensitive' } },
-        { notes: { contains: normalizedQuery, mode: 'insensitive' } },
       ],
     },
     include: {
@@ -451,7 +463,9 @@ const buildIncomingCopyData = (
   translationNormalized: sourceWord.translationNormalized,
   tags: options.tags ? sourceWord.tags : [sourceWord.mandatoryTag],
   synonyms: options.synonyms ? sourceWord.synonyms : [],
-  notes: options.notes ? sourceWord.notes : null,
+  notesBlocks: options.notes
+    ? normalizeNotesBlocksForPersistence(sourceWord.notesBlocks)
+    : null,
   customAudioUrl: options.audio ? sourceWord.customAudioUrl : null,
 });
 
@@ -598,7 +612,7 @@ export const importCommunityWordForUser = async (
           mandatoryTag: preview.sourceWord.mandatoryTag,
           tags: preview.incomingData.tags,
           synonyms: preview.incomingData.synonyms,
-          notes: preview.incomingData.notes,
+          notesBlocks: toNullableJsonInput(preview.incomingData.notesBlocks),
           customAudioUrl: preview.incomingData.customAudioUrl,
           customAudioPath: null,
           deleteToken: ACTIVE_DELETE_TOKEN,
@@ -657,10 +671,12 @@ export const importCommunityWordForUser = async (
         preview.incomingData.synonyms,
         mergeStrategy.synonyms,
       ),
-      notes: mergeNotesValue(
-        preview.existingWord.notes,
-        preview.incomingData.notes,
-        mergeStrategy.notes,
+      notesBlocks: toNullableJsonInput(
+        mergeNotesBlocksValue(
+          normalizeNotesBlocksForPersistence(preview.existingWord.notesBlocks),
+          preview.incomingData.notesBlocks,
+          mergeStrategy.notes,
+        ),
       ),
       customAudioUrl:
         mergeStrategy.audio === 'replace'
@@ -700,6 +716,7 @@ export const updateWordForOwner = async (
     ...input,
     languageId: existingWord.languageId,
   });
+  const { notesBlocks, ...wordData } = normalizedInput;
   await assertNoActiveDuplicate(
     ownerId,
     existingWord.languageId,
@@ -718,7 +735,8 @@ export const updateWordForOwner = async (
   return prisma.word.update({
     where: { id: wordId },
     data: {
-      ...normalizedInput,
+      ...wordData,
+      notesBlocks: toNullableJsonInput(notesBlocks),
       ...(audioData ?? {}),
     },
   });

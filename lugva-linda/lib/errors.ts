@@ -51,3 +51,49 @@ export class StorageError extends AppError {
     this.name = 'StorageError';
   }
 }
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)
+    : null;
+
+const extractMessage = (value: unknown): string => {
+  if (value instanceof Error) {
+    return value.message;
+  }
+
+  const record = asRecord(value);
+  if (!record) {
+    return '';
+  }
+
+  return typeof record.message === 'string' ? record.message : '';
+};
+
+const hasConnectivityMarker = (value: unknown): boolean => {
+  const message = extractMessage(value).toLowerCase();
+  if (
+    message.includes("can't reach database server") ||
+    message.includes('databasenotreachable') ||
+    message.includes('connect timeout')
+  ) {
+    return true;
+  }
+
+  const record = asRecord(value);
+  if (!record) {
+    return false;
+  }
+
+  const code = typeof record.code === 'string' ? record.code : '';
+  if (code === 'P1001' || code === 'UND_ERR_CONNECT_TIMEOUT') {
+    return true;
+  }
+
+  return (
+    hasConnectivityMarker(record.cause) || hasConnectivityMarker(record.meta)
+  );
+};
+
+export const isDatabaseUnavailableError = (error: unknown) =>
+  hasConnectivityMarker(error);

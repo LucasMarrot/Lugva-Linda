@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { Rating } from 'ts-fsrs';
 import { MANDATORY_TAGS, MANDATORY_TAGS_SET } from '../words/tags';
-import { extractNotesText, NOTES_MAX_LENGTH } from '../words/notes';
+import { extractNotesTextFromBlocks, NOTES_MAX_LENGTH } from '../words/notes';
 
 const validGrades = [
   Rating.Again,
@@ -119,6 +119,11 @@ const stringArraySchema = z.array(
   ),
 );
 
+const notesBlockSchema = z.looseObject({
+  id: nonEmptyTextSchema.max(128, 'ID de bloc invalide.'),
+  type: nonEmptyTextSchema.max(64, 'Type de bloc invalide.'),
+});
+
 export const wordWriteSchema = z
   .object({
     term: nonEmptyTextSchema.max(
@@ -132,13 +137,9 @@ export const wordWriteSchema = z
     tags: stringArraySchema.max(20, 'Maximum 20 tags.'),
     synonyms: stringArraySchema.max(20, 'Maximum 20 synonymes.'),
     relatedWords: stringArraySchema.max(20, 'Maximum 20 mots lies.'),
-    notes: z
-      .string()
-      .trim()
-      .refine(
-        (value) => extractNotesText(value).length <= NOTES_MAX_LENGTH,
-        `Les notes ne doivent pas depasser ${NOTES_MAX_LENGTH} caracteres.`,
-      )
+    notesBlocks: z
+      .array(notesBlockSchema)
+      .max(500, 'Les notes ne doivent pas depasser 500 blocs.')
       .nullable(),
     languageId: languageIdSchema.optional(),
   })
@@ -158,6 +159,16 @@ export const wordWriteSchema = z
         code: 'custom',
         path: ['tags'],
         message: 'Une seule nature est autorisee.',
+      });
+    }
+
+    if (
+      extractNotesTextFromBlocks(data.notesBlocks).length > NOTES_MAX_LENGTH
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['notesBlocks'],
+        message: `Les notes ne doivent pas depasser ${NOTES_MAX_LENGTH} caracteres.`,
       });
     }
   });

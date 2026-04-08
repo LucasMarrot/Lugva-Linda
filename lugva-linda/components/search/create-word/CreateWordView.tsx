@@ -11,7 +11,7 @@ import {
 } from '@/actions/word-actions';
 import { SynonymSelector } from './SynonymSelector';
 import { AudioRecorder } from './AudioRecorder';
-import { cn } from '@/lib/utils';
+import { cn, toUpperCaseFirstWord } from '@/lib/utils';
 import { useToast } from '@/components/providers/ToastProvider';
 import { createWordFormSchema } from '@/lib/validation/schemas';
 import { type EditableWordSnapshot } from '@/lib/words/community';
@@ -19,9 +19,10 @@ import { CustomTagSelector } from './CustomTagSelector';
 import { MANDATORY_TAGS } from '@/lib/words/tags';
 import { TagSelector } from './TagSelector';
 import {
-  extractNotesText,
+  extractNotesTextFromBlocks,
   NOTES_MAX_LENGTH,
-  sanitizeNotesHtml,
+  type NotesBlock,
+  serializeNotesBlocks,
 } from '@/lib/words/notes';
 import { RichTextEditor } from '@/components/shared';
 
@@ -69,17 +70,21 @@ export const CreateWordView = ({
   const latestDuplicateRequestRef = useRef(0);
 
   const langId = isEditing ? initialData.languageId : currentLangId;
-  const defaultWord = isEditing ? initialData.term : initialQuery;
+  const defaultWord = isEditing
+    ? initialData.term
+    : toUpperCaseFirstWord(initialQuery);
   const defaultTranslation = initialData?.translation || '';
-  const defaultNotes = initialData?.notes ?? '';
+  const defaultNotesBlocks = initialData?.notesBlocks ?? null;
 
   const [wordValue, setWordValue] = useState(defaultWord);
   const [translationValue, setTranslationValue] = useState(defaultTranslation);
-  const [notesValue, setNotesValue] = useState(defaultNotes);
+  const [notesBlocksValue, setNotesBlocksValue] = useState<NotesBlock[] | null>(
+    defaultNotesBlocks,
+  );
 
   const notesCharacterCount = useMemo(
-    () => extractNotesText(notesValue).length,
-    [notesValue],
+    () => extractNotesTextFromBlocks(notesBlocksValue).length,
+    [notesBlocksValue],
   );
   const notesError =
     notesCharacterCount > NOTES_MAX_LENGTH
@@ -209,7 +214,7 @@ export const CreateWordView = ({
       formData.append('audioFile', audioFile);
     }
 
-    formData.set('notes', sanitizeNotesHtml(notesValue));
+    formData.set('notesBlocks', serializeNotesBlocks(notesBlocksValue));
 
     try {
       setIsSubmitting(true);
@@ -376,8 +381,8 @@ export const CreateWordView = ({
             </span>
           </div>
           <RichTextEditor
-            value={notesValue}
-            onChange={setNotesValue}
+            blocks={notesBlocksValue}
+            onBlocksChange={setNotesBlocksValue}
             disabled={isSubmitting}
           />
 

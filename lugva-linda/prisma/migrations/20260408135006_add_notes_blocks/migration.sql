@@ -1,0 +1,5 @@
+-- RenameIndex
+ALTER INDEX "Word_ownerId_languageId_isDeleted_termNormalized_mandatoryTag_i" RENAME TO "Word_ownerId_languageId_isDeleted_termNormalized_mandatoryT_idx";
+
+-- RenameIndex
+ALTER INDEX "Word_ownerId_languageId_termNormalized_mandatoryTag_deleteToken" RENAME TO "Word_ownerId_languageId_termNormalized_mandatoryTag_deleteT_key";

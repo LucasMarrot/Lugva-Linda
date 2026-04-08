@@ -17,14 +17,17 @@ import {
 import { BlockNoteView } from '@blocknote/mantine';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import type { NotesBlock } from '@/lib/words/notes';
 import styles from './RichTextEditor.module.css';
 
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css';
 
 interface RichTextEditorProps {
-  value: string;
-  onChange: (html: string) => void;
+  value?: string;
+  blocks?: NotesBlock[] | null;
+  onChange?: (html: string) => void;
+  onBlocksChange?: (blocks: NotesBlock[]) => void;
   onBlurSave?: (blocks: Block[]) => void;
   disabled?: boolean;
   className?: string;
@@ -32,12 +35,15 @@ interface RichTextEditorProps {
 
 export const RichTextEditor = ({
   value,
+  blocks,
   onChange,
+  onBlocksChange,
   onBlurSave,
   disabled = false,
   className,
 }: RichTextEditorProps) => {
   const lastSyncedHtmlRef = useRef<string>('');
+  const lastSyncedBlocksRef = useRef<string>('');
 
   const editorDictionary = useMemo(
     () => ({
@@ -116,14 +122,24 @@ export const RichTextEditor = ({
   );
 
   useEffect(() => {
-    const nextHtml = value.trim();
-    if (nextHtml === lastSyncedHtmlRef.current) {
+    const serializedIncomingBlocks = blocks ? JSON.stringify(blocks) : '';
+    const shouldSyncFromBlocks =
+      Boolean(blocks && blocks.length > 0) &&
+      serializedIncomingBlocks !== lastSyncedBlocksRef.current;
+
+    const nextHtml = typeof value === 'string' ? value.trim() : '';
+    const shouldSyncFromHtml =
+      typeof value === 'string' && nextHtml !== lastSyncedHtmlRef.current;
+
+    if (!shouldSyncFromBlocks && !shouldSyncFromHtml) {
       return;
     }
 
-    const parsedBlocks: PartialBlock[] = nextHtml
-      ? editor.tryParseHTMLToBlocks(nextHtml)
-      : [{ type: 'paragraph' }];
+    const parsedBlocks: PartialBlock[] = shouldSyncFromBlocks
+      ? (blocks as PartialBlock[])
+      : nextHtml
+        ? editor.tryParseHTMLToBlocks(nextHtml)
+        : [{ type: 'paragraph' }];
 
     if (editor.document.length > 0) {
       editor.replaceBlocks(editor.document, parsedBlocks);
@@ -136,12 +152,22 @@ export const RichTextEditor = ({
     }
 
     lastSyncedHtmlRef.current = editor.blocksToHTMLLossy(editor.document);
-  }, [editor, value]);
+    lastSyncedBlocksRef.current = JSON.stringify(editor.document);
+
+    if (onBlocksChange) {
+      onBlocksChange(editor.document as NotesBlock[]);
+    }
+  }, [blocks, editor, onBlocksChange, value]);
 
   const handleEditorChange = () => {
+    const editorBlocks = editor.document as NotesBlock[];
     const html = editor.blocksToHTMLLossy(editor.document);
+
     lastSyncedHtmlRef.current = html;
-    onChange(html);
+    lastSyncedBlocksRef.current = JSON.stringify(editorBlocks);
+
+    onChange?.(html);
+    onBlocksChange?.(editorBlocks);
   };
 
   const handleBlur = () => {

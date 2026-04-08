@@ -8,3 +8,4 @@ export * from './UnderConstructionPage';
 export * from './WordListItem';
 export * from './word-modal/WordDetailModal';
 export * from './rich-text-editor/RichTextEditor';
+export * from './rich-text-editor/RichTextViewer';

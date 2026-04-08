@@ -14,3 +14,6 @@ export function frenchPluralize(
 }
 
 export const toTint = (hex: string) => `${hex}1A`;
+
+export const toUpperCaseFirstWord = (str: string) =>
+  str.charAt(0).toLocaleUpperCase() + str.slice(1).toLocaleLowerCase();

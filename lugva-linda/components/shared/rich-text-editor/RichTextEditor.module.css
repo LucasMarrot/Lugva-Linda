@@ -148,6 +148,21 @@
   cursor: not-allowed;
 }
 
+.root.viewer :global(.bn-container) {
+  --bn-colors-editor-background: transparent;
+}
+
+.root.viewer :global(.bn-editor) {
+  min-height: 0;
+  padding-inline-start: 0;
+  padding-inline-end: 0;
+  padding-block: 0;
+}
+
+.root.viewer :global(.bn-block-outer) {
+  margin-inline: 0;
+}
+
 @media (max-width: 640px) {
   .root :global(.bn-editor) {
     padding-inline-start: 3.5rem;
