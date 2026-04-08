@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui';
 import { MANDATORY_TAGS } from '@/lib/words/tags';
 
 type TagSelectorProps = {

@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui';
 import { Home } from 'lucide-react';
 import { StateMessage } from '@/components/shared';
 

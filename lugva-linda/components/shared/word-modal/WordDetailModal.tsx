@@ -9,7 +9,7 @@ import {
   DialogDescription,
   DialogTitle,
   DialogClose,
-} from '@/components/ui/dialog';
+} from '@/components/ui';
 import { SynonymsList } from './SynonymsList';
 import { WordActions } from './WordActions';
 import { AudioPlayer } from '@/components/shared/';

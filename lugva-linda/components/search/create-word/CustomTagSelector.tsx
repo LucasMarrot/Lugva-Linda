@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input, Button, Badge } from '@/components/ui';
 import { Plus } from 'lucide-react';
 
 type CustomTagSelectorProps = {

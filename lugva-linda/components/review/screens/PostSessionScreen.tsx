@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui';
 import { SessionStats } from '@/hooks/useReviewSession';
 import { Trophy, Home } from 'lucide-react';
 import { SessionHeader } from '../SessionHeader';

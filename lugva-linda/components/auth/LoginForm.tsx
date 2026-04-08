@@ -2,17 +2,18 @@
 
 import { useMemo, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
+  Button,
+  Input,
+  Label,
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
+} from '@/components/ui';
+
 import { cn } from '@/lib/utils';
 import { loginFormSchema } from '@/lib/validation/schemas';
 import { StateMessage } from '@/components/shared/';

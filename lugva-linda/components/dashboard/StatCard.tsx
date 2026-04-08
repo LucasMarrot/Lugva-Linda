@@ -1,13 +1,13 @@
-import { type LucideIcon } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+import { type LucideIcon } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 type StatCardProps = {
-  title: string
-  value: number | string
-  icon: LucideIcon
-  variant?: 'primary' | 'default'
-}
+  title: string;
+  value: number | string;
+  icon: LucideIcon;
+  variant?: 'primary' | 'default';
+};
 
 export const StatCard = ({
   title,
@@ -15,7 +15,7 @@ export const StatCard = ({
   icon: Icon,
   variant = 'default',
 }: StatCardProps) => {
-  const isPrimary = variant === 'primary'
+  const isPrimary = variant === 'primary';
 
   return (
     <Card
@@ -44,5 +44,5 @@ export const StatCard = ({
         </span>
       </CardContent>
     </Card>
-  )
-}
+  );
+};

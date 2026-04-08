@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Construction, ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui';
 
 type UnderConstructionPageProps = {
   title: string;

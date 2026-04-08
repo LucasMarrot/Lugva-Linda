@@ -2,8 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { buildCreateLanguageFormSchema } from '@/lib/validation/schemas';
 

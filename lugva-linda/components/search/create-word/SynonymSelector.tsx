@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Input, Label, Badge } from '@/components/ui';
 import { searchWords } from '@/actions/word-actions';
 import { type WordCommunityView } from '@/lib/words/community';
-import { Badge } from '@/components/ui/badge';
 
 type SynonymSelectorProps = {
   currentLangId: string;

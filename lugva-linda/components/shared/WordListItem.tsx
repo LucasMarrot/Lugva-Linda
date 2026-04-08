@@ -1,8 +1,7 @@
 import type { MouseEventHandler } from 'react';
 import type { Word } from '@prisma/client';
 import { BookOpen, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '../ui/badge';
+import { Button, Badge } from '@/components/ui';
 
 type WordListItemProps = {
   word: Word;

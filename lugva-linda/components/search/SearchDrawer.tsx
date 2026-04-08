@@ -10,7 +10,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '@/components/ui/drawer';
+} from '@/components/ui';
 import { SearchView } from './SearchView';
 import { CreateWordView } from './create-word/CreateWordView';
 

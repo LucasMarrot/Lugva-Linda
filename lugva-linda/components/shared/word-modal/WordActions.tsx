@@ -3,8 +3,8 @@
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
 import { Trash2, Edit2, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ConfirmButton } from '../ConfirmButton';
+import { Button } from '@/components/ui';
+import { ConfirmButton } from '@/components/shared/';
 
 type WordActionsProps = {
   canEdit?: boolean;

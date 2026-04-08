@@ -6,12 +6,7 @@ import {
   syncGlobalLanguagesForUser,
 } from '@/lib/services/language-service';
 
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import { SetupLanguageForm } from '@/components/setup/SetupLanguageForm';
 
 export default async function SetupPage() {

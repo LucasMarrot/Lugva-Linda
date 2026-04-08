@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Mic, Square, Trash2, Play, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 

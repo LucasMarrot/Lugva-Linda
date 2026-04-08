@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { toast as sonnerToast } from 'sonner';
-import { SonnerToaster } from '@/components/ui/sonner';
+import { SonnerToaster } from '@/components/ui';
 
 type ToastVariant = 'error' | 'success' | 'info';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui';
 import { Play, Clock, Brain } from 'lucide-react';
 import type { ReviewSessionIntent } from '../ReviewSessionContainer';
 import { cn } from '@/lib/utils';

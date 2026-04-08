@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, ReactNode } from 'react';
-import { Button, ButtonProps } from '@/components/ui/button';
+import { Button, ButtonProps } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { AlertCircle } from 'lucide-react';
 

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Brain } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui';
 
 type DueTodayReviewButtonProps = {
   languageId: string;

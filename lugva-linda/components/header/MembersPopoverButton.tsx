@@ -5,12 +5,13 @@ import { Users } from 'lucide-react';
 import { listCommunityMembersAction } from '@/actions/word-actions';
 import { usePresence } from '@/components/providers/PresenceProvider';
 import { useMaybeActiveLanguage } from '@/components/providers/ActiveLanguageProvider';
-import { Button } from '@/components/ui/button';
 import {
+  Button,
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@/components/ui';
+
 import { type CommunityMemberSummary } from '@/lib/words/community';
 import MemberClientCard from './MemberClientCard';
 

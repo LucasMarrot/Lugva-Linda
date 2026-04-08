@@ -10,16 +10,15 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+  Input,
+  Button,
+} from '@/components/ui';
+
 import { buildCreateLanguageFormSchema } from '@/lib/validation/schemas';
 import { cn } from '@/lib/utils';
 import { useActiveLanguage } from '@/components/providers/ActiveLanguageProvider';
@@ -101,7 +100,7 @@ export const LanguageSelector = () => {
       onValueChange={handleLanguageChange}
       disabled={isSwitchingLanguage}
     >
-      <SelectTrigger className="border-border bg-background h-9 w-[130px] focus:ring-0">
+      <SelectTrigger className="border-border bg-background h-9 w-32.5 focus:ring-0">
         <SelectValue placeholder="Langue" />
       </SelectTrigger>
 
@@ -122,7 +121,7 @@ export const LanguageSelector = () => {
             </Button>
           </DialogTrigger>
 
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-106.25">
             <DialogHeader>
               <DialogTitle>Ajouter une langue</DialogTitle>
             </DialogHeader>

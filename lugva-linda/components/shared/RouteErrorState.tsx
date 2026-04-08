@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui';
 
 type RouteErrorStateProps = {
   title?: string;

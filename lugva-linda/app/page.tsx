@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getDashboardData } from '@/data/dashboard';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { LearningActions } from '@/components/dashboard/LearningActions';
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
