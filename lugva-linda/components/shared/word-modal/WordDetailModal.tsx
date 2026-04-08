@@ -9,12 +9,14 @@ import {
   DialogDescription,
   DialogTitle,
   DialogClose,
+  Badge,
 } from '@/components/ui';
 import { SynonymsList } from './SynonymsList';
 import { WordActions } from './WordActions';
 import { AudioPlayer, RichTextViewer } from '@/components/shared/';
 import { CreateWordView } from '@/components/search/create-word/CreateWordView';
 import { type EditableWordSnapshot } from '@/lib/words/community';
+import { cn } from '@/lib/utils';
 
 type WordDetailModalProps = {
   word: EditableWordSnapshot | null;
@@ -108,11 +110,27 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
                   </div>
 
                   {word.tags && word.tags.length > 0 && (
-                    <div className="flex justify-center">
-                      <span className="bg-muted inline-flex h-8 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold whitespace-nowrap">
-                        <Tag className="text-muted-foreground h-4 w-4 shrink-0" />
-                        {word.tags[0]}
-                      </span>
+                    <div className="flex justify-center gap-2">
+                      {word.tags &&
+                        word.tags.length > 0 &&
+                        word.tags.map((tag, index) => (
+                          <span
+                            key={tag + index}
+                            className={cn(
+                              index === 0
+                                ? 'bg-secondary text-secondary-foreground border'
+                                : 'text-foreground border',
+                              'inline-flex h-8 items-center justify-center rounded-full px-4 text-sm font-semibold whitespace-nowrap',
+                            )}
+                          >
+                            {index === 0 && (
+                              <Tag className="text-primary h-4 w-4 shrink-0" />
+                            )}
+                            <Badge variant={'ghost'} className="text-md">
+                              {tag}
+                            </Badge>
+                          </span>
+                        ))}
                     </div>
                   )}
 
