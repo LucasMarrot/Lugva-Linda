@@ -25,7 +25,7 @@ import {
   NOTES_MAX_LENGTH,
   sanitizeNotesHtml,
 } from '@/lib/words/notes';
-import RichTextEditor from '@/components/shared/rich-text-editor/RichTextEditor';
+import { RichTextEditor } from '@/components/shared';
 
 type CreateWordViewProps = {
   initialQuery?: string;

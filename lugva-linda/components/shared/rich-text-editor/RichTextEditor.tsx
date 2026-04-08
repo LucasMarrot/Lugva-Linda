@@ -22,7 +22,7 @@ import styles from './RichTextEditor.module.css';
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/mantine/style.css';
 
-interface DocumentEditorProps {
+interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
   onBlurSave?: (blocks: Block[]) => void;
@@ -30,13 +30,13 @@ interface DocumentEditorProps {
   className?: string;
 }
 
-export default function DocumentEditor({
+export const RichTextEditor = ({
   value,
   onChange,
   onBlurSave,
   disabled = false,
   className,
-}: DocumentEditorProps) {
+}: RichTextEditorProps) => {
   const lastSyncedHtmlRef = useRef<string>('');
 
   const editorDictionary = useMemo(
@@ -198,4 +198,4 @@ export default function DocumentEditor({
       </BlockNoteView>
     </div>
   );
-}
+};

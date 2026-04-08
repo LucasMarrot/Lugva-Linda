@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { RouteErrorState } from '@/components/shared/RouteErrorState';
+import { RouteErrorState } from '@/components/shared';
 
 export default function Error({
   error,

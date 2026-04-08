@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { loginFormSchema } from '@/lib/validation/schemas';
-import { StateMessage } from '@/components/shared/StateMessage';
+import { StateMessage } from '@/components/shared/';
 
 type LoginFormProps = {
   hasError: boolean;

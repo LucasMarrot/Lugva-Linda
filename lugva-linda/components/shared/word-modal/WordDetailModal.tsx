@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { SynonymsList } from './SynonymsList';
 import { WordActions } from './WordActions';
-import { AudioPlayer } from '@/components/shared/AudioPlayer';
+import { AudioPlayer } from '@/components/shared/';
 import { CreateWordView } from '@/components/search/create-word/CreateWordView';
 import { type EditableWordSnapshot } from '@/lib/words/community';
 import { sanitizeNotesHtml } from '@/lib/words/notes';

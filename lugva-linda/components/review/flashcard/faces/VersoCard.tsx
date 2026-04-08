@@ -1,8 +1,8 @@
 'use client';
 
 import type { Word } from '@prisma/client';
-import { AudioPlayer } from '@/components/shared/AudioPlayer';
 import { CardFace } from './CardFace';
+import { AudioPlayer } from '@/components/shared';
 
 type VersoCardProps = {
   word: Word;

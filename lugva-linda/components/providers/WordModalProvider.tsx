@@ -2,7 +2,7 @@
 
 import type { FC, ReactNode } from 'react';
 import { createContext, useContext, useState } from 'react';
-import { WordDetailModal } from '@/components/shared/word-modal/WordDetailModal';
+import { WordDetailModal } from '@/components/shared/';
 import { useToast } from '@/components/providers/ToastProvider';
 import { deleteWordAction, getWordByTextAction } from '@/actions/word-actions';
 import { type EditableWordSnapshot } from '@/lib/words/community';

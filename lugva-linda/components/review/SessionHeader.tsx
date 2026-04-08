@@ -2,7 +2,7 @@
 
 import { X } from 'lucide-react';
 
-import { ConfirmButton } from '@/components/shared/ConfirmButton';
+import { ConfirmButton } from '@/components/shared';
 
 type SessionHeaderProps = {
   languageName: string;

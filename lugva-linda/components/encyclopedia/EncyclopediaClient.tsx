@@ -5,9 +5,8 @@ import { useMemo, useState } from 'react';
 import type { Word } from '@prisma/client';
 import { useWordModal } from '../providers/WordModalProvider';
 import { AlphabetNav } from './AlphabetNav';
-import { WordListItem } from '../shared/WordListItem';
 import { TagFilter } from './TagFilter';
-import { StateMessage } from '@/components/shared/StateMessage';
+import { StateMessage, WordListItem } from '@/components/shared/';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
 import { getWordVisualMeta, toWordSnapshot } from '@/hooks/useWordSnapshot';
 

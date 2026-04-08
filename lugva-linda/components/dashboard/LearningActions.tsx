@@ -1,6 +1,6 @@
 import { DueTodayReviewButton } from '@/components/dashboard/DueTodayReviewButton';
 import { ReviewBatchButton } from '@/components/dashboard/ReviewBatchButton';
-import { SectionHeader } from '@/components/shared/SectionHeader';
+import { SectionHeader } from '@/components/shared/';
 
 type LearningActionsProps = {
   languageId: string;

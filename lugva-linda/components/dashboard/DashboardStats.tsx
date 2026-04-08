@@ -1,6 +1,6 @@
 import { Brain, BookOpen } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { StateMessage } from '@/components/shared/StateMessage';
+import { StateMessage } from '@/components/shared/';
 
 type DashboardStatsProps = {
   totalWords: number;

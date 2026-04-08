@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Rating } from 'ts-fsrs';
-import { ConfirmButton } from '@/components/shared/ConfirmButton';
+import { ConfirmButton } from '@/components/shared';
 
 type ValidGrade = Exclude<Rating, Rating.Manual>;
 

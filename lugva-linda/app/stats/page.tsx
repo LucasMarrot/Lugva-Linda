@@ -1,4 +1,4 @@
-import { UnderConstructionPage } from '@/components/shared/UnderConstructionPage';
+import { UnderConstructionPage } from '@/components/shared/';
 
 export default function StatsPage() {
   return (
