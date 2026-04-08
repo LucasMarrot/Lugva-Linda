@@ -20,12 +20,12 @@ import { type EditableWordSnapshot } from '@/lib/words/community';
 import { CustomTagSelector } from './CustomTagSelector';
 import { MANDATORY_TAGS } from '@/lib/words/tags';
 import { TagSelector } from './TagSelector';
-import { NotesEditor } from './NotesEditor';
 import {
   extractNotesText,
   NOTES_MAX_LENGTH,
   sanitizeNotesHtml,
 } from '@/lib/words/notes';
+import RichTextEditor from '@/components/shared/rich-text-editor/RichTextEditor';
 
 type CreateWordViewProps = {
   initialQuery?: string;
@@ -377,11 +377,12 @@ export const CreateWordView = ({
               {notesCharacterCount}/{NOTES_MAX_LENGTH}
             </span>
           </div>
-          <NotesEditor
+          <RichTextEditor
             value={notesValue}
             onChange={setNotesValue}
             disabled={isSubmitting}
           />
+
           {notesError && (
             <p className="text-destructive text-sm font-medium">{notesError}</p>
           )}
