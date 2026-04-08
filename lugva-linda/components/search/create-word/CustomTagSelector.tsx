@@ -47,7 +47,7 @@ export const CustomTagSelector = ({
 
   return (
     <div className="space-y-3">
-      {availableCustomTags.length > 0 && (
+      {(availableCustomTags.length > 0 || selectedCustomTags.length > 0) && (
         <div className="flex flex-wrap gap-2">
           {availableCustomTags.map((tag) => {
             const selectedMatch = findSelectedMatch(tag);
