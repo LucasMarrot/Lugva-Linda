@@ -3,7 +3,13 @@ export const MANDATORY_TAGS = [
   'Verbe',
   'Adjectif',
   'Adverbe',
+  'Pronom',
+  'Déterminant',
+  'Préposition',
+  'Conjonction',
+  'Interjection',
   'Expression',
+  'Phrase',
 ] as const;
 
 export type MandatoryTag = (typeof MANDATORY_TAGS)[number];
