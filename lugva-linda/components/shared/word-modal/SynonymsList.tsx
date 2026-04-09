@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
 type SynonymsListProps = {
-  synonyms: string[]
-  onSynonymClick: (synonym: string) => void
-}
+  synonyms: string[];
+  onSynonymClick: (synonym: string) => void;
+};
 
 export const SynonymsList = ({
   synonyms,
   onSynonymClick,
 }: SynonymsListProps) => {
-  if (!synonyms || synonyms.length === 0) return null
+  if (!synonyms || synonyms.length === 0) return null;
 
   return (
     <div className="space-y-3">
@@ -28,5 +28,5 @@ export const SynonymsList = ({
         ))}
       </div>
     </div>
-  )
-}
+  );
+};

@@ -1,10 +1,10 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
-  })
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,42 +12,42 @@ export async function proxy(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
-          )
+          );
           supabaseResponse = NextResponse.next({
             request,
-          })
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options),
-          )
+          );
         },
       },
     },
-  )
+  );
 
   // On récupère l'utilisateur actuel
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   // PROTECTION DES ROUTES
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth') // On englobe tout le dossier auth
+  const isAuthPage = request.nextUrl.pathname.startsWith('/auth'); // On englobe tout le dossier auth
 
   // 1. Si pas d'user et pas sur une page auth -> Direction /auth/login
   if (!user && !isAuthPage) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
   // 2. Si user et sur /auth/login -> Direction Accueil
   if (user && request.nextUrl.pathname.startsWith('/auth/login')) {
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
-  return supabaseResponse
+  return supabaseResponse;
 }
 
 export const config = {
@@ -61,4 +61,4 @@ export const config = {
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-}
+};
