@@ -56,15 +56,31 @@ export const RichTextEditor = ({
         ...fr.slash_menu,
         heading: {
           ...fr.slash_menu.heading,
-          subtext: 'Titre de premier niveau',
+          subtext: '',
         },
         heading_2: {
           ...fr.slash_menu.heading_2,
-          subtext: 'Titre de deuxième niveau',
+          subtext: '',
         },
         heading_3: {
           ...fr.slash_menu.heading_3,
-          subtext: 'Titre de troisième niveau',
+          subtext: '',
+        },
+        numbered_list: {
+          ...fr.slash_menu.numbered_list,
+          subtext: '',
+        },
+        bullet_list: {
+          ...fr.slash_menu.bullet_list,
+          subtext: '',
+        },
+        paragraph: {
+          ...fr.slash_menu.paragraph,
+          subtext: '',
+        },
+        quote: {
+          ...fr.slash_menu.quote,
+          subtext: '',
         },
       },
     }),
