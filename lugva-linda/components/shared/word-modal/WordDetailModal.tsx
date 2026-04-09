@@ -12,7 +12,12 @@ import {
 } from '@/components/ui';
 import { SynonymsList } from './SynonymsList';
 import { WordActions } from './WordActions';
-import { AudioPlayer, PageHeader, RichTextViewer } from '@/components/shared/';
+import {
+  AudioPlayer,
+  PageHeader,
+  RichTextViewer,
+  SectionHeader,
+} from '@/components/shared/';
 import { CreateWordView } from '@/components/search/create-word/CreateWordView';
 import { type EditableWordSnapshot } from '@/lib/words/community';
 import { cn } from '@/lib/utils';
@@ -142,11 +147,9 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
 
                   {word.customAudioUrl && (
                     <>
-                      <hr className="border-border/50" />
+                      <hr className="border-border/70" />
                       <div className="space-y-3">
-                        <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-                          Prononciation
-                        </h3>
+                        <SectionHeader title="Prononciation" />
                         <AudioPlayer audioUrl={word.customAudioUrl} />
                       </div>
                     </>
@@ -154,7 +157,7 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
 
                   {word.synonyms && word.synonyms.length > 0 && (
                     <>
-                      <hr className="border-border/50" />
+                      <hr className="border-border/70" />
                       <SynonymsList
                         synonyms={word.synonyms}
                         onSynonymClick={onSynonymSelect}
@@ -164,18 +167,16 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
 
                   {word.notesBlocks && word.notesBlocks.length > 0 && (
                     <>
-                      <hr className="border-border/50" />
+                      <hr className="border-border/70" />
                       <div className="space-y-3">
-                        <h3 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-                          Notes
-                        </h3>
+                        <SectionHeader title="Notes" />
                         <RichTextViewer blocks={word.notesBlocks} />
                       </div>
                     </>
                   )}
                 </div>
 
-                <div className="border-border/50 bg-background/95 shrink-0 border-t p-4 backdrop-blur-sm sm:rounded-b-2xl">
+                <div className="border-border/70 bg-background/95 shrink-0 border-t p-4 backdrop-blur-sm sm:rounded-b-2xl">
                   <WordActions
                     canEdit={canEdit}
                     canDelete={canDelete}
