@@ -1,6 +1,6 @@
 'use client';
 
-import type { FC } from 'react';
+import type { SubmitEventHandler } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -19,7 +19,7 @@ type SearchViewProps = {
   onCreateClick: () => void;
 };
 
-export const SearchView: FC<SearchViewProps> = ({
+export const SearchView = ({
   query,
   setQuery,
   currentLangId,
@@ -32,6 +32,7 @@ export const SearchView: FC<SearchViewProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const latestRequestRef = useRef(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -85,18 +86,25 @@ export const SearchView: FC<SearchViewProps> = ({
       word.term.toLowerCase() === query.trim().toLowerCase(),
   );
 
+  const handleSearchSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault();
+    searchInputRef.current?.blur();
+  };
+
   return (
     <div className="space-y-6">
-      <div className="relative">
+      <form className="relative" onSubmit={handleSearchSubmit}>
         <Search className="text-muted-foreground absolute top-3.5 left-4 h-5 w-5" />
         <Input
+          ref={searchInputRef}
           autoFocus
+          enterKeyHint="search"
           placeholder="Chercher ou ajouter un mot..."
           className="bg-muted/50 focus-visible:ring-primary h-12 rounded-xl border-transparent pl-12 text-lg"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-      </div>
+      </form>
 
       {query.trim().length > 0 && (
         <div className="space-y-4">

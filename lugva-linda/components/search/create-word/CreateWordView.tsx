@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
 import { Input, Button, Label } from '@/components/ui';
 import {
   checkWordTermNatureAvailabilityAction,
@@ -38,7 +37,6 @@ export const CreateWordView = ({
   initialQuery = '',
   currentLangId = '',
   initialData,
-  onCancel,
   onSuccess,
 }: CreateWordViewProps) => {
   const isEditing = !!initialData;
@@ -246,20 +244,6 @@ export const CreateWordView = ({
 
   return (
     <div className="animate-in slide-in-from-right-4 fade-in space-y-6 pb-8 duration-200">
-      <div className="mb-2 flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onCancel}
-          className="-ml-2"
-        >
-          <ArrowLeft className="text-foreground h-5 w-5" />
-        </Button>
-        <h3 className="text-foreground text-lg font-semibold">
-          {isEditing ? 'Modifier la fiche' : "Ajouter à l'encyclopédie"}
-        </h3>
-      </div>
-
       <form action={handleSubmit} className="space-y-6">
         <input type="hidden" name="languageId" value={langId} />
         {selectedMandatoryTag && (

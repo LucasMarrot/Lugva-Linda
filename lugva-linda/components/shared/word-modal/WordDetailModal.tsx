@@ -2,18 +2,17 @@
 
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
-import { X, Tag } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
-  DialogClose,
   Badge,
 } from '@/components/ui';
 import { SynonymsList } from './SynonymsList';
 import { WordActions } from './WordActions';
-import { AudioPlayer, RichTextViewer } from '@/components/shared/';
+import { AudioPlayer, PageHeader, RichTextViewer } from '@/components/shared/';
 import { CreateWordView } from '@/components/search/create-word/CreateWordView';
 import { type EditableWordSnapshot } from '@/lib/words/community';
 import { cn } from '@/lib/utils';
@@ -45,6 +44,7 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
 }: WordDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const isExternalWord = !!word && canAdd;
+  const isEditingMode = isEditing && canEdit;
 
   useEffect(() => {
     if (!isOpen) {
@@ -55,7 +55,14 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-background m-0 flex h-dvh w-full max-w-none flex-col overflow-hidden rounded-none border-none p-0 sm:m-4 sm:h-auto sm:max-w-md sm:rounded-2xl [&>button.absolute]:hidden">
+      <DialogContent
+        className={cn(
+          'bg-background flex flex-col overflow-hidden p-0 motion-safe:transition-[width,max-width,height,border-radius,box-shadow] motion-safe:duration-300 motion-safe:ease-out motion-reduce:transition-none [&>button.absolute]:hidden',
+          isEditingMode
+            ? 'h-dvh w-screen max-w-dvw rounded-none border-none shadow-none sm:h-dvh sm:w-screen sm:max-w-dvw sm:rounded-none'
+            : 'h-dvh w-full max-w-none rounded-none border-none sm:h-[80dvh] sm:max-w-md sm:rounded-2xl sm:shadow-xl',
+        )}
+      >
         <DialogTitle className="sr-only">
           {word
             ? isEditing
@@ -71,18 +78,17 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
 
         {word && (
           <div className="flex h-full flex-col">
-            <div className="border-border/50 flex shrink-0 items-center justify-between border-b p-4">
-              <div className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-                {isEditing
-                  ? 'Modification'
+            <PageHeader
+              title={
+                isEditing
+                  ? 'Modifier la fiche'
                   : isExternalWord
                     ? 'Fiche communautaire'
-                    : 'Fiche de vocabulaire'}
-              </div>
-              <DialogClose className="hover:bg-muted rounded-full p-2 transition-colors">
-                <X className="h-6 w-6" />
-              </DialogClose>
-            </div>
+                    : 'Fiche de vocabulaire'
+              }
+              onCancel={isEditing ? () => setIsEditing(false) : undefined}
+              onClose={onClose}
+            />
 
             {!isEditing || !canEdit ? (
               <>

@@ -6,6 +6,7 @@ export * from './SectionHeader';
 export * from './StateMessage';
 export * from './UnderConstructionPage';
 export * from './WordListItem';
+export * from './PageHeader';
 export * from './word-modal/WordDetailModal';
 export * from './rich-text-editor/RichTextEditor';
 export * from './rich-text-editor/RichTextViewer';
