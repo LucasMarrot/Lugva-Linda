@@ -1,6 +1,5 @@
 'use client';
 
-import type { FC } from 'react';
 import { useEffect, useState } from 'react';
 import { Tag } from 'lucide-react';
 import {
@@ -9,6 +8,7 @@ import {
   DialogDescription,
   DialogTitle,
   Badge,
+  DialogFooter,
 } from '@/components/ui';
 import { SynonymsList } from './SynonymsList';
 import { WordActions } from './WordActions';
@@ -35,7 +35,7 @@ type WordDetailModalProps = {
   isAddingExternalWord?: boolean;
 };
 
-export const WordDetailModal: FC<WordDetailModalProps> = ({
+export const WordDetailModal = ({
   word,
   isOpen,
   onClose,
@@ -49,7 +49,6 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
 }: WordDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const isExternalWord = !!word && canAdd;
-  const isEditingMode = isEditing && canEdit;
 
   useEffect(() => {
     if (!isOpen) {
@@ -60,22 +59,15 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        className={cn(
-          'bg-background flex flex-col overflow-hidden p-0 motion-safe:transition-[width,max-width,height,border-radius,box-shadow] motion-safe:duration-300 motion-safe:ease-out motion-reduce:transition-none [&>button.absolute]:hidden',
-          isEditingMode
-            ? 'h-dvh w-screen max-w-dvw rounded-none border-none shadow-none sm:h-dvh sm:w-screen sm:max-w-dvw sm:rounded-none'
-            : 'h-dvh w-full max-w-none rounded-none border-none sm:h-[80dvh] sm:max-w-md sm:rounded-2xl sm:shadow-xl',
-        )}
-      >
-        <DialogTitle className="sr-only">
+      <DialogContent fullScreen={isEditing}>
+        <DialogTitle>
           {word
             ? isEditing
               ? `Modifier ${word.term}`
               : `Détails de ${word.term}`
             : 'Détails du mot'}
         </DialogTitle>
-        <DialogDescription className="sr-only">
+        <DialogDescription>
           {word
             ? `Affiche les détails, les actions et les informations liées au mot ${word.term}.`
             : 'Affiche les détails du mot sélectionné.'}
@@ -94,7 +86,6 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
               onCancel={isEditing ? () => setIsEditing(false) : undefined}
               onClose={onClose}
             />
-
             {!isEditing || !canEdit ? (
               <>
                 <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-6">
@@ -176,7 +167,7 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
                   )}
                 </div>
 
-                <div className="border-border/70 bg-background/95 shrink-0 border-t p-4 backdrop-blur-sm sm:rounded-b-2xl">
+                <DialogFooter>
                   <WordActions
                     canEdit={canEdit}
                     canDelete={canDelete}
@@ -194,7 +185,7 @@ export const WordDetailModal: FC<WordDetailModalProps> = ({
                     }
                     isAdding={isAddingExternalWord}
                   />
-                </div>
+                </DialogFooter>
               </>
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto p-6">

@@ -1,97 +1,34 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createLanguage } from '@/actions/language-actions';
+import { useMemo, useState } from 'react';
 
 import {
+  Button,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  Input,
-  Button,
 } from '@/components/ui';
 
-import { buildCreateLanguageFormSchema } from '@/lib/validation/schemas';
-import { cn } from '@/lib/utils';
 import { useActiveLanguage } from '@/components/providers/ActiveLanguageProvider';
+import CreateLanguageModal from './CreateLanguageModal';
 
 export const LanguageSelector = () => {
-  const router = useRouter();
   const { languages, activeLanguageId, isSwitchingLanguage, setLanguage } =
     useActiveLanguage();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [languageName, setLanguageName] = useState('');
-  const [createLanguageError, setCreateLanguageError] = useState<string | null>(
-    null,
-  );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreateLanguageModalOpen, setIsCreateLanguageModalOpen] =
+    useState(false);
 
-  const languageSchema = buildCreateLanguageFormSchema(
-    languages.map((language) => language.name),
+  const existingLanguageNames = useMemo(
+    () => languages.map((language) => language.name),
+    [languages],
   );
-
-  const languageValidation = languageSchema.safeParse({ name: languageName });
-  const languageError = languageValidation.success
-    ? null
-    : (languageValidation.error.issues[0]?.message ??
-      'Nom de langue invalide.');
-  const isLanguageValid = languageValidation.success;
 
   const currentLangId = activeLanguageId;
 
   const handleLanguageChange = async (langId: string) => {
     await setLanguage(langId);
-  };
-
-  const handleCreateLanguage = async (formData: FormData) => {
-    const parsedForm = languageSchema.safeParse({
-      name: String(formData.get('name') ?? '').trim(),
-    });
-
-    if (!parsedForm.success) {
-      setCreateLanguageError(
-        parsedForm.error.issues[0]?.message ??
-          'Veuillez saisir un nom de langue valide.',
-      );
-      return;
-    }
-
-    const normalizedFormData = new FormData();
-    normalizedFormData.set('name', parsedForm.data.name);
-
-    try {
-      setIsSubmitting(true);
-      setCreateLanguageError(null);
-      await createLanguage(normalizedFormData);
-      setLanguageName('');
-      setIsDialogOpen(false);
-      router.refresh();
-    } catch (error) {
-      const fallbackMessage = 'Impossible de creer la langue.';
-      setCreateLanguageError(
-        error instanceof Error ? error.message : fallbackMessage,
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleOpenChange = (open: boolean) => {
-    setIsDialogOpen(open);
-
-    if (!open) {
-      setLanguageName('');
-      setCreateLanguageError(null);
-      setIsSubmitting(false);
-    }
   };
 
   return (
@@ -106,59 +43,29 @@ export const LanguageSelector = () => {
 
       <SelectContent>
         {languages.map((lang) => (
-          <SelectItem key={lang.id} value={lang.id}>
+          <SelectItem key={lang.id} value={lang.id} className="cursor-pointer">
             {lang.name}
           </SelectItem>
         ))}
 
-        <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
-          <DialogTrigger asChild>
-            <Button
-              variant="ghost"
-              className="text-primary hover:text-primary/90 hover:bg-muted w-full justify-start px-2 font-medium"
-            >
-              + Nouvelle langue
-            </Button>
-          </DialogTrigger>
+        <hr className="border-border/70 m-1" />
 
-          <DialogContent className="sm:max-w-106.25">
-            <DialogHeader>
-              <DialogTitle>Ajouter une langue</DialogTitle>
-            </DialogHeader>
-            <form action={handleCreateLanguage} className="space-y-4 pt-4">
-              {(createLanguageError || languageError) && (
-                <p className="text-destructive text-sm font-medium">
-                  {createLanguageError ?? languageError}
-                </p>
-              )}
-              <Input
-                id="name"
-                name="name"
-                value={languageName}
-                onChange={(event) => {
-                  setLanguageName(event.target.value);
-                  if (createLanguageError) {
-                    setCreateLanguageError(null);
-                  }
-                }}
-                placeholder="Nom de la langue (ex: Anglais)"
-                required
-                aria-invalid={!isLanguageValid || !!createLanguageError}
-                className={cn(
-                  (!isLanguageValid || createLanguageError) &&
-                    'border-destructive ring-destructive/20 focus-visible:ring-destructive/30',
-                )}
-              />
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={!isLanguageValid || isSubmitting}
-              >
-                Créer
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start px-2"
+          disabled={isSwitchingLanguage}
+          onClick={() => setIsCreateLanguageModalOpen(true)}
+        >
+          + Nouvelle langue
+        </Button>
+
+        <CreateLanguageModal
+          isOpen={isCreateLanguageModalOpen}
+          onOpenChange={setIsCreateLanguageModalOpen}
+          existingLanguageNames={existingLanguageNames}
+        />
       </SelectContent>
     </Select>
   );
