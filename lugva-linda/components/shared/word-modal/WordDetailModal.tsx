@@ -9,6 +9,7 @@ import {
   DialogTitle,
   Badge,
   DialogFooter,
+  Separator,
 } from '@/components/ui';
 import { SynonymsList } from './SynonymsList';
 import { WordActions } from './WordActions';
@@ -138,7 +139,7 @@ export const WordDetailModal = ({
 
                   {word.customAudioUrl && (
                     <>
-                      <hr className="border-border/70" />
+                      <Separator />
                       <div className="space-y-3">
                         <SectionHeader title="Prononciation" />
                         <AudioPlayer audioUrl={word.customAudioUrl} />
@@ -148,7 +149,7 @@ export const WordDetailModal = ({
 
                   {word.synonyms && word.synonyms.length > 0 && (
                     <>
-                      <hr className="border-border/70" />
+                      <Separator />
                       <SynonymsList
                         synonyms={word.synonyms}
                         onSynonymClick={onSynonymSelect}
@@ -158,7 +159,7 @@ export const WordDetailModal = ({
 
                   {word.notesBlocks && word.notesBlocks.length > 0 && (
                     <>
-                      <hr className="border-border/70" />
+                      <Separator />
                       <div className="space-y-3">
                         <SectionHeader title="Notes" />
                         <RichTextViewer blocks={word.notesBlocks} />

@@ -1,3 +1,4 @@
+import { Separator } from '../ui';
 import { Badge } from '../ui/badge';
 
 type TagFilterProps = {
@@ -16,20 +17,18 @@ export const TagFilter = ({
   if (allTags.length === 0) return null;
 
   return (
-    <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto px-4 pb-2">
-      <div className="border-r pr-2">
-        <Badge
-          variant={selectedTags.length === 0 ? 'default' : 'outline'}
-          onClick={onClearTags}
-          className={
-            selectedTags.length === 0
-              ? undefined
-              : 'opacity-70 hover:opacity-100'
-          }
-        >
-          Tous
-        </Badge>
-      </div>
+    <div className="no-scrollbar mb-6 flex h-8 gap-2 overflow-x-auto px-4 pb-2">
+      <Badge
+        variant={selectedTags.length === 0 ? 'default' : 'outline'}
+        onClick={onClearTags}
+        className={
+          selectedTags.length === 0 ? undefined : 'opacity-70 hover:opacity-100'
+        }
+      >
+        Tous
+      </Badge>
+
+      <Separator orientation="vertical" />
 
       {allTags.map((tag) => {
         const isSelected = selectedTags.includes(tag);

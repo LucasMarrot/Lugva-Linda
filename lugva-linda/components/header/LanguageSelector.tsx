@@ -9,6 +9,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Separator,
 } from '@/components/ui';
 
 import { useActiveLanguage } from '@/components/providers/ActiveLanguageProvider';
@@ -48,7 +49,7 @@ export const LanguageSelector = () => {
           </SelectItem>
         ))}
 
-        <hr className="border-border/70 m-1" />
+        <Separator />
 
         <Button
           type="button"

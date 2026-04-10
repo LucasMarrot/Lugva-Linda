@@ -7,3 +7,4 @@ export * from './label';
 export * from './popover';
 export * from './select';
 export * from './sonner';
+export * from './separator';
