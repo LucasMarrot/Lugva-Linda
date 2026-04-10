@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui';
-import { SectionHeader } from '../SectionHeader';
+import { SectionHeader } from '@/components/shared';
 
 type SynonymsListProps = {
   synonyms: string[];

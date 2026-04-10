@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 import { SearchView } from './SearchView';
-import { CreateWordView } from './create-word/CreateWordView';
+import { WordForm } from '../shared/word-modal/word-form/WordForm';
 import {
   sanitizeReturnToPath,
   SEARCH_RETURN_TO_KEY,
@@ -116,7 +116,7 @@ export const SearchRoutePage = ({
             onCreateClick={() => setIsCreating(true)}
           />
         ) : (
-          <CreateWordView
+          <WordForm
             initialQuery={query}
             currentLangId={currentLangId}
             onCancel={() => setIsCreating(false)}

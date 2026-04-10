@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
-import { Input, Label, Badge } from '@/components/ui';
+import { Input, Badge } from '@/components/ui';
 import { searchWords } from '@/actions/word-actions';
 import { type WordCommunityView } from '@/lib/words/community';
+import { SectionHeader } from '@/components/shared';
 
 type SynonymSelectorProps = {
   currentLangId: string;
@@ -61,8 +62,7 @@ export const SynonymSelector = ({
 
   return (
     <div className="space-y-3">
-      <Label className="text-foreground font-medium">Lier des synonymes</Label>
-
+      <SectionHeader title="Lier des synonymes" />
       {selectedSynonyms.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-2">
           {selectedSynonyms.map((syn) => (

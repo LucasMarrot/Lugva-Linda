@@ -1,32 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Tag } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
-  Badge,
-  DialogFooter,
-  Separator,
 } from '@/components/ui';
-import { SynonymsList } from './SynonymsList';
-import { WordActions } from './WordActions';
-import {
-  AudioPlayer,
-  PageHeader,
-  RichTextViewer,
-  SectionHeader,
-} from '@/components/shared/';
-import { CreateWordView } from '@/components/search/create-word/CreateWordView';
+import { PageHeader } from '@/components/shared/';
+import { WordForm } from '@/components/shared/word-modal/word-form/WordForm';
+import { WordDetailView } from './word-detail-view/WordDetailView';
 import { type EditableWordSnapshot } from '@/lib/words/community';
-import { cn } from '@/lib/utils';
 
 type WordDetailModalProps = {
   word: EditableWordSnapshot | null;
   isOpen: boolean;
   onClose: () => void;
+  isEditing?: boolean;
+  onStartEdit?: () => void;
+  onCancelEdit?: () => void;
+  onEditSuccess?: () => void;
   onSynonymSelect: (synonym: string) => void;
   canEdit?: boolean;
   canDelete?: boolean;
@@ -40,6 +32,10 @@ export const WordDetailModal = ({
   word,
   isOpen,
   onClose,
+  isEditing = false,
+  onStartEdit,
+  onCancelEdit,
+  onEditSuccess,
   onSynonymSelect,
   canEdit = false,
   canDelete = false,
@@ -48,16 +44,6 @@ export const WordDetailModal = ({
   onAddExternalWord,
   isAddingExternalWord = false,
 }: WordDetailModalProps) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const isExternalWord = !!word && canAdd;
-
-  useEffect(() => {
-    if (!isOpen) {
-      const timeout = setTimeout(() => setIsEditing(false), 300);
-      return () => clearTimeout(timeout);
-    }
-  }, [isOpen, word]);
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent fullScreen={isEditing}>
@@ -80,121 +66,37 @@ export const WordDetailModal = ({
               title={
                 isEditing
                   ? 'Modifier la fiche'
-                  : isExternalWord
+                  : canAdd
                     ? 'Fiche communautaire'
                     : 'Fiche de vocabulaire'
               }
-              onCancel={isEditing ? () => setIsEditing(false) : undefined}
+              onCancel={
+                isEditing && canEdit ? (onCancelEdit ?? onClose) : undefined
+              }
               onClose={onClose}
             />
             {!isEditing || !canEdit ? (
-              <>
-                <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-6">
-                  <div className="space-y-2 text-center">
-                    <h2
-                      className="text-4xl font-extrabold"
-                      style={
-                        isExternalWord && word.ownerColorHex
-                          ? { color: word.ownerColorHex }
-                          : undefined
-                      }
-                    >
-                      {word.term}
-                    </h2>
-                    <p className="text-primary text-xl font-medium">
-                      {word.translation}
-                    </p>
-
-                    {isExternalWord && word.ownerName && (
-                      <p className="text-muted-foreground text-xs">
-                        Propriétaire: {word.ownerName}
-                      </p>
-                    )}
-                  </div>
-
-                  {word.tags && word.tags.length > 0 && (
-                    <div className="flex justify-center gap-2">
-                      {word.tags &&
-                        word.tags.length > 0 &&
-                        word.tags.map((tag, index) => (
-                          <span
-                            key={tag + index}
-                            className={cn(
-                              index === 0
-                                ? 'bg-secondary text-secondary-foreground border'
-                                : 'text-foreground border',
-                              'inline-flex h-8 items-center justify-center rounded-full px-4 text-sm font-semibold whitespace-nowrap',
-                            )}
-                          >
-                            {index === 0 && (
-                              <Tag className="text-primary h-4 w-4 shrink-0" />
-                            )}
-                            <Badge variant={'ghost'} className="text-md">
-                              {tag}
-                            </Badge>
-                          </span>
-                        ))}
-                    </div>
-                  )}
-
-                  {word.customAudioUrl && (
-                    <>
-                      <Separator />
-                      <div className="space-y-3">
-                        <SectionHeader title="Prononciation" />
-                        <AudioPlayer audioUrl={word.customAudioUrl} />
-                      </div>
-                    </>
-                  )}
-
-                  {word.synonyms && word.synonyms.length > 0 && (
-                    <>
-                      <Separator />
-                      <SynonymsList
-                        synonyms={word.synonyms}
-                        onSynonymClick={onSynonymSelect}
-                      />
-                    </>
-                  )}
-
-                  {word.notesBlocks && word.notesBlocks.length > 0 && (
-                    <>
-                      <Separator />
-                      <div className="space-y-3">
-                        <SectionHeader title="Notes" />
-                        <RichTextViewer blocks={word.notesBlocks} />
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <DialogFooter>
-                  <WordActions
-                    canEdit={canEdit}
-                    canDelete={canDelete}
-                    canAdd={canAdd}
-                    onEdit={canEdit ? () => setIsEditing(true) : undefined}
-                    onDelete={
-                      canDelete && onDelete
-                        ? () => onDelete(word.id)
-                        : undefined
-                    }
-                    onAdd={
-                      canAdd && onAddExternalWord
-                        ? () => onAddExternalWord(word)
-                        : undefined
-                    }
-                    isAdding={isAddingExternalWord}
-                  />
-                </DialogFooter>
-              </>
+              <WordDetailView
+                word={word}
+                canEdit={canEdit}
+                canDelete={canDelete}
+                canAdd={canAdd}
+                onEdit={onStartEdit}
+                onDelete={onDelete}
+                onAddExternalWord={onAddExternalWord}
+                isAddingExternalWord={isAddingExternalWord}
+                onSynonymSelect={onSynonymSelect}
+              />
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto p-6">
-                <CreateWordView
+                <WordForm
                   initialData={word}
-                  onCancel={() => setIsEditing(false)}
+                  onCancel={onCancelEdit ?? onClose}
                   onSuccess={() => {
-                    setIsEditing(false);
+                    if (onEditSuccess) {
+                      onEditSuccess();
+                      return;
+                    }
                     onClose();
                   }}
                 />
