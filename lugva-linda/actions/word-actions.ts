@@ -313,9 +313,10 @@ export async function deleteWordAction(wordId: string) {
       subject: user.id,
     });
     assertRateLimit(`delete-word:${user.id}`, 30, 60_000);
+    const supabase = await createClient();
 
     const validatedWordId = wordIdSchema.parse(normalizeText(wordId));
-    await softDeleteWordForOwner(user.id, validatedWordId);
+    await softDeleteWordForOwner(user.id, validatedWordId, supabase);
 
     revalidatePath('/');
     revalidatePath('/words');

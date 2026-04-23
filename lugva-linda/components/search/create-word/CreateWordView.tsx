@@ -353,12 +353,11 @@ export const CreateWordView = ({
         </div>
 
         <div className="space-y-3">
-          <Label className="text-foreground font-medium">
-            {isEditing && initialData?.customAudioUrl
-              ? "Nouvel audio (remplacera l'actuel)"
-              : 'Prononciation'}
-          </Label>
-          <AudioRecorder onAudioReady={setAudioFile} />
+          <Label className="text-foreground font-medium">Prononciation</Label>
+          <AudioRecorder
+            onAudioReady={setAudioFile}
+            existingAudioUrl={initialData?.customAudioUrl ?? null}
+          />
         </div>
 
         <SynonymSelector

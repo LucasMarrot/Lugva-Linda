@@ -1,53 +1,107 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Mic, Square, Trash2, Play, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { useCallback, useEffect, useState } from 'react';
+import { AudioPlayer } from '@/components/shared';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import { AddFile } from './AddFile';
+import { Recorder } from './Recorder';
 
-type AudioRecorderProps = {
+interface AudioRecorderProps {
   onAudioReady: (file: File | null) => void;
-};
+  existingAudioUrl?: string | null;
+  errorMessage?: string | null;
+  onValidationError?: (message: string | null) => void;
+}
 
-export const AudioRecorder = ({ onAudioReady }: AudioRecorderProps) => {
+export const AudioRecorder = ({
+  onAudioReady,
+  existingAudioUrl,
+  errorMessage,
+  onValidationError,
+}: AudioRecorderProps) => {
+  const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
+
+  const handleRecordedAudioReady = useCallback(
+    (file: File | null) => {
+      onAudioReady(file);
+    },
+    [onAudioReady],
+  );
+
   const {
     isRecording,
-    audioUrl,
-    duration,
+    audioUrl: recordedAudioUrl,
     errorEvent,
     startRecording,
     stopRecording,
-    deleteAudio,
-  } = useAudioRecorder(onAudioReady);
+    deleteAudio: deleteRecordedAudio,
+  } = useAudioRecorder(handleRecordedAudioReady);
+
   const toast = useToast();
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isAudioLoaded, setIsAudioLoaded] = useState(false);
-  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const hasUploadedAudio = Boolean(uploadedAudioUrl);
+  const activeAudioUrl = uploadedAudioUrl ?? recordedAudioUrl;
 
-  const togglePlay = () => {
-    if (!audioPlayerRef.current || !isAudioLoaded) return;
+  const clearUploadedAudio = useCallback(
+    (notifyParent: boolean) => {
+      // Revoke object URLs when replacing/removing uploads to avoid memory leaks.
+      setUploadedAudioUrl((previous) => {
+        if (previous) URL.revokeObjectURL(previous);
 
-    if (isPlaying) {
-      audioPlayerRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioPlayerRef.current.play();
-      setIsPlaying(true);
+        return null;
+      });
+
+      if (notifyParent) {
+        onAudioReady(null);
+      }
+    },
+    [onAudioReady],
+  );
+
+  const handleStartRecording = async () => {
+    if (hasUploadedAudio) {
+      clearUploadedAudio(true);
     }
+    onValidationError?.(null);
+    await startRecording();
   };
+
+  const handleFileReady = useCallback(
+    (file: File) => {
+      onValidationError?.(null);
+
+      if (recordedAudioUrl) {
+        deleteRecordedAudio();
+      }
+
+      if (hasUploadedAudio) {
+        clearUploadedAudio(false);
+      }
+
+      const nextUrl = URL.createObjectURL(file);
+      setUploadedAudioUrl(nextUrl);
+      onAudioReady(file);
+    },
+    [
+      clearUploadedAudio,
+      deleteRecordedAudio,
+      onAudioReady,
+      onValidationError,
+      recordedAudioUrl,
+      hasUploadedAudio,
+    ],
+  );
 
   const handleDelete = () => {
-    setIsPlaying(false);
-    setIsAudioLoaded(false);
-    deleteAudio();
-  };
+    if (hasUploadedAudio) {
+      clearUploadedAudio(true);
+      onValidationError?.(null);
+      return;
+    }
 
-  const formatDuration = (totalSeconds: number) => {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    deleteRecordedAudio();
+    onValidationError?.(null);
   };
 
   useEffect(() => {
@@ -56,70 +110,48 @@ export const AudioRecorder = ({ onAudioReady }: AudioRecorderProps) => {
     }
   }, [errorEvent, toast]);
 
+  useEffect(() => {
+    return () => {
+      if (uploadedAudioUrl) {
+        URL.revokeObjectURL(uploadedAudioUrl);
+      }
+    };
+  }, [uploadedAudioUrl]);
+
   return (
     <div className="space-y-2">
-      {!audioUrl ? (
-        <Button
-          type="button"
-          variant={isRecording ? 'destructive' : 'outline'}
-          className="h-12 w-full gap-2 border-dashed transition-colors"
-          onClick={isRecording ? stopRecording : startRecording}
-        >
-          {isRecording ? (
-            <>
-              <Square className="h-4 w-4 fill-current" /> Arrêter
-              l&apos;enregistrement
-            </>
-          ) : (
-            <>
-              <Mic className="h-4 w-4" /> Enregistrer la prononciation
-            </>
-          )}
-        </Button>
-      ) : (
-        <div className="border-border bg-muted/30 flex w-full items-center justify-between rounded-xl border p-2 px-3">
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              onClick={togglePlay}
-              disabled={!isAudioLoaded}
-              className="bg-primary/10 text-primary hover:bg-primary/20 h-9 w-9 shrink-0 rounded-full"
-            >
-              {!isAudioLoaded ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isPlaying ? (
-                <Square className="h-4 w-4 fill-current" />
-              ) : (
-                <Play className="ml-0.5 h-4 w-4 fill-current" />
-              )}
-            </Button>
-            <div className="text-muted-foreground text-sm font-medium">
-              {formatDuration(duration)}
-            </div>
-          </div>
+      {existingAudioUrl && (
+        <AudioPlayer
+          audioUrl={existingAudioUrl}
+          label={
+            activeAudioUrl ? 'Ancienne prononciation' : 'Prononciation actuelle'
+          }
+          tone={activeAudioUrl ? 'muted' : 'default'}
+        />
+      )}
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={handleDelete}
-            className="text-destructive hover:bg-destructive/10 h-9 w-9 shrink-0"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+      {!activeAudioUrl ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Recorder
+            isRecording={isRecording}
+            onStartRecording={handleStartRecording}
+            onStopRecording={stopRecording}
+            errorMessage={errorMessage}
+          />
 
-          <audio
-            ref={audioPlayerRef}
-            src={audioUrl}
-            playsInline
-            preload="auto"
-            onCanPlayThrough={() => setIsAudioLoaded(true)}
-            onEnded={() => setIsPlaying(false)}
-            className="hidden"
+          <AddFile
+            isDisabled={isRecording}
+            onFileReady={handleFileReady}
+            errorMessage={errorMessage}
+            onValidationError={onValidationError}
           />
         </div>
+      ) : (
+        <AudioPlayer
+          audioUrl={activeAudioUrl}
+          onDelete={handleDelete}
+          label="Nouvelle prononciation"
+        />
       )}
     </div>
   );

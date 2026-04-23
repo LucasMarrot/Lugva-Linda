@@ -4,26 +4,30 @@ import { SectionHeader } from '@/components/shared';
 import { AudioRecorder } from './AudioRecorder';
 
 type PronunciationSectionProps = {
-  isEditing: boolean;
-  hasExistingAudio: boolean;
+  existingAudioUrl?: string | null;
+  errorMessage?: string | null;
+  onValidationError?: (message: string | null) => void;
   onAudioReady: (file: File | null) => void;
 };
 
 export const PronunciationSection = ({
-  isEditing,
-  hasExistingAudio,
+  existingAudioUrl,
+  errorMessage,
+  onValidationError,
   onAudioReady,
 }: PronunciationSectionProps) => {
   return (
     <div className="space-y-3">
-      <SectionHeader
-        title={
-          isEditing && hasExistingAudio
-            ? "Nouvel audio (remplacera l'actuel)"
-            : 'Prononciation'
-        }
+      <SectionHeader title="Prononciation" />
+      <AudioRecorder
+        existingAudioUrl={existingAudioUrl}
+        onAudioReady={onAudioReady}
+        errorMessage={errorMessage}
+        onValidationError={onValidationError}
       />
-      <AudioRecorder onAudioReady={onAudioReady} />
+      {errorMessage && (
+        <p className="text-destructive text-sm font-medium">{errorMessage}</p>
+      )}
     </div>
   );
 };

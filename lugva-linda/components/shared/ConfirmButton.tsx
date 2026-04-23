@@ -7,7 +7,7 @@ import { AlertCircle } from 'lucide-react';
 
 export interface ConfirmButtonProps extends Omit<ButtonProps, 'onClick'> {
   onConfirm: () => void;
-  idleText: string;
+  idleText?: string;
   confirmText?: string;
   idleIcon?: ReactNode;
   confirmIcon?: ReactNode;

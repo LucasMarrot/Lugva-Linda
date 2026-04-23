@@ -43,8 +43,12 @@ const AUDIO_ALLOWED_MIME_TYPES = new Set([
   'audio/webm',
   'audio/wav',
   'audio/mpeg',
+  'audio/mp3',
   'audio/mp4',
+  'audio/m4a',
+  'audio/x-m4a',
   'audio/ogg',
+  'audio/aac',
 ]);
 const TRASH_RETENTION_DAYS = 30;
 
@@ -76,10 +80,25 @@ const getFileExtension = (file: File) => {
   }
 
   if (file.type === 'audio/mpeg') return 'mp3';
+  if (file.type === 'audio/mp3') return 'mp3';
   if (file.type === 'audio/mp4') return 'm4a';
+  if (file.type === 'audio/m4a') return 'm4a';
+  if (file.type === 'audio/x-m4a') return 'm4a';
+  if (file.type === 'audio/aac') return 'aac';
   if (file.type === 'audio/ogg') return 'ogg';
   if (file.type === 'audio/wav') return 'wav';
   return 'webm';
+};
+
+const deleteAudioFromStorage = async (
+  supabase: SupabaseClient,
+  path: string,
+) => {
+  const { error } = await supabase.storage.from(AUDIO_BUCKET).remove([path]);
+
+  if (error) {
+    throw new StorageError('Suppression audio impossible. Reessayez.');
+  }
 };
 
 const validateAudioFile = (file: File) => {
@@ -732,7 +751,7 @@ export const updateWordForOwner = async (
     audioData = await uploadAudio(options.supabase, ownerId, options.audioFile);
   }
 
-  return prisma.word.update({
+  const updatedWord = await prisma.word.update({
     where: { id: wordId },
     data: {
       ...wordData,
@@ -740,11 +759,21 @@ export const updateWordForOwner = async (
       ...(audioData ?? {}),
     },
   });
+
+  if (audioData && options?.supabase && existingWord.customAudioPath) {
+    await deleteAudioFromStorage(
+      options.supabase,
+      existingWord.customAudioPath,
+    );
+  }
+
+  return updatedWord;
 };
 
 export const softDeleteWordForOwner = async (
   ownerId: string,
   wordId: string,
+  supabase: SupabaseClient,
 ) => {
   const existingWord = await prisma.word.findUnique({ where: { id: wordId } });
 
@@ -755,6 +784,10 @@ export const softDeleteWordForOwner = async (
   const { now, purgeAfter } = retentionDate();
   const deleteToken = BigInt(now.getTime());
 
+  if (existingWord.customAudioPath) {
+    await deleteAudioFromStorage(supabase, existingWord.customAudioPath);
+  }
+
   await prisma.word.update({
     where: { id: wordId },
     data: {
@@ -762,6 +795,8 @@ export const softDeleteWordForOwner = async (
       deletedAt: now,
       purgeAfter,
       deleteToken,
+      customAudioPath: null,
+      customAudioUrl: null,
     },
   });
 };
@@ -804,13 +839,7 @@ export const hardDeleteWordForOwner = async (
   }
 
   if (existingWord.customAudioPath) {
-    const { error } = await supabase.storage
-      .from(AUDIO_BUCKET)
-      .remove([existingWord.customAudioPath]);
-
-    if (error) {
-      throw new StorageError('Suppression audio impossible. Reessayez.');
-    }
+    await deleteAudioFromStorage(supabase, existingWord.customAudioPath);
   }
 
   await prisma.word.delete({

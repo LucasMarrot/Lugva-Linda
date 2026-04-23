@@ -16,6 +16,62 @@ import { SynonymsSection } from './word-form-sections/synonym-section/SynonymsSe
 import { NotesSection } from './word-form-sections/NotesSection';
 import { useWordDuplicateCheck } from './useWordDuplicateCheck';
 
+const AUDIO_MAX_BYTES = 10 * 1024 * 1024;
+const AUDIO_ALLOWED_MIME_TYPES = new Set([
+  'audio/webm',
+  'audio/wav',
+  'audio/mpeg',
+  'audio/mp3',
+  'audio/mp4',
+  'audio/m4a',
+  'audio/x-m4a',
+  'audio/ogg',
+  'audio/aac',
+]);
+
+const AUDIO_INVALID_TYPE_MESSAGE =
+  'Format audio non supporte. Formats acceptes: MP3, M4A, WAV, OGG, WEBM, AAC.';
+const AUDIO_TOO_LARGE_MESSAGE =
+  'Fichier audio trop volumineux. Taille maximale: 10 Mo.';
+
+const parseActionError = (rawMessage: string) => {
+  const separatorIndex = rawMessage.indexOf(':');
+
+  if (separatorIndex <= 0) {
+    return {
+      code: null as string | null,
+      message: rawMessage.trim(),
+    };
+  }
+
+  const maybeCode = rawMessage.slice(0, separatorIndex).trim();
+  const maybeMessage = rawMessage.slice(separatorIndex + 1).trim();
+
+  if (/^[A-Z0-9_]+$/.test(maybeCode)) {
+    return {
+      code: maybeCode,
+      message: maybeMessage,
+    };
+  }
+
+  return {
+    code: null as string | null,
+    message: rawMessage.trim(),
+  };
+};
+
+const validateAudioFile = (file: File) => {
+  if (!AUDIO_ALLOWED_MIME_TYPES.has(file.type)) {
+    return AUDIO_INVALID_TYPE_MESSAGE;
+  }
+
+  if (file.size > AUDIO_MAX_BYTES) {
+    return AUDIO_TOO_LARGE_MESSAGE;
+  }
+
+  return null;
+};
+
 type WordFormProps = {
   initialQuery?: string;
   currentLangId?: string;
@@ -46,6 +102,9 @@ export const WordForm = ({
     string | null
   >(mandatoryTags[0] ?? null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [pronunciationError, setPronunciationError] = useState<string | null>(
+    null,
+  );
   const [hasNotesError, setHasNotesError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -90,8 +149,44 @@ export const WordForm = ({
     (issue) => issue.path[0] === 'mandatoryTag',
   )?.message;
 
+  const handleAudioReady = (file: File | null) => {
+    if (!file) {
+      setAudioFile(null);
+      if (pronunciationError) {
+        setPronunciationError(null);
+      }
+      return;
+    }
+
+    const validationError = validateAudioFile(file);
+    if (validationError) {
+      setAudioFile(null);
+      setPronunciationError(validationError);
+      toast.error(validationError);
+      return;
+    }
+
+    setAudioFile(file);
+    if (pronunciationError) {
+      setPronunciationError(null);
+    }
+  };
+
+  const handlePronunciationValidation = (message: string | null) => {
+    setPronunciationError(message);
+  };
+
   const handleSubmit = async (formData: FormData) => {
+    setPronunciationError(null);
+
     if (audioFile) {
+      const validationError = validateAudioFile(audioFile);
+      if (validationError) {
+        setPronunciationError(validationError);
+        toast.error(validationError);
+        return;
+      }
+
       formData.append('audioFile', audioFile);
     }
 
@@ -110,13 +205,32 @@ export const WordForm = ({
     } catch (error) {
       console.error('Erreur lors de la validation du mot:', error);
       const rawMessage = error instanceof Error ? error.message : '';
-      const [code, ...rest] = rawMessage.split(':');
-      const message = rest.join(':').trim();
+      const { code, message } = parseActionError(rawMessage);
+      const lowerRawMessage = rawMessage.toLowerCase();
+      const isServerActionBodyLimitError =
+        lowerRawMessage.includes('body exceeded') ||
+        lowerRawMessage.includes('bodysizelimit');
+      const resolvedMessage = message || 'Une erreur inattendue est survenue.';
 
       if (code === 'DUPLICATE') {
-        toast.error(message || 'Ce mot existe deja avec cette nature.');
+        toast.error(resolvedMessage || 'Ce mot existe deja avec cette nature.');
+      } else if (
+        code === 'INVALID_AUDIO_TYPE' ||
+        code === 'AUDIO_TOO_LARGE' ||
+        code === 'STORAGE_ERROR' ||
+        (Boolean(audioFile) && isServerActionBodyLimitError)
+      ) {
+        const audioErrorMessage =
+          code === 'INVALID_AUDIO_TYPE'
+            ? AUDIO_INVALID_TYPE_MESSAGE
+            : code === 'AUDIO_TOO_LARGE' || isServerActionBodyLimitError
+              ? AUDIO_TOO_LARGE_MESSAGE
+              : resolvedMessage;
+
+        setPronunciationError(audioErrorMessage);
+        toast.error(audioErrorMessage);
       } else {
-        toast.error('La validation a echoue. Merci de reessayer.');
+        toast.error(resolvedMessage);
       }
     } finally {
       setIsSubmitting(false);
@@ -150,9 +264,10 @@ export const WordForm = ({
         <CustomTagsSection langId={langId} initialSelectedTags={customTags} />
 
         <PronunciationSection
-          isEditing={isEditing}
-          hasExistingAudio={Boolean(initialData?.customAudioUrl)}
-          onAudioReady={setAudioFile}
+          existingAudioUrl={initialData?.customAudioUrl}
+          errorMessage={pronunciationError}
+          onValidationError={handlePronunciationValidation}
+          onAudioReady={handleAudioReady}
         />
 
         <SynonymsSection

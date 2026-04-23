@@ -1,52 +1,65 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Play, Square } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ConfirmButton } from './ConfirmButton';
 
-type AudioPlayerProps = {
+export interface AudioPlayerProps {
   audioUrl: string;
-};
+  onDelete?: () => void;
+  label?: string;
+  tone?: 'default' | 'muted';
+}
 
-export const AudioPlayer = ({ audioUrl }: AudioPlayerProps) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const togglePlay = () => {
-    if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play();
-      setIsPlaying(true);
-    }
-  };
+export const AudioPlayer = ({
+  audioUrl,
+  onDelete,
+  label,
+  tone = 'default',
+}: AudioPlayerProps) => {
+  const isMutedTone = tone === 'muted';
 
   return (
-    <div className="bg-muted/30 border-border/50 flex items-center gap-3 rounded-xl border p-3">
-      <Button
-        variant="secondary"
-        size="icon"
-        onClick={togglePlay}
-        className="bg-primary/10 text-primary hover:bg-primary/20 h-12 w-12 shrink-0 rounded-full"
-      >
-        {isPlaying ? (
-          <Square className="h-5 w-5 fill-current" />
-        ) : (
-          <Play className="ml-1 h-5 w-5 fill-current" />
-        )}
-      </Button>
-      <span className="text-muted-foreground font-medium">
-        Écouter la prononciation
-      </span>
+    <div
+      className={cn(
+        'flex flex-col items-start gap-3 rounded-xl border p-3',
+        isMutedTone
+          ? 'bg-destructive/2 border-destructive/15 border-dashed'
+          : 'bg-muted/30 border-border/50',
+      )}
+    >
+      {label && (
+        <div className="flex h-7 w-full items-center justify-between gap-2">
+          <div className="text-muted-foreground text-sm font-medium">
+            {label}
+          </div>
+
+          {onDelete && (
+            <ConfirmButton
+              type="button"
+              confirmVariant="destructive"
+              idleVariant="ghostDestructive"
+              size="icon"
+              onConfirm={onDelete}
+              aria-label="Supprimer cet audio"
+              className="w-fit p-3"
+              idleIcon={<Trash2 className="h-4 w-4" />}
+            />
+          )}
+        </div>
+      )}
 
       <audio
-        ref={audioRef}
+        controls
         src={audioUrl}
-        onEnded={() => setIsPlaying(false)}
-        className="hidden"
-      />
+        playsInline
+        preload="metadata"
+        className="w-full"
+      >
+        Le navigateur ne supporte pas la lecture de ce format audio. Veuillez
+        mettre a jour votre navigateur ou essayer un autre navigateur pour
+        ecouter cet audio.
+      </audio>
     </div>
   );
 };
