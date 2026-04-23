@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ExerciseCategory, ExerciseType } from '@prisma/client';
+import { ExerciseCategory, ExerciseType, Prisma } from '@prisma/client';
 
 import prisma from '@/lib/prisma';
 import { toNullableJsonInput } from '@/lib/prisma-json';
@@ -285,6 +285,170 @@ export const parseWordFormData = (formData: FormData): WordInput => {
   };
 };
 
+const areStringArraysEqual = (left: string[], right: string[]) =>
+  left.length === right.length &&
+  left.every((value, index) => value === right[index]);
+
+const toUniqueTermsByNormalized = (values: string[]) => {
+  const uniqueByNormalized = new Map<string, string>();
+
+  for (const value of values) {
+    const normalizedText = normalizeText(value);
+    if (!normalizedText) continue;
+
+    const normalizedLookup = normalizeForLookup(normalizedText);
+    if (!uniqueByNormalized.has(normalizedLookup)) {
+      uniqueByNormalized.set(normalizedLookup, normalizedText);
+    }
+  }
+
+  return uniqueByNormalized;
+};
+
+const mergeTermsByNormalized = (current: string[], additions: string[]) => {
+  const merged = toUniqueTermsByNormalized(current);
+
+  for (const [normalized, term] of toUniqueTermsByNormalized(additions)) {
+    if (!merged.has(normalized)) {
+      merged.set(normalized, term);
+    }
+  }
+
+  return Array.from(merged.values());
+};
+
+const removeTermsByNormalized = (
+  values: string[],
+  termsToRemove: Set<string>,
+) => {
+  const nextValues = new Map<string, string>();
+
+  for (const value of values) {
+    const normalizedText = normalizeText(value);
+    if (!normalizedText) continue;
+
+    const normalizedLookup = normalizeForLookup(normalizedText);
+    if (termsToRemove.has(normalizedLookup)) {
+      continue;
+    }
+
+    if (!nextValues.has(normalizedLookup)) {
+      nextValues.set(normalizedLookup, normalizedText);
+    }
+  }
+
+  return Array.from(nextValues.values());
+};
+
+const sanitizeSynonymsForTerm = (synonyms: string[], term: string) =>
+  removeTermsByNormalized(synonyms, new Set([normalizeForLookup(term)]));
+
+type SynchronizeSynonymConnectionsInput = {
+  ownerId: string;
+  languageId: string;
+  wordId: string;
+  previousTerm: string;
+  nextTerm: string;
+  previousSynonyms: string[];
+  nextSynonyms: string[];
+};
+
+const synchronizeSynonymConnections = async (
+  tx: Prisma.TransactionClient,
+  input: SynchronizeSynonymConnectionsInput,
+) => {
+  const previousSynonyms = toUniqueTermsByNormalized(input.previousSynonyms);
+  const nextSynonyms = toUniqueTermsByNormalized(input.nextSynonyms);
+
+  const removedSynonymLookups = new Set<string>();
+  for (const normalized of previousSynonyms.keys()) {
+    if (!nextSynonyms.has(normalized)) {
+      removedSynonymLookups.add(normalized);
+    }
+  }
+
+  const candidateLookups = new Set<string>([
+    ...Array.from(removedSynonymLookups),
+    ...Array.from(nextSynonyms.keys()),
+  ]);
+
+  if (candidateLookups.size === 0) {
+    return;
+  }
+
+  const relatedWords = await tx.word.findMany({
+    where: {
+      ownerId: input.ownerId,
+      languageId: input.languageId,
+      id: { not: input.wordId },
+      termNormalized: { in: Array.from(candidateLookups) },
+      isDeleted: false,
+      deleteToken: ACTIVE_DELETE_TOKEN,
+    },
+    select: {
+      id: true,
+      termNormalized: true,
+      synonyms: true,
+    },
+  });
+
+  const previousTermLookup = normalizeForLookup(input.previousTerm);
+  const nextTermLookup = normalizeForLookup(input.nextTerm);
+  const hasRenamedTerm = previousTermLookup !== nextTermLookup;
+  const connectedTerms = toUniqueTermsByNormalized([
+    input.nextTerm,
+    ...nextSynonyms.values(),
+  ]);
+
+  for (const relatedWord of relatedWords) {
+    const wasConnected = previousSynonyms.has(relatedWord.termNormalized);
+    const isConnected = nextSynonyms.has(relatedWord.termNormalized);
+
+    if (!wasConnected && !isConnected) {
+      continue;
+    }
+
+    let nextRelatedSynonyms = relatedWord.synonyms;
+    const termsToRemove = new Set<string>();
+
+    if (wasConnected && !isConnected) {
+      termsToRemove.add(previousTermLookup);
+      termsToRemove.add(nextTermLookup);
+    } else if (hasRenamedTerm) {
+      termsToRemove.add(previousTermLookup);
+    }
+
+    if (termsToRemove.size > 0) {
+      nextRelatedSynonyms = removeTermsByNormalized(
+        nextRelatedSynonyms,
+        termsToRemove,
+      );
+    }
+
+    if (isConnected) {
+      const connectedTermsForRelatedWord: string[] = [];
+
+      for (const [normalized, term] of connectedTerms.entries()) {
+        if (normalized !== relatedWord.termNormalized) {
+          connectedTermsForRelatedWord.push(term);
+        }
+      }
+
+      nextRelatedSynonyms = mergeTermsByNormalized(
+        nextRelatedSynonyms,
+        connectedTermsForRelatedWord,
+      );
+    }
+
+    if (!areStringArraysEqual(relatedWord.synonyms, nextRelatedSynonyms)) {
+      await tx.word.update({
+        where: { id: relatedWord.id },
+        data: { synonyms: nextRelatedSynonyms },
+      });
+    }
+  }
+};
+
 export const createWordForUser = async (
   userId: string,
   input: WordInput,
@@ -292,6 +456,10 @@ export const createWordForUser = async (
 ) => {
   const languageId = await resolveLanguageId(userId, input.languageId);
   const normalizedInput = buildInput(input);
+  const sanitizedSynonyms = sanitizeSynonymsForTerm(
+    normalizedInput.synonyms,
+    normalizedInput.term,
+  );
   const { notesBlocks, ...wordData } = normalizedInput;
 
   await assertNoActiveDuplicate(
@@ -315,6 +483,7 @@ export const createWordForUser = async (
         createdById: userId,
         languageId,
         ...wordData,
+        synonyms: sanitizedSynonyms,
         notesBlocks: toNullableJsonInput(notesBlocks),
         deleteToken: ACTIVE_DELETE_TOKEN,
         ...(audioData ?? {}),
@@ -331,30 +500,15 @@ export const createWordForUser = async (
       },
     });
 
-    if (normalizedInput.synonyms.length > 0) {
-      const existing = await tx.word.findMany({
-        where: {
-          ownerId: userId,
-          languageId,
-          termNormalized: {
-            in: normalizedInput.synonyms.map((item) =>
-              normalizeForLookup(item),
-            ),
-          },
-          deleteToken: ACTIVE_DELETE_TOKEN,
-          isDeleted: false,
-        },
-      });
-
-      for (const relatedWord of existing) {
-        if (!relatedWord.synonyms.includes(normalizedInput.term)) {
-          await tx.word.update({
-            where: { id: relatedWord.id },
-            data: { synonyms: { push: normalizedInput.term } },
-          });
-        }
-      }
-    }
+    await synchronizeSynonymConnections(tx, {
+      ownerId: userId,
+      languageId,
+      wordId: word.id,
+      previousTerm: word.term,
+      nextTerm: word.term,
+      previousSynonyms: [],
+      nextSynonyms: word.synonyms,
+    });
 
     return word;
   });
@@ -735,6 +889,10 @@ export const updateWordForOwner = async (
     ...input,
     languageId: existingWord.languageId,
   });
+  const sanitizedSynonyms = sanitizeSynonymsForTerm(
+    normalizedInput.synonyms,
+    normalizedInput.term,
+  );
   const { notesBlocks, ...wordData } = normalizedInput;
   await assertNoActiveDuplicate(
     ownerId,
@@ -751,13 +909,28 @@ export const updateWordForOwner = async (
     audioData = await uploadAudio(options.supabase, ownerId, options.audioFile);
   }
 
-  const updatedWord = await prisma.word.update({
-    where: { id: wordId },
-    data: {
-      ...wordData,
-      notesBlocks: toNullableJsonInput(notesBlocks),
-      ...(audioData ?? {}),
-    },
+  const updatedWord = await prisma.$transaction(async (tx) => {
+    const word = await tx.word.update({
+      where: { id: wordId },
+      data: {
+        ...wordData,
+        synonyms: sanitizedSynonyms,
+        notesBlocks: toNullableJsonInput(notesBlocks),
+        ...(audioData ?? {}),
+      },
+    });
+
+    await synchronizeSynonymConnections(tx, {
+      ownerId,
+      languageId: existingWord.languageId,
+      wordId: word.id,
+      previousTerm: existingWord.term,
+      nextTerm: word.term,
+      previousSynonyms: existingWord.synonyms,
+      nextSynonyms: word.synonyms,
+    });
+
+    return word;
   });
 
   if (audioData && options?.supabase && existingWord.customAudioPath) {
