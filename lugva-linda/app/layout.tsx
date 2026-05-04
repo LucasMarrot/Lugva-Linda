@@ -4,6 +4,7 @@ import './globals.css';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 import { WordModalProvider } from '@/components/providers/WordModalProvider';
 import { PresenceProvider } from '@/components/providers/PresenceProvider';
+import { CommunityImportProvider } from '@/components/providers/CommunityImportProvider';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -32,7 +33,9 @@ export default function RootLayout({
       >
         <PresenceProvider>
           <ToastProvider>
-            <WordModalProvider>{children}</WordModalProvider>
+            <CommunityImportProvider>
+              <WordModalProvider>{children}</WordModalProvider>
+            </CommunityImportProvider>
           </ToastProvider>
         </PresenceProvider>
       </body>

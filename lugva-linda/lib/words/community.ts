@@ -62,6 +62,17 @@ export type WordMergeStrategy = {
   audio: Exclude<MergeMode, 'merge'>;
 };
 
+export type CommunityImportSelection = {
+  useCommunityTranslation: boolean;
+  keepOwnTranslation: boolean;
+  communityTagKeys: string[];
+  keepOwnTagKeys: string[];
+  useCommunityAudio: boolean;
+  keepOwnAudio: boolean;
+  communityNoteBlockIds: string[];
+  keepOwnNoteBlockIds: string[];
+};
+
 export const defaultWordMergeStrategy: WordMergeStrategy = {
   translation: 'keep',
   tags: 'merge',

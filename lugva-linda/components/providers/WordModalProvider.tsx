@@ -95,6 +95,12 @@ export const WordModalProvider: FC<{ children: ReactNode }> = ({
     dispatch({ type: 'CLOSE_EDIT' });
   };
 
+  const resetSearchIfNeeded = () => {
+    if (window.location.pathname === '/search') {
+      window.location.assign('/search');
+    }
+  };
+
   const handleSynonymSelect = async (synonymText: string) => {
     if (!activeWord) return;
 
@@ -126,10 +132,16 @@ export const WordModalProvider: FC<{ children: ReactNode }> = ({
     try {
       await deleteWordAction(wordId);
       closeWord();
+      resetSearchIfNeeded();
     } catch (error) {
       console.error('Erreur lors de la suppression :', error);
       toast.error('Une erreur est survenue lors de la suppression.');
     }
+  };
+
+  const handleEditSuccess = () => {
+    closeWord();
+    resetSearchIfNeeded();
   };
 
   const handleAddExternalWord = async (word: EditableWordSnapshot) => {
@@ -150,7 +162,7 @@ export const WordModalProvider: FC<{ children: ReactNode }> = ({
         isEditing={isEditing}
         onStartEdit={startEditing}
         onCancelEdit={cancelEditing}
-        onEditSuccess={closeWord}
+        onEditSuccess={handleEditSuccess}
         onSynonymSelect={handleSynonymSelect}
         canEdit={!!activeWord?.isOwnedByCurrentUser}
         canDelete={!!activeWord?.isOwnedByCurrentUser}

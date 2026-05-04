@@ -6,6 +6,7 @@ import {
 } from '@/lib/auth/server';
 import { createClient } from '@/lib/supabase/server';
 import {
+  communityImportSelectionSchema,
   checkWordTermNatureSchema,
   languageIdSchema,
   wordIdSchema,
@@ -18,6 +19,7 @@ import {
   getCommunityWordImportPreview,
   hardDeleteWordForOwner,
   importCommunityWordForUser,
+  importCommunityWordWithSelectionForUser,
   listCustomTagsForOwnerInLanguage,
   listCommunityMembers,
   listMemberWordsInLanguage,
@@ -37,6 +39,7 @@ import {
 import { assertRateLimit } from '@/lib/security/rate-limit';
 import { assertCsrfForAction } from '@/lib/security/csrf';
 import {
+  type CommunityImportSelection,
   defaultCopyFieldOptions,
   defaultWordMergeStrategy,
   type CopyFieldOptions,
@@ -279,6 +282,49 @@ export async function importWordFromCommunityAction(
     return result;
   } catch (error) {
     logActionError('importWordFromCommunityAction', userId, error, startedAt);
+    throw toActionError(error);
+  }
+}
+
+export async function importWordFromCommunitySelectionAction(
+  sourceWordId: string,
+  selection: CommunityImportSelection,
+) {
+  let userId: string | null = null;
+  const startedAt = Date.now();
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    await assertCsrfForAction({
+      subject: user.id,
+    });
+    assertRateLimit(`import-word-selection:${user.id}`, 25, 60_000);
+
+    const validatedSelection = communityImportSelectionSchema.parse(selection);
+    const result = await importCommunityWordWithSelectionForUser(
+      user.id,
+      wordIdSchema.parse(normalizeText(sourceWordId)),
+      validatedSelection,
+    );
+
+    revalidatePath('/');
+    revalidatePath('/words');
+    revalidatePath('/community');
+    logActionSuccess(
+      'importWordFromCommunitySelectionAction',
+      userId,
+      startedAt,
+    );
+
+    return result;
+  } catch (error) {
+    logActionError(
+      'importWordFromCommunitySelectionAction',
+      userId,
+      error,
+      startedAt,
+    );
     throw toActionError(error);
   }
 }

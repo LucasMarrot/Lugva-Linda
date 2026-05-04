@@ -112,6 +112,17 @@ export const checkWordTermNatureSchema = z.object({
   excludeWordId: wordIdSchema.optional(),
 });
 
+export const communityImportSelectionSchema = z.object({
+  useCommunityTranslation: z.boolean(),
+  keepOwnTranslation: z.boolean(),
+  communityTagKeys: z.array(nonEmptyTextSchema.max(64)).max(50),
+  keepOwnTagKeys: z.array(nonEmptyTextSchema.max(64)).max(50),
+  useCommunityAudio: z.boolean(),
+  keepOwnAudio: z.boolean(),
+  communityNoteBlockIds: z.array(nonEmptyTextSchema.max(128)).max(500),
+  keepOwnNoteBlockIds: z.array(nonEmptyTextSchema.max(128)).max(500),
+});
+
 const stringArraySchema = z.array(
   nonEmptyTextSchema.max(
     64,

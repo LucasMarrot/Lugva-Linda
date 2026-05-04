@@ -3,7 +3,9 @@ import { ExerciseCategory, ExerciseType, Prisma } from '@prisma/client';
 
 import prisma from '@/lib/prisma';
 import { toNullableJsonInput } from '@/lib/prisma-json';
+import { createClient } from '@/lib/supabase/server';
 import {
+  type CommunityImportSelection,
   type CopyFieldOptions,
   type CommunityMemberSummary,
   type WordCommunityView,
@@ -642,6 +644,73 @@ const buildIncomingCopyData = (
   customAudioUrl: options.audio ? sourceWord.customAudioUrl : null,
 });
 
+const toLookupKeySet = (values: string[]) =>
+  new Set(values.map((value) => normalizeForLookup(value)));
+
+const selectCustomTagsByLookup = (
+  availableTags: string[],
+  mandatoryTag: string,
+  selectedLookupKeys: string[],
+) => {
+  const selected = toLookupKeySet(selectedLookupKeys);
+
+  return availableTags.filter((tag) => {
+    if (tag === mandatoryTag) {
+      return false;
+    }
+
+    return selected.has(normalizeForLookup(tag));
+  });
+};
+
+const selectNotesBlocksById = (
+  blocks: ReturnType<typeof normalizeNotesBlocksForPersistence>,
+  selectedBlockIds: string[],
+) => {
+  if (!blocks || blocks.length === 0) {
+    return [];
+  }
+
+  const selectedIds = new Set(
+    selectedBlockIds.map((value) => normalizeText(value)),
+  );
+
+  return blocks.filter((block) => selectedIds.has(normalizeText(block.id)));
+};
+
+const mergeSelectedNotesBlocks = (
+  ownBlocks: ReturnType<typeof normalizeNotesBlocksForPersistence>,
+  incomingBlocks: ReturnType<typeof normalizeNotesBlocksForPersistence>,
+) => {
+  if (
+    (!ownBlocks || ownBlocks.length === 0) &&
+    (!incomingBlocks || incomingBlocks.length === 0)
+  ) {
+    return null;
+  }
+
+  const merged = ownBlocks ? [...ownBlocks] : [];
+  const indexById = new Map<string, number>();
+
+  merged.forEach((block, index) => {
+    indexById.set(block.id, index);
+  });
+
+  incomingBlocks?.forEach((block) => {
+    const existingIndex = indexById.get(block.id);
+
+    if (typeof existingIndex === 'number') {
+      merged[existingIndex] = block;
+      return;
+    }
+
+    indexById.set(block.id, merged.length);
+    merged.push(block);
+  });
+
+  return merged.length > 0 ? merged : null;
+};
+
 export const listCommunityMembers = async (): Promise<
   CommunityMemberSummary[]
 > => {
@@ -802,7 +871,18 @@ export const importCommunityWordForUser = async (
         },
       });
 
-      return findWordWithOwnerById(word.id);
+      return tx.word.findUnique({
+        where: { id: word.id },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              email: true,
+              colorHex: true,
+            },
+          },
+        },
+      });
     });
 
     if (!created) {
@@ -821,6 +901,15 @@ export const importCommunityWordForUser = async (
       'MERGE_REQUIRED',
     );
   }
+
+  const shouldReplaceAudio = mergeStrategy.audio === 'replace';
+  const existingAudioPath = preview.existingWord.customAudioPath;
+  const nextCustomAudioUrl = shouldReplaceAudio
+    ? preview.incomingData.customAudioUrl
+    : preview.existingWord.customAudioUrl;
+  const nextCustomAudioPath = shouldReplaceAudio
+    ? null
+    : preview.existingWord.customAudioPath;
 
   const mergedWord = await prisma.word.update({
     where: { id: preview.existingWord.id },
@@ -851,10 +940,8 @@ export const importCommunityWordForUser = async (
           mergeStrategy.notes,
         ),
       ),
-      customAudioUrl:
-        mergeStrategy.audio === 'replace'
-          ? preview.incomingData.customAudioUrl
-          : preview.existingWord.customAudioUrl,
+      customAudioUrl: nextCustomAudioUrl,
+      customAudioPath: nextCustomAudioPath,
       sourceWordId: preview.sourceWord.id,
     },
     include: {
@@ -867,6 +954,201 @@ export const importCommunityWordForUser = async (
       },
     },
   });
+
+  if (shouldReplaceAudio && existingAudioPath) {
+    const supabase = await createClient();
+    await deleteAudioFromStorage(supabase, existingAudioPath);
+  }
+
+  return {
+    mode: 'merged' as const,
+    word: toCommunityView(mergedWord, viewerId),
+  };
+};
+
+export const importCommunityWordWithSelectionForUser = async (
+  viewerId: string,
+  sourceWordId: string,
+  selection: CommunityImportSelection,
+) => {
+  const preview = await getCommunityWordImportPreview(viewerId, sourceWordId, {
+    translation: true,
+    tags: true,
+    notes: true,
+    synonyms: false,
+    audio: true,
+  });
+
+  const sourceWord = preview.sourceWord;
+  const existingWord = preview.existingWord;
+  const mandatoryTag = sourceWord.mandatoryTag;
+
+  const sourceCustomTags = sourceWord.tags.filter(
+    (tag) => tag !== mandatoryTag,
+  );
+  const existingCustomTags = existingWord
+    ? existingWord.tags.filter((tag) => tag !== mandatoryTag)
+    : [];
+
+  const selectedSourceTags = selectCustomTagsByLookup(
+    sourceCustomTags,
+    mandatoryTag,
+    selection.communityTagKeys,
+  );
+  const selectedExistingTags = existingWord
+    ? selectCustomTagsByLookup(
+        existingCustomTags,
+        mandatoryTag,
+        selection.keepOwnTagKeys,
+      )
+    : [];
+
+  const sourceNotesBlocks = normalizeNotesBlocksForPersistence(
+    sourceWord.notesBlocks,
+  );
+  const existingNotesBlocks = existingWord
+    ? normalizeNotesBlocksForPersistence(existingWord.notesBlocks)
+    : null;
+
+  const selectedSourceNotesBlocks = selectNotesBlocksById(
+    sourceNotesBlocks,
+    selection.communityNoteBlockIds,
+  );
+  const selectedExistingNotesBlocks = existingWord
+    ? selectNotesBlocksById(existingNotesBlocks, selection.keepOwnNoteBlockIds)
+    : [];
+
+  const nextTranslation = existingWord
+    ? selection.useCommunityTranslation
+      ? sourceWord.translation
+      : selection.keepOwnTranslation
+        ? existingWord.translation
+        : sourceWord.translation
+    : sourceWord.translation;
+
+  const mergedCustomTags = mergeTermsByNormalized(
+    selectedExistingTags,
+    selectedSourceTags,
+  );
+  const nextTags = [mandatoryTag, ...mergedCustomTags];
+
+  const nextNotesBlocks = mergeSelectedNotesBlocks(
+    selectedExistingNotesBlocks,
+    selectedSourceNotesBlocks,
+  );
+
+  const nextCustomAudioUrl = existingWord
+    ? selection.useCommunityAudio
+      ? sourceWord.customAudioUrl
+      : selection.keepOwnAudio
+        ? existingWord.customAudioUrl
+        : null
+    : selection.useCommunityAudio
+      ? sourceWord.customAudioUrl
+      : null;
+
+  if (!nextTranslation || normalizeText(nextTranslation).length === 0) {
+    throw new ValidationError(
+      'La traduction est obligatoire.',
+      'INVALID_IMPORT_SELECTION',
+    );
+  }
+
+  if (!nextTags.includes(mandatoryTag)) {
+    throw new ValidationError(
+      'La nature du mot est obligatoire.',
+      'INVALID_IMPORT_SELECTION',
+    );
+  }
+
+  if (!existingWord) {
+    const created = await prisma.$transaction(async (tx) => {
+      const word = await tx.word.create({
+        data: {
+          ownerId: viewerId,
+          createdById: viewerId,
+          sourceWordId: sourceWord.id,
+          languageId: sourceWord.languageId,
+          term: sourceWord.term,
+          termNormalized: sourceWord.termNormalized,
+          translation: nextTranslation,
+          translationNormalized: normalizeForLookup(nextTranslation),
+          mandatoryTag,
+          tags: nextTags,
+          synonyms: [],
+          notesBlocks: toNullableJsonInput(nextNotesBlocks),
+          customAudioUrl: nextCustomAudioUrl,
+          customAudioPath: null,
+          deleteToken: ACTIVE_DELETE_TOKEN,
+        },
+      });
+
+      await tx.card.create({
+        data: {
+          wordId: word.id,
+          ownerId: viewerId,
+          languageId: word.languageId,
+          category: ExerciseCategory.READING,
+          type: ExerciseType.RECOGNITION,
+        },
+      });
+
+      return tx.word.findUnique({
+        where: { id: word.id },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              email: true,
+              colorHex: true,
+            },
+          },
+        },
+      });
+    });
+
+    if (!created) {
+      throw new NotFoundError('Impossible de finaliser la copie du mot.');
+    }
+
+    return {
+      mode: 'created' as const,
+      word: toCommunityView(created, viewerId),
+    };
+  }
+
+  const shouldKeepOwnAudio =
+    selection.keepOwnAudio && !selection.useCommunityAudio;
+  const shouldRemoveOwnAudio =
+    Boolean(existingWord.customAudioPath) && !shouldKeepOwnAudio;
+
+  const mergedWord = await prisma.word.update({
+    where: { id: existingWord.id },
+    data: {
+      translation: nextTranslation,
+      translationNormalized: normalizeForLookup(nextTranslation),
+      mandatoryTag,
+      tags: nextTags,
+      notesBlocks: toNullableJsonInput(nextNotesBlocks),
+      customAudioUrl: nextCustomAudioUrl,
+      customAudioPath: shouldKeepOwnAudio ? existingWord.customAudioPath : null,
+      sourceWordId: sourceWord.id,
+    },
+    include: {
+      owner: {
+        select: {
+          id: true,
+          email: true,
+          colorHex: true,
+        },
+      },
+    },
+  });
+
+  if (shouldRemoveOwnAudio) {
+    const supabase = await createClient();
+    await deleteAudioFromStorage(supabase, existingWord.customAudioPath!);
+  }
 
   return {
     mode: 'merged' as const,

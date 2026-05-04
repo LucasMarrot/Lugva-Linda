@@ -8,7 +8,7 @@ export interface AudioPlayerProps {
   audioUrl: string;
   onDelete?: () => void;
   label?: string;
-  tone?: 'default' | 'muted';
+  tone?: 'default' | 'muted' | 'valid';
 }
 
 export const AudioPlayer = ({
@@ -17,15 +17,18 @@ export const AudioPlayer = ({
   label,
   tone = 'default',
 }: AudioPlayerProps) => {
-  const isMutedTone = tone === 'muted';
+  const styleByTone =
+    tone === 'muted'
+      ? 'bg-destructive/4 border-destructive/30 border-dashed'
+      : tone === 'valid'
+        ? 'bg-emerald-100/30 border-emerald-500/50'
+        : 'bg-muted/30 border-border/50';
 
   return (
     <div
       className={cn(
         'flex flex-col items-start gap-3 rounded-xl border p-3',
-        isMutedTone
-          ? 'bg-destructive/2 border-destructive/15 border-dashed'
-          : 'bg-muted/30 border-border/50',
+        styleByTone,
       )}
     >
       {label && (
