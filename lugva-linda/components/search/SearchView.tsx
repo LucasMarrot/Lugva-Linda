@@ -33,6 +33,12 @@ export const SearchView = ({
   const [searchError, setSearchError] = useState<string | null>(null);
   const latestRequestRef = useRef(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const ownedResults = searchResults.filter(
+    (word) => word.isOwnedByCurrentUser,
+  );
+  const communityResults = searchResults.filter(
+    (word) => !word.isOwnedByCurrentUser,
+  );
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -91,6 +97,33 @@ export const SearchView = ({
     searchInputRef.current?.blur();
   };
 
+  const renderWordItem = (word: WordCommunityView) => {
+    const mode = word.isOwnedByCurrentUser ? 'owner' : 'external';
+    const visualMeta = getWordVisualMeta(word, mode);
+
+    return (
+      <WordListItem
+        key={word.id}
+        word={word}
+        ownerName={visualMeta.ownerName}
+        primaryColor={visualMeta.primaryColor}
+        onAdd={
+          !word.isOwnedByCurrentUser && addingWordId !== word.id
+            ? () => importWord(word.id)
+            : undefined
+        }
+        onRedirect={
+          word.isOwnedByCurrentUser
+            ? () => {
+                router.push(`/words?lang=${word.languageId}#word-${word.id}`);
+              }
+            : undefined
+        }
+        onClick={() => openWord(toWordSnapshot(word, mode))}
+      />
+    );
+  };
+
   return (
     <div className="space-y-6">
       <form className="relative" onSubmit={handleSearchSubmit}>
@@ -131,54 +164,48 @@ export const SearchView = ({
             />
           )}
 
-          <div className="px-2 pt-2">
-            <SectionHeader title="Resultats" className="mb-3" />
-
-            <div className="space-y-2">
-              {searchError ? (
-                <StateMessage tone="error" message={searchError} />
-              ) : isSearching ? (
-                <StateMessage tone="info" message="Recherche en cours..." />
-              ) : searchResults.length === 0 ? (
-                <StateMessage
-                  tone="neutral"
-                  message="Aucun mot similaire trouve."
-                />
-              ) : (
-                searchResults.map((word) =>
-                  (() => {
-                    const mode = word.isOwnedByCurrentUser
-                      ? 'owner'
-                      : 'external';
-                    const visualMeta = getWordVisualMeta(word, mode);
-
-                    return (
-                      <WordListItem
-                        key={word.id}
-                        word={word}
-                        ownerName={visualMeta.ownerName}
-                        primaryColor={visualMeta.primaryColor}
-                        onAdd={
-                          !word.isOwnedByCurrentUser && addingWordId !== word.id
-                            ? () => importWord(word.id)
-                            : undefined
-                        }
-                        onRedirect={
-                          word.isOwnedByCurrentUser
-                            ? () => {
-                                router.push(
-                                  `/words?lang=${word.languageId}#word-${word.id}`,
-                                );
-                              }
-                            : undefined
-                        }
-                        onClick={() => openWord(toWordSnapshot(word, mode))}
+          <div className="space-y-4 px-2 pt-2">
+            {searchError ? (
+              <StateMessage tone="error" message={searchError} />
+            ) : isSearching ? (
+              <StateMessage tone="info" message="Recherche en cours..." />
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <SectionHeader
+                    title="Résultats dans mon encyclopédie"
+                    className="mb-3"
+                  />
+                  <div className="space-y-2">
+                    {ownedResults.length === 0 ? (
+                      <StateMessage
+                        tone="neutral"
+                        message="Aucun résultat dans votre encyclopédie."
                       />
-                    );
-                  })(),
-                )
-              )}
-            </div>
+                    ) : (
+                      ownedResults.map(renderWordItem)
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <SectionHeader
+                    title="Résultats dans la communauté"
+                    className="mb-3"
+                  />
+                  <div className="space-y-2">
+                    {communityResults.length === 0 ? (
+                      <StateMessage
+                        tone="neutral"
+                        message="Aucun résultat dans la communauté."
+                      />
+                    ) : (
+                      communityResults.map(renderWordItem)
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
