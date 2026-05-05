@@ -40,7 +40,7 @@ export const WordDetailView = ({
 
   return (
     <>
-      <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-6">
+      <div className="min-h-0 flex-1 space-y-8 overflow-x-hidden overflow-y-auto p-6">
         <div className="space-y-2 text-center">
           <h2
             className="text-4xl font-extrabold"
@@ -62,7 +62,7 @@ export const WordDetailView = ({
         </div>
 
         {word.tags && word.tags.length > 0 && (
-          <div className="flex justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             {word.tags.map((tag, index) => (
               <span
                 key={tag + index}

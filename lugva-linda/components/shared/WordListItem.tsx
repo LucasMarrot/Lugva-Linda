@@ -1,7 +1,10 @@
-import type { MouseEventHandler } from 'react';
+'use client';
+
+import { useMemo, useRef, type MouseEventHandler } from 'react';
 import type { Word } from '@prisma/client';
 import { BookOpen, Plus } from 'lucide-react';
-import { Button, Badge } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { WordTags } from './WordTags';
 
 type WordListItemProps = {
   word: Word;
@@ -20,6 +23,12 @@ export const WordListItem = ({
   onRedirect,
   onAdd,
 }: WordListItemProps) => {
+  const tags = useMemo(() => word.tags ?? [], [word.tags]);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const leftRef = useRef<HTMLDivElement>(null);
+  const rightRef = useRef<HTMLDivElement>(null);
+  const buttonsRef = useRef<HTMLDivElement>(null);
+
   const customCardStyle = primaryColor
     ? {
         borderLeftColor: `${primaryColor}`,
@@ -32,10 +41,11 @@ export const WordListItem = ({
       onClick={onClick}
       role="button"
       tabIndex={0}
-      className="ui-motion-interactive ui-tap-feedback bg-card border-border/50 hover:bg-accent hover:border-border active:bg-accent/80 flex w-full cursor-pointer items-center justify-between gap-2 overflow-hidden rounded-xl border-2 p-3 text-left sm:gap-3 sm:p-4"
+      ref={rootRef}
+      className="ui-motion-interactive ui-tap-feedback bg-card border-border/50 hover:bg-accent hover:border-border active:bg-accent/80 relative flex w-full cursor-pointer items-center justify-between gap-2 overflow-hidden rounded-xl border-2 p-3 text-left sm:gap-3 sm:p-4"
       style={customCardStyle}
     >
-      <div className="flex min-w-0 flex-col gap-1.5">
+      <div ref={leftRef} className="flex min-w-0 flex-col gap-1.5">
         <span
           className="truncate text-base font-semibold sm:text-lg"
           style={primaryColor ? { color: primaryColor } : undefined}
@@ -56,45 +66,44 @@ export const WordListItem = ({
         )}
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
-        {word.tags &&
-          word.tags.length > 0 &&
-          word.tags.map((tag, index) => (
-            <Badge
-              key={tag}
-              variant={index === 0 ? 'secondaryOutline' : 'outline'}
+      <div ref={rightRef} className="flex min-w-0 items-center gap-2">
+        <WordTags
+          tags={tags}
+          rootRef={rootRef}
+          leftRef={leftRef}
+          rightRef={rightRef}
+          buttonsRef={buttonsRef}
+        />
+
+        <div ref={buttonsRef} className="flex shrink-0 items-center gap-2">
+          {onAdd && (
+            <Button
+              variant="default"
+              size="icon"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAdd(e);
+              }}
             >
-              {tag}
-            </Badge>
-          ))}
+              <Plus className="h-4 w-4" />
+            </Button>
+          )}
 
-        {onAdd && (
-          <Button
-            variant="default"
-            size="icon"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onAdd(e);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        )}
-
-        {onRedirect && (
-          <Button
-            variant="default"
-            size="icon"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onRedirect(e);
-            }}
-          >
-            <BookOpen className="h-4 w-4" />
-          </Button>
-        )}
+          {onRedirect && (
+            <Button
+              variant="default"
+              size="icon"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRedirect(e);
+              }}
+            >
+              <BookOpen className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

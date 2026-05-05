@@ -17,18 +17,20 @@ export const TagFilter = ({
   if (allTags.length === 0) return null;
 
   return (
-    <div className="no-scrollbar mb-6 flex h-8 gap-2 overflow-x-auto px-4 pb-2">
+    <div className="no-scrollbar mb-6 flex h-fit flex-wrap items-center gap-2 overflow-x-auto px-4 pb-2">
       <Badge
         variant={selectedTags.length === 0 ? 'default' : 'outline'}
         onClick={onClearTags}
         className={
-          selectedTags.length === 0 ? undefined : 'opacity-70 hover:opacity-100'
+          selectedTags.length === 0 ? undefined : 'opacity-60 hover:opacity-100'
         }
       >
         Tous
       </Badge>
 
-      <Separator orientation="vertical" />
+      <div className="h-4">
+        <Separator orientation="vertical" />
+      </div>
 
       {allTags.map((tag) => {
         const isSelected = selectedTags.includes(tag);
@@ -37,7 +39,7 @@ export const TagFilter = ({
             key={tag}
             variant={isSelected ? 'default' : 'outline'}
             onClick={() => onToggleTag(tag)}
-            className={isSelected ? undefined : 'opacity-70 hover:opacity-100'}
+            className={isSelected ? undefined : 'opacity-60 hover:opacity-100'}
           >
             {tag}
           </Badge>
