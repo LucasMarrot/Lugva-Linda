@@ -6,7 +6,7 @@ const SonnerToaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       position="bottom-right"
-      theme="system"
+      theme="light"
       richColors
       closeButton
       style={{ zIndex: 2147483647 }}
