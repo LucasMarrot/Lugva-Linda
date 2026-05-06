@@ -58,7 +58,7 @@ export default async function SettingsPage(props: SettingsPageProps) {
       activeLanguageId={activeLanguageId}
     >
       <div className="bg-background min-h-dvh pb-[calc(var(--bottom-nav-height)+1rem)]">
-        <Header title="Parametres" />
+        <Header />
 
         <main className="space-y-6 px-4 pt-4 pb-6">
           <SettingsClient profile={profile} />

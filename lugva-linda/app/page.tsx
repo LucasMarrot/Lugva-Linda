@@ -87,7 +87,7 @@ export default async function HomePage(props: HomePageProps) {
   if (viewModel.status === 'database-unavailable') {
     return (
       <div className="bg-background min-h-screen pb-[calc(var(--bottom-nav-height)+1rem)]">
-        <Header title="Dashboard" />
+        <Header />
 
         <main className="space-y-6 px-4 pt-4">
           <StateMessage
@@ -112,7 +112,7 @@ export default async function HomePage(props: HomePageProps) {
       activeLanguageId={viewModel.activeLanguageId}
     >
       <div className="bg-background min-h-screen pb-[calc(var(--bottom-nav-height)+1rem)]">
-        <Header title="Dashboard" />
+        <Header />
 
         <main className="space-y-8 px-4 pt-4">
           <DashboardStats
