@@ -35,7 +35,7 @@ export const BottomNavSearchLink = () => {
       scroll={false}
       onClick={handleClick}
       aria-label="Rechercher ou ajouter un mot"
-      className="ui-motion-interactive ui-tap-feedback bg-primary text-primary-foreground ring-background hover:bg-primary/90 absolute -top-16 right-6 flex h-14 w-14 -translate-y-4 items-center justify-center rounded-full shadow-lg ring-4"
+      className="ui-motion-interactive ui-tap-feedback bg-primary text-primary-foreground ring-background/50 hover:bg-primary/90 absolute -top-16 right-6 flex h-14 w-14 -translate-y-4 items-center justify-center rounded-full shadow-lg ring-4"
     >
       <Search className="h-6 w-6" />
     </Link>
