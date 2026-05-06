@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js';
 import { requireAuthenticatedUser } from '@/lib/auth/server';
 import {
   logActionError,
@@ -18,6 +19,7 @@ import {
   usernameSchema,
 } from '@/lib/validation/schemas';
 import { DuplicateError, ValidationError } from '@/lib/errors';
+import { redirect } from 'next/navigation';
 
 export async function updateUsername(formData: FormData) {
   let userId: string | null = null;
@@ -105,11 +107,17 @@ export async function updatePassword(formData: FormData) {
   try {
     const user = await requireAuthenticatedUser();
     userId = user.id;
+
     await assertCsrfForAction({ formData, subject: user.id });
     assertRateLimit(`update-password:${user.id}`, 6, 60_000);
 
+    const oldPassword = String(formData.get('oldPassword') ?? '');
     const password = String(formData.get('password') ?? '');
     const confirmPassword = String(formData.get('confirmPassword') ?? '');
+
+    if (!oldPassword) {
+      throw new ValidationError('Le mot de passe actuel est requis.');
+    }
 
     const parsedPassword = userPasswordSchema.parse(password);
     const parsedConfirm = userPasswordSchema.parse(confirmPassword);
@@ -119,13 +127,29 @@ export async function updatePassword(formData: FormData) {
     }
 
     const supabase = await createClient();
-    const { error } = await supabase.auth.updateUser({
+
+    if (!user.email) {
+      throw new ValidationError(
+        "Impossible de vérifier l'utilisateur (email manquant).",
+      );
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: oldPassword,
+    });
+
+    if (signInError) {
+      throw new ValidationError('Le mot de passe actuel est incorrect.');
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
       password: parsedPassword,
     });
 
-    if (error) {
+    if (updateError) {
       throw new ValidationError(
-        error.message || 'Impossible de mettre a jour le mot de passe.',
+        updateError.message || 'Impossible de mettre a jour le mot de passe.',
         'PASSWORD_UPDATE_FAILED',
       );
     }
@@ -166,4 +190,45 @@ export async function updateUserColor(formData: FormData) {
     logActionError('updateUserColor', userId, error, startedAt);
     throw toActionError(error);
   }
+}
+
+export async function deleteAccountAction() {
+  let userId: string | null = null;
+  const startedAt = Date.now();
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+
+    await assertCsrfForAction({ subject: user.id });
+    assertRateLimit(`delete-account:${user.id}`, 3, 60_000);
+
+    const supabaseAdmin = createSupabaseAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+
+    await prisma.user.delete({
+      where: { id: user.id },
+    });
+
+    const { error: deleteAuthError } =
+      await supabaseAdmin.auth.admin.deleteUser(user.id);
+
+    if (deleteAuthError) {
+      throw new ValidationError(
+        "Erreur lors de la suppression de l'identité d'authentification.",
+      );
+    }
+
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+
+    logActionSuccess('deleteAccountAction', userId, startedAt);
+  } catch (error) {
+    logActionError('deleteAccountAction', userId, error, startedAt);
+    throw toActionError(error);
+  }
+
+  redirect('/auth/login');
 }

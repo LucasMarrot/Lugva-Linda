@@ -1,11 +1,17 @@
 import prisma from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
-import { ForbiddenError, NotFoundError, UnauthorizedError } from '@/lib/errors';
+import {
+  ForbiddenError,
+  isDatabaseUnavailableError,
+  NotFoundError,
+  UnauthorizedError,
+} from '@/lib/errors';
 import {
   assertUserLanguageAccess,
   ensureUserRecord,
 } from '@/lib/services/language-service';
 import { cache } from 'react';
+import { toast } from 'sonner';
 
 export const requireAuthenticatedUser = async () => {
   const supabase = await createClient();
@@ -65,20 +71,39 @@ export const getCurrentUserProfile = cache(async () => {
 
   if (error || !user) return null;
 
-  const profile = await prisma.user.upsert({
-    where: { id: user.id },
-    update: {},
-    create: {
-      id: user.id,
-      email: user.email ?? `user-${user.id}@example.invalid`,
-    },
-    select: {
-      id: true,
-      email: true,
-      username: true,
-      colorHex: true,
-    },
-  });
+  try {
+    const profile = await prisma.user.upsert({
+      where: { id: user.id },
+      update: {},
+      create: {
+        id: user.id,
+        email: user.email ?? `user-${user.id}@example.invalid`,
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        colorHex: true,
+      },
+    });
 
-  return profile;
+    return profile;
+  } catch (dbError) {
+    if (isDatabaseUnavailableError(dbError)) {
+      console.warn(
+        'Base de données injoignable, utilisation du profil de secours.',
+      );
+      toast.warning(
+        'Base de données injoignable, utilisation du profil de secours.',
+      );
+      return {
+        id: user.id,
+        email: user.email ?? '',
+        username: null,
+        colorHex: '#3B82F6',
+      };
+    }
+
+    throw dbError;
+  }
 });
