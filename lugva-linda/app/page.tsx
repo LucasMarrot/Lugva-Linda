@@ -10,7 +10,7 @@ import { Button } from '@/components/ui';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { LearningActions } from '@/components/dashboard/LearningActions';
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
-import { Header } from '@/components/header/Header';
+import { Header } from '@/components/layout/header/Header';
 import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
 import { StateMessage } from '@/components/shared';
 

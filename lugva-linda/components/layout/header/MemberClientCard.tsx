@@ -1,5 +1,5 @@
 import { CommunityMemberSummary } from '@/lib/words/community';
-import { usePresence } from '../providers/PresenceProvider';
+import { usePresence } from '../../providers/PresenceProvider';
 import { toTint } from '@/lib/utils';
 import Link from 'next/link';
 import { Circle } from 'lucide-react';

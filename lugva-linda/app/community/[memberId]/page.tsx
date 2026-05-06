@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
-import { Header } from '@/components/header/Header';
+import { Header } from '@/components/layout/header/Header';
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
 import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
 import { EncyclopediaClient } from '@/components/encyclopedia/EncyclopediaClient';

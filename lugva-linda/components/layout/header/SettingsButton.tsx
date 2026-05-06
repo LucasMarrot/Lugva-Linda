@@ -10,7 +10,7 @@ import {
   Separator,
 } from '@/components/ui';
 import Link from 'next/link';
-import { useUser } from '../providers/UserProvider';
+import { useUser } from '../../providers/UserProvider';
 import { toDisplayName } from '@/lib/words/community';
 
 const SettingsButton = () => {

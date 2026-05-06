@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
-import { Header } from '@/components/header/Header';
+import { Header } from '@/components/layout/header/Header';
 import { EncyclopediaClient } from '@/components/encyclopedia/EncyclopediaClient';
 import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
 

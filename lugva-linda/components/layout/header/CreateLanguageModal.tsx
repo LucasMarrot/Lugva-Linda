@@ -14,7 +14,7 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { buildCreateLanguageFormSchema } from '@/lib/validation/schemas';
-import { PageHeader } from '../shared';
+import { PageHeader } from '../../shared';
 
 type CreateLanguageModalProps = {
   isOpen: boolean;

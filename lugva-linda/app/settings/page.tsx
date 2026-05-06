@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 import prisma from '@/lib/prisma';
-import { Header } from '@/components/header/Header';
+import { Header } from '@/components/layout/header/Header';
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
 import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
 import { SettingsClient } from '@/components/settings/SettingsClient';
