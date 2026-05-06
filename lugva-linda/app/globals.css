@@ -49,8 +49,8 @@
 
 :root {
   --radius: 0.625rem;
-  --safe-area-top: env(safe-area-inset-top, 0px);
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-top: 8px;
+  --safe-area-bottom: 12px;
   --bottom-nav-height: calc(4rem + var(--safe-area-bottom));
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);

@@ -8,12 +8,14 @@ import { cn } from '@/lib/utils';
 type BottomNavItemProps = {
   href: string;
   icon: LucideIcon;
+  text: string;
   matchPaths?: string[];
 };
 
 export const BottomNavItem = ({
   href,
   icon: Icon,
+  text,
   matchPaths = [],
 }: BottomNavItemProps) => {
   const pathname = usePathname();
@@ -35,6 +37,7 @@ export const BottomNavItem = ({
       )}
     >
       <Icon className="h-6 w-6" />
+      {text && <span className="mt-1 text-xs font-medium">{text}</span>}
     </Link>
   );
 };
