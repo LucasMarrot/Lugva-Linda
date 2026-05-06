@@ -107,7 +107,7 @@ export const LoginForm = ({ hasError, action }: LoginFormProps) => {
         <CardFooter>
           <Button
             type="submit"
-            className="w-full"
+            className="mt-4 w-full"
             disabled={!validation.success}
           >
             Se connecter
