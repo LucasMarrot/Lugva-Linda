@@ -32,12 +32,12 @@ export const BottomNavItem = ({
       className={cn(
         'ui-motion-interactive ui-tap-feedback flex h-full flex-1 flex-col items-center justify-center',
         isActive
-          ? 'text-primary'
+          ? 'text-primary font-semibold'
           : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground',
       )}
     >
       <Icon className="h-6 w-6" />
-      {text && <span className="mt-1 text-xs font-medium">{text}</span>}
+      {text && <span className="mt-1 text-xs">{text}</span>}
     </Link>
   );
 };
