@@ -45,6 +45,7 @@ export default async function MemberPage(props: MemberPageProps) {
     select: {
       id: true,
       email: true,
+      username: true,
     },
   });
 
@@ -68,7 +69,11 @@ export default async function MemberPage(props: MemberPageProps) {
     >
       <div className="bg-background min-h-dvh">
         <Header
-          title={`Encyclopedie de ${toDisplayName(member.email, member.id)}`}
+          title={`Encyclopedie de ${toDisplayName(
+            member.email,
+            member.id,
+            member.username,
+          )}`}
         />
 
         <main className="pt-4">

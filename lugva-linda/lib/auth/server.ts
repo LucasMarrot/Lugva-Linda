@@ -5,6 +5,7 @@ import {
   assertUserLanguageAccess,
   ensureUserRecord,
 } from '@/lib/services/language-service';
+import { cache } from 'react';
 
 export const requireAuthenticatedUser = async () => {
   const supabase = await createClient();
@@ -54,3 +55,30 @@ export const verifyWordOwnership = async (wordId: string, userId: string) => {
 
   return word;
 };
+
+export const getCurrentUserProfile = cache(async () => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) return null;
+
+  const profile = await prisma.user.upsert({
+    where: { id: user.id },
+    update: {},
+    create: {
+      id: user.id,
+      email: user.email ?? `user-${user.id}@example.invalid`,
+    },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      colorHex: true,
+    },
+  });
+
+  return profile;
+});

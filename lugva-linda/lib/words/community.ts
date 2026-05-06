@@ -81,7 +81,16 @@ export const defaultWordMergeStrategy: WordMergeStrategy = {
   audio: 'keep',
 };
 
-export const toDisplayName = (email: string, userId: string) => {
+export const toDisplayName = (
+  email: string,
+  userId: string,
+  username?: string | null,
+) => {
+  const normalizedUsername = username?.trim();
+  if (normalizedUsername && normalizedUsername.length > 0) {
+    return normalizedUsername;
+  }
+
   const localPart = email.split('@')[0]?.trim();
   if (localPart && localPart.length > 0) {
     return localPart;

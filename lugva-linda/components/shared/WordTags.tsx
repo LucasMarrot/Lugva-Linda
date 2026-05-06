@@ -182,7 +182,7 @@ export const WordTags = ({
             {tag}
           </Badge>
         ))}
-        <Badge ref={plusMeasureRef} variant="outline" className={`shrink-0`}>
+        <Badge ref={plusMeasureRef} variant="outline" className="shrink-0">
           <span ref={plusTextRef} className="truncate">
             +0
           </span>

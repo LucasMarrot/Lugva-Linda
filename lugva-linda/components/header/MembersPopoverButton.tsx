@@ -15,13 +15,7 @@ import {
 import { type CommunityMemberSummary } from '@/lib/words/community';
 import MemberClientCard from './MemberClientCard';
 
-type MembersPopoverButtonProps = {
-  className?: string;
-};
-
-export const MembersPopoverButton = ({
-  className,
-}: MembersPopoverButtonProps) => {
+export const MembersPopoverButton = () => {
   const { currentUserId } = usePresence();
   const languageContext = useMaybeActiveLanguage();
 
@@ -60,8 +54,8 @@ export const MembersPopoverButton = ({
         <Button
           variant="ghost"
           size="icon"
-          className={`cursor-pointer ${className ?? ''} ${
-            isOpen ? 'bg-primary/10 text-primary hover:bg-primary/15' : ''
+          className={`cursor-pointer ${
+            isOpen && 'bg-primary/10 text-primary hover:bg-primary/15'
           }`}
         >
           <Users

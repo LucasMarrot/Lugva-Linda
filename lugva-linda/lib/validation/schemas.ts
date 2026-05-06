@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { Rating } from 'ts-fsrs';
 import { MANDATORY_TAGS, MANDATORY_TAGS_SET } from '../words/tags';
 import { extractNotesTextFromBlocks, NOTES_MAX_LENGTH } from '../words/notes';
+import { USER_COLOR_OPTIONS } from '../users/colors';
 
 const validGrades = [
   Rating.Again,
@@ -84,6 +85,25 @@ export const loginFormSchema = z.object({
     8,
     'Le mot de passe doit contenir au moins 8 caracteres.',
   ),
+});
+
+export const usernameSchema = nonEmptyTextSchema
+  .min(3, "Le nom d'utilisateur doit contenir au moins 3 caracteres.")
+  .max(32, "Le nom d'utilisateur ne doit pas depasser 32 caracteres.")
+  .regex(
+    /^[a-zA-Z0-9._-]+$/,
+    'Utilisez uniquement des lettres, chiffres, points, tirets ou underscores.',
+  );
+
+export const userEmailSchema = z.string().trim().email('Email invalide.');
+
+export const userPasswordSchema = nonEmptyTextSchema.min(
+  8,
+  'Le mot de passe doit contenir au moins 8 caracteres.',
+);
+
+export const userColorSchema = z.enum(USER_COLOR_OPTIONS, {
+  message: 'Couleur invalide.',
 });
 
 export const mandatoryTagSchema = z.enum(MANDATORY_TAGS, {

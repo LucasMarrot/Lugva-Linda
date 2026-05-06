@@ -5,6 +5,8 @@ import { ToastProvider } from '@/components/providers/ToastProvider';
 import { WordModalProvider } from '@/components/providers/WordModalProvider';
 import { PresenceProvider } from '@/components/providers/PresenceProvider';
 import { CommunityImportProvider } from '@/components/providers/CommunityImportProvider';
+import { UserProvider } from '@/components/providers/UserProvider';
+import { getCurrentUserProfile } from '@/lib/auth/server';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -21,11 +23,13 @@ export const metadata: Metadata = {
   description: 'Apprendre le vocabulaire',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialUser = await getCurrentUserProfile();
+
   return (
     <html lang="fr">
       <body
@@ -34,7 +38,11 @@ export default function RootLayout({
         <PresenceProvider>
           <ToastProvider>
             <CommunityImportProvider>
-              <WordModalProvider>{children}</WordModalProvider>
+              <WordModalProvider>
+                <UserProvider initialUser={initialUser}>
+                  {children}
+                </UserProvider>
+              </WordModalProvider>
             </CommunityImportProvider>
           </ToastProvider>
         </PresenceProvider>

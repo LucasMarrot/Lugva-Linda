@@ -41,6 +41,7 @@ enum ReviewGrade {
 model User {
   id        String   @id
   email     String   @unique
+  username  String?  @db.VarChar(32)
   role      Role     @default(USER)
   colorHex  String   @default("#3B82F6") @db.VarChar(7)
   activeLanguageId String?
