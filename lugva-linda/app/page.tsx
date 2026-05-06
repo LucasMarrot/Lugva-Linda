@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDashboardData } from '@/data/dashboard';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
@@ -121,17 +120,6 @@ export default async function HomePage(props: HomePageProps) {
             wordsToReview={viewModel.wordsToReview}
           />
           <LearningActions languageId={viewModel.activeLanguageId} />
-
-          <Button
-            variant="outline"
-            className="bg-card border-border text-foreground hover:bg-accent hover:text-accent-foreground h-14 w-full justify-center gap-3 font-medium shadow-sm"
-            asChild
-          >
-            <Link href="/words">
-              <BookOpen className="text-primary h-5 w-5" />
-              Parcourir l&apos;encyclopédie
-            </Link>
-          </Button>
         </main>
 
         <BottomNav />
