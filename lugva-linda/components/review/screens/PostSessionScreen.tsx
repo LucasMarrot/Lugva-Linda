@@ -37,8 +37,8 @@ export const PostSessionScreen = ({
         </p>
 
         <div className="mb-8 grid w-full grid-cols-3 gap-3">
-          <div className="bg-card flex flex-col items-center rounded-xl border border-blue-500/30 p-3 shadow-sm">
-            <span className="mb-1 text-3xl font-bold text-blue-500">
+          <div className="bg-card flex flex-col items-center rounded-xl border border-emerald-500/30 p-3 shadow-sm">
+            <span className="mb-1 text-3xl font-bold text-emerald-500">
               {stats.easy}
             </span>
             <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
@@ -46,8 +46,8 @@ export const PostSessionScreen = ({
             </span>
           </div>
 
-          <div className="bg-card border-primary/30 flex flex-col items-center rounded-xl border p-3 shadow-sm">
-            <span className="text-primary mb-1 text-3xl font-bold">
+          <div className="bg-card flex flex-col items-center rounded-xl border border-blue-500/30 p-3 shadow-sm">
+            <span className="mb-1 text-3xl font-bold text-blue-500">
               {stats.good}
             </span>
             <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">

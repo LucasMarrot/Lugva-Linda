@@ -55,7 +55,7 @@ export const CommunityImportPanelHeader = ({
 
       {mandatoryTag && (
         <div className="bg-muted/20 inline-flex items-center gap-2 rounded-full border px-3 py-1.5">
-          <Tag className="text-primary h-4 w-4 shrink-0" />
+          <Tag className="text-foreground h-4 w-4 shrink-0" />
           <span className="text-sm font-semibold">{mandatoryTag}</span>
         </div>
       )}

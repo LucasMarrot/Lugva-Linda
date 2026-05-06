@@ -43,7 +43,7 @@ export const WordDetailView = ({
       <div className="min-h-0 flex-1 space-y-8 overflow-x-hidden overflow-y-auto p-6">
         <div className="space-y-2 text-center">
           <h2
-            className="text-4xl font-extrabold"
+            className="text-primary text-4xl font-extrabold"
             style={
               isExternalWord && word.ownerColorHex
                 ? { color: word.ownerColorHex }
@@ -52,7 +52,9 @@ export const WordDetailView = ({
           >
             {word.term}
           </h2>
-          <p className="text-primary text-xl font-medium">{word.translation}</p>
+          <p className="text-foreground text-xl font-medium">
+            {word.translation}
+          </p>
 
           {isExternalWord && word.ownerName && (
             <p className="text-muted-foreground text-xs">
@@ -74,7 +76,7 @@ export const WordDetailView = ({
                 )}
               >
                 {index === 0 && (
-                  <Tag className="text-primary h-4 w-4 shrink-0" />
+                  <Tag className="text-foreground h-4 w-4 shrink-0" />
                 )}
                 <Badge variant={'ghost'} className="text-md">
                   {tag}
