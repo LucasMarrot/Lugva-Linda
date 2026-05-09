@@ -134,33 +134,49 @@ export const WordTags = ({
   }, [buttonsRef, getGapValue, leftRef, rightRef, rootRef, tags]);
 
   useLayoutEffect(() => {
-    const root = rootRef.current;
-    const left = leftRef.current;
-    const right = rightRef.current;
-    const buttons = buttonsRef.current;
-    const measure = measureRef.current;
+    if (tags.length === 0) return;
 
-    if (!root || !left || !right || !buttons || !measure) {
-      return;
+    let frame: number;
+    let observer: ResizeObserver | null = null;
+
+    const initObserver = () => {
+      const root = rootRef.current;
+      const left = leftRef.current;
+      const right = rightRef.current;
+      const buttons = buttonsRef.current;
+      const measure = measureRef.current;
+
+      if (!root || !left || !right || !buttons || !measure) {
+        frame = requestAnimationFrame(initObserver);
+        return;
+      }
+
+      observer = new ResizeObserver(() => {
+        recompute();
+      });
+
+      observer.observe(root);
+      observer.observe(left);
+      observer.observe(right);
+      observer.observe(buttons);
+      observer.observe(measure);
+
+      recompute();
+    };
+
+    initObserver();
+
+    if (typeof document !== 'undefined' && document.fonts) {
+      document.fonts.ready.then(() => {
+        recompute();
+      });
     }
 
-    const observer = new ResizeObserver(() => {
-      recompute();
-    });
-
-    observer.observe(root);
-    observer.observe(left);
-    observer.observe(right);
-    observer.observe(buttons);
-    observer.observe(measure);
-
-    const frame = requestAnimationFrame(recompute);
-
     return () => {
-      cancelAnimationFrame(frame);
-      observer.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+      if (observer) observer.disconnect();
     };
-  }, [buttonsRef, leftRef, recompute, rightRef, rootRef]);
+  }, [buttonsRef, leftRef, recompute, rightRef, rootRef, tags.length]);
 
   const clampedVisibleTagCount = Math.min(visibleTagCount, tags.length);
   const visibleTags = tags.slice(0, clampedVisibleTagCount);
