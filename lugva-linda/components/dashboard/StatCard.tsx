@@ -20,19 +20,14 @@ export const StatCard = ({
   return (
     <Card
       className={cn(
-        'border-none transition-all',
+        'transition-all',
         isPrimary
-          ? 'bg-primary text-primary-foreground shadow-md'
+          ? 'bg-primary/10 border-primary/20 text-card-foreground shadow-md'
           : 'bg-card text-card-foreground shadow-sm',
       )}
     >
       <CardContent className="flex flex-col items-center justify-center p-5">
-        <Icon
-          className={cn(
-            'mb-1 h-7 w-7 opacity-90',
-            !isPrimary && 'text-primary',
-          )}
-        />
+        <Icon className="text-primary mb-1 h-7 w-7 opacity-90" />
         <span className="text-3xl font-bold tracking-tight">{value}</span>
         <span
           className={cn(

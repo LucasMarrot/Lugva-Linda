@@ -11,7 +11,6 @@ import {
   ensureUserRecord,
 } from '@/lib/services/language-service';
 import { cache } from 'react';
-import { toast } from 'sonner';
 
 export const requireAuthenticatedUser = async () => {
   const supabase = await createClient();
@@ -98,9 +97,6 @@ export const getCurrentUserProfile = cache(async () => {
     if (isDatabaseUnavailableError(dbError)) {
       console.warn(
         'Base de données injoignable, utilisation du profil de secours.',
-      );
-      toast.warning(
-        'La base de données est momentanément indisponible. Certaines fonctionnalités pourraient ne pas fonctionner correctement.',
       );
       return {
         id: user.id,
