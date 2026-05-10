@@ -1,5 +1,4 @@
 import type { Word } from '@prisma/client';
-import type { NotesBlock } from '@/lib/words/notes';
 
 export type WordOwnerSummary = {
   id: string;
@@ -11,22 +10,6 @@ export type WordOwnerSummary = {
 export type WordCommunityView = Word & {
   owner: WordOwnerSummary;
   isOwnedByCurrentUser: boolean;
-};
-
-export type EditableWordSnapshot = {
-  id: string;
-  languageId: string;
-  ownerId: string;
-  ownerName?: string;
-  ownerColorHex?: string;
-  isOwnedByCurrentUser: boolean;
-  term: string;
-  translation: string;
-  tags: string[];
-  synonyms: string[];
-  notesBlocks?: NotesBlock[] | null;
-  sourceWordId?: string | null;
-  customAudioUrl: string | null;
 };
 
 export type CommunityMemberSummary = {
@@ -60,17 +43,6 @@ export type WordMergeStrategy = {
   notes: MergeMode;
   synonyms: MergeMode;
   audio: Exclude<MergeMode, 'merge'>;
-};
-
-export type CommunityImportSelection = {
-  useCommunityTranslation: boolean;
-  keepOwnTranslation: boolean;
-  communityTagKeys: string[];
-  keepOwnTagKeys: string[];
-  useCommunityAudio: boolean;
-  keepOwnAudio: boolean;
-  communityNoteBlockIds: string[];
-  keepOwnNoteBlockIds: string[];
 };
 
 export const defaultWordMergeStrategy: WordMergeStrategy = {

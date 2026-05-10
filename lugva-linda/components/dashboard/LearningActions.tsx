@@ -1,24 +1,18 @@
-import { DueTodayReviewButton } from '@/components/dashboard/DueTodayReviewButton';
 import { ReviewBatchButton } from '@/components/dashboard/ReviewBatchButton';
 import { SectionHeader } from '@/components/shared/';
+import { REVIEW_BATCH_SIZES } from '@/lib/validation/schemas';
 
 type LearningActionsProps = {
   languageId: string;
 };
 
 export const LearningActions = ({ languageId }: LearningActionsProps) => {
-  const reviewBatches = [10, 20, 30];
-
   return (
     <section>
-      <div className="mb-3">
-        <DueTodayReviewButton languageId={languageId} />
-      </div>
+      <SectionHeader title="Entraînement libre" className="mb-2" />
 
-      <SectionHeader title="Sessions forcees" className="mb-2" />
-
-      <div className="grid grid-cols-3 gap-2">
-        {reviewBatches.map((count) => (
+      <div className="flex flex-wrap items-center gap-3">
+        {REVIEW_BATCH_SIZES.map((count) => (
           <ReviewBatchButton
             key={count}
             count={count}

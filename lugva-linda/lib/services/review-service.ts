@@ -5,8 +5,8 @@ import prisma from '@/lib/prisma';
 import { ForbiddenError, NotFoundError, ValidationError } from '@/lib/errors';
 import { fsrsEngine, mapDbCardToFsrsCard, validateFsrsCard } from '@/lib/fsrs';
 import { assertUserLanguageAccess } from '@/lib/services/language-service';
-
-type ReviewSelectionMode = 'DUE_ONLY' | 'ALLOW_EARLY';
+import { endOfDay } from 'date-fns';
+import { ReviewMode } from '../validation/schemas';
 
 const mapRatingToReviewGrade = (rating: Rating) => {
   if (rating === Rating.Again) return ReviewGrade.AGAIN;
@@ -30,15 +30,31 @@ const selectReviewCards = async (
   userId: string,
   languageId: string,
   limit: number,
-  mode: ReviewSelectionMode,
+  mode: ReviewMode,
 ) => {
-  const now = new Date();
+  if (mode === 'PRACTICE') {
+    const allCards = await prisma.card.findMany({
+      where: {
+        ownerId: userId,
+        languageId,
+        state: { not: 0 },
+        word: { isDeleted: false, deleteToken: BigInt(0) },
+      },
+      include: { word: true },
+    });
+
+    const shuffledCards = allCards.sort(() => 0.5 - Math.random());
+
+    return shuffledCards.slice(0, limit);
+  }
+
+  const limitDate = endOfDay(new Date());
 
   const dueCards = await prisma.card.findMany({
     where: {
       ownerId: userId,
       languageId,
-      due: { lte: now },
+      due: { lte: limitDate },
       state: { not: 0 },
       word: {
         isDeleted: false,
@@ -70,24 +86,36 @@ const selectReviewCards = async (
 
   let cards = [...dueCards, ...newCards];
 
-  if (mode === 'ALLOW_EARLY' && cards.length < limit) {
-    const earlyCards = await prisma.card.findMany({
+  if (mode === 'ALLOW_EARLY' && cards.length === 0) {
+    const nextCard = await prisma.card.findFirst({
       where: {
         ownerId: userId,
         languageId,
-        due: { gt: now },
+        due: { gt: limitDate },
         state: { not: 0 },
-        word: {
-          isDeleted: false,
-          deleteToken: BigInt(0),
-        },
+        word: { isDeleted: false, deleteToken: BigInt(0) },
       },
-      include: { word: true },
-      take: limit - cards.length,
       orderBy: { due: 'asc' },
     });
 
-    cards = [...cards, ...earlyCards];
+    if (nextCard) {
+      const endOfNextSessionDay = endOfDay(nextCard.due);
+
+      const earlyCards = await prisma.card.findMany({
+        where: {
+          ownerId: userId,
+          languageId,
+          due: { gt: limitDate, lte: endOfNextSessionDay },
+          state: { not: 0 },
+          word: { isDeleted: false, deleteToken: BigInt(0) },
+        },
+        include: { word: true },
+        take: limit,
+        orderBy: { due: 'asc' },
+      });
+
+      cards = [...earlyCards];
+    }
   }
 
   return cards;
@@ -96,7 +124,7 @@ const selectReviewCards = async (
 export const getDueWordsForReview = async (
   userId: string,
   languageId: string,
-  options: { limit: number; mode: ReviewSelectionMode },
+  options: { limit: number; mode: ReviewMode },
 ) => {
   await assertUserLanguageAccess(userId, languageId);
 
@@ -107,7 +135,6 @@ export const getDueWordsForReview = async (
     options.mode,
   );
 
-  // Keep the current UI payload shape while review becomes card-centric.
   return cards.map((item) => ({
     ...item.word,
     cardId: item.id,

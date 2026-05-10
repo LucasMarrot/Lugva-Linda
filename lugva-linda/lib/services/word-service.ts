@@ -5,7 +5,6 @@ import prisma from '@/lib/prisma';
 import { toNullableJsonInput } from '@/lib/prisma-json';
 import { createClient } from '@/lib/supabase/server';
 import {
-  type CommunityImportSelection,
   type CopyFieldOptions,
   type CommunityMemberSummary,
   type WordCommunityView,
@@ -18,7 +17,10 @@ import {
   StorageError,
   ValidationError,
 } from '@/lib/errors';
-import { wordWriteSchema } from '@/lib/validation/schemas';
+import {
+  CommunityImportSelection,
+  wordWriteSchema,
+} from '@/lib/validation/schemas';
 import {
   assertUserLanguageAccess,
   getFirstUserLanguage,

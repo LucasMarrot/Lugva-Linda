@@ -7,8 +7,8 @@ import {
   normalizeNotesBlocks,
   type NotesBlock,
 } from '@/lib/words/notes';
-import type { CommunityImportSelection } from '@/lib/words/community';
 import type { PreviewPayload } from './useCommunityImportPreview';
+import { CommunityImportSelection } from '@/lib/validation/schemas';
 
 type TranslationSource = 'community' | 'own';
 

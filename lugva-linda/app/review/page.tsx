@@ -5,7 +5,7 @@ import { ReviewSessionContainer } from '@/components/review/ReviewSessionContain
 import { SimulationModeBanner } from '@/components/review/SimulationModeBanner';
 import { generateMockWords } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/server';
-import { reviewPageSearchSchema } from '@/lib/validation/schemas';
+import { ReviewMode, reviewPageSearchSchema } from '@/lib/validation/schemas';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 
 export const metadata = {
@@ -13,33 +13,22 @@ export const metadata = {
 };
 
 type ReviewSearchParams = {
-  lang?: string;
-  fill?: string;
-  sim?: 'on' | 'off';
-  simPanel?: 'show' | 'hide';
-};
-
-type ReviewUrlState = {
-  lang?: string;
-  fill?: number;
-  sim?: 'on' | 'off';
-  simPanel?: 'show' | 'hide';
+  [key: string]: string | string[] | undefined;
 };
 
 type ReviewPageProps = {
   searchParams: Promise<ReviewSearchParams>;
 };
 
-const DEFAULT_DUE_LIMIT = 20;
+const DEFAULT_DUE_LIMIT = 10;
 
-const buildReviewHref = (state: ReviewUrlState) => {
+const buildReviewHref = (state: ReviewSearchParams) => {
   const searchParams = new URLSearchParams();
-
-  if (state.lang) searchParams.set('lang', state.lang);
-  if (typeof state.fill === 'number')
-    searchParams.set('fill', String(state.fill));
-  if (state.sim) searchParams.set('sim', state.sim);
-  if (state.simPanel) searchParams.set('simPanel', state.simPanel);
+  if (typeof state.lang === 'string') searchParams.set('lang', state.lang);
+  if (typeof state.mode === 'string') searchParams.set('mode', state.mode);
+  if (typeof state.sim === 'string') searchParams.set('sim', state.sim);
+  if (typeof state.simPanel === 'string')
+    searchParams.set('simPanel', state.simPanel);
 
   const query = searchParams.toString();
   return query.length > 0 ? `/review?${query}` : '/review';
@@ -79,13 +68,19 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
   const isSimulationPanelVisible =
     isDevelopment && parsedSearchParams.simPanel !== 'hide';
 
-  const isForcedFill = typeof parsedSearchParams.fill === 'number';
-  const sessionSize = parsedSearchParams.fill ?? DEFAULT_DUE_LIMIT;
-  const reviewSelectionMode = isForcedFill ? 'ALLOW_EARLY' : 'DUE_ONLY';
+  const requestedMode = rawSearchParams.mode;
+  const isEarlyMode = requestedMode === 'ALLOW_EARLY';
+  const isPracticeMode = requestedMode === 'PRACTICE';
 
-  const simulationState: ReviewUrlState = {
+  const sessionSize = parsedSearchParams.fill ?? DEFAULT_DUE_LIMIT;
+
+  let reviewSelectionMode: ReviewMode = 'DUE_ONLY';
+  if (isEarlyMode) reviewSelectionMode = 'ALLOW_EARLY';
+  if (isPracticeMode) reviewSelectionMode = 'PRACTICE';
+
+  const simulationState: ReviewSearchParams = {
     lang: languageId,
-    fill: parsedSearchParams.fill,
+    mode: requestedMode,
     sim: parsedSearchParams.sim,
     simPanel: parsedSearchParams.simPanel,
   };
@@ -106,7 +101,8 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
   const wordsToReview =
     isSimulationEnabled && isDevelopment
       ? generateMockWords(sessionSize)
-      : await getDueWords(languageId, {
+      : await getDueWords({
+          languageId,
           limit: sessionSize,
           mode: reviewSelectionMode,
         });
@@ -125,11 +121,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
 
       <ReviewSessionContainer
         initialWords={wordsToReview}
-        sessionIntent={
-          isForcedFill
-            ? { mode: 'FORCED_FILL', targetCount: sessionSize }
-            : { mode: 'DUE_ONLY' }
-        }
+        mode={reviewSelectionMode}
       />
     </main>
   );

@@ -66,7 +66,6 @@ export const LoginForm = ({ hasError, action }: LoginFormProps) => {
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="lucas@exemple.com"
               aria-invalid={!!emailError}
               className={cn(
                 emailError &&

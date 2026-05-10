@@ -1,12 +1,13 @@
 'use server';
 
-import { z } from 'zod';
 import { ReviewGrade } from '@prisma/client';
 import { Rating } from 'ts-fsrs';
+import prisma from '@/lib/prisma';
 import {
+  GetDueWordsOptions,
   getDueWordsSchema,
   processReviewSchema,
-  reviewSelectionModeSchema,
+  ValidGrade,
 } from '@/lib/validation/schemas';
 import {
   requireAuthenticatedUser,
@@ -23,19 +24,57 @@ import {
 } from '@/lib/actions/action-error';
 import { assertRateLimit } from '@/lib/security/rate-limit';
 import { assertCsrfForAction } from '@/lib/security/csrf';
+import {
+  addDays,
+  eachDayOfInterval,
+  format,
+  isBefore,
+  startOfDay,
+  subDays,
+} from 'date-fns';
+import { revalidatePath } from 'next/cache';
 
-type ValidGrade = Exclude<Rating, Rating.Manual>;
-type ReviewSelectionMode = z.infer<typeof reviewSelectionModeSchema>;
+export const processReview = async (
+  wordId: string,
+  grade: ValidGrade,
+  durationMs?: number,
+) => {
+  let userId: string | null = null;
+  const startedAt = Date.now();
 
-type GetDueWordsOptions = {
-  limit?: number;
-  mode?: ReviewSelectionMode;
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+
+    await assertCsrfForAction({
+      subject: user.id,
+    });
+    assertRateLimit(`process-review:${user.id}`, 120, 60_000);
+
+    const parsed = processReviewSchema.parse({
+      wordId,
+      grade,
+      durationMs,
+    });
+
+    const result = await processReviewForWord(
+      user.id,
+      parsed.wordId,
+      mapValidGradeToReviewGrade(parsed.grade as ValidGrade),
+      parsed.durationMs,
+    );
+
+    revalidatePath('/');
+
+    logActionSuccess('processReview', userId, startedAt);
+    return result;
+  } catch (error) {
+    logActionError('processReview', userId, error, startedAt);
+    throw toActionError(error);
+  }
 };
 
-export const getDueWords = async (
-  languageId: string,
-  options: GetDueWordsOptions = {},
-) => {
+export const getDueWords = async (options: GetDueWordsOptions) => {
   let userId: string | null = null;
 
   try {
@@ -43,7 +82,7 @@ export const getDueWords = async (
     userId = user.id;
 
     const parsed = getDueWordsSchema.parse({
-      languageId,
+      languageId: options.languageId,
       limit: options.limit,
       mode: options.mode,
     });
@@ -67,39 +106,76 @@ const mapValidGradeToReviewGrade = (grade: ValidGrade): ReviewGrade => {
   return ReviewGrade.EASY;
 };
 
-export const processReview = async (
-  wordId: string,
-  grade: ValidGrade,
-  durationMs?: number,
+export const getReviewCalendarData = async (
+  languageId: string,
+  daysLimit = 35,
 ) => {
-  let userId: string | null = null;
-  const startedAt = Date.now();
+  const user = await requireAuthenticatedUser();
+  await verifyLanguageOwnership(languageId, user.id);
 
-  try {
-    const user = await requireAuthenticatedUser();
-    userId = user.id;
-    await assertCsrfForAction({
-      subject: user.id,
-    });
-    assertRateLimit(`process-review:${user.id}`, 120, 60_000);
+  const today = startOfDay(new Date());
+  const limitDate = addDays(today, daysLimit);
+  const todayStr = format(today, 'yyyy-MM-dd');
 
-    const parsed = processReviewSchema.parse({
-      wordId,
-      grade,
-      durationMs,
-    });
+  const logs = await prisma.reviewLog.findMany({
+    where: { ownerId: user.id, languageId },
+    select: { reviewDate: true },
+  });
 
-    const result = await processReviewForWord(
-      user.id,
-      parsed.wordId,
-      mapValidGradeToReviewGrade(parsed.grade as ValidGrade),
-      parsed.durationMs,
-    );
+  const completedDates: string[] = [];
+  logs.forEach((log: { reviewDate: Date }) => {
+    const logDateStr = format(log.reviewDate, 'yyyy-MM-dd');
+    if (!completedDates.includes(logDateStr)) completedDates.push(logDateStr);
+  });
 
-    logActionSuccess('processReview', userId, startedAt);
-    return result;
-  } catch (error) {
-    logActionError('processReview', userId, error, startedAt);
-    throw toActionError(error);
+  const cards = await prisma.card.findMany({
+    where: { ownerId: user.id, languageId, word: { isDeleted: false } },
+    select: { due: true, state: true },
+  });
+
+  const planned: Record<string, number> = {};
+  let earliestOverdue: Date | null = null;
+
+  for (const card of cards) {
+    const cardDueDay = startOfDay(card.due);
+    const dateStr = format(cardDueDay, 'yyyy-MM-dd');
+
+    if (isBefore(cardDueDay, today)) {
+      planned[todayStr] = (planned[todayStr] || 0) + 1;
+
+      if (!earliestOverdue || isBefore(cardDueDay, earliestOverdue)) {
+        earliestOverdue = cardDueDay;
+      }
+    } else if (
+      cardDueDay.getTime() >= today.getTime() &&
+      cardDueDay.getTime() <= limitDate.getTime()
+    ) {
+      planned[dateStr] = (planned[dateStr] || 0) + 1;
+    }
   }
+
+  const missedDatesSet = new Set<string>();
+
+  if (earliestOverdue) {
+    const oldestAllowedMissedDate = subDays(today, 60);
+    const yesterday = subDays(today, 1);
+
+    const startMissed = isBefore(earliestOverdue, oldestAllowedMissedDate)
+      ? oldestAllowedMissedDate
+      : earliestOverdue;
+
+    if (startMissed.getTime() <= yesterday.getTime()) {
+      const interval = eachDayOfInterval({
+        start: startMissed,
+        end: yesterday,
+      });
+      interval.forEach((day) => {
+        missedDatesSet.add(format(day, 'yyyy-MM-dd'));
+      });
+    }
+  }
+
+  const missedDates = Array.from(missedDatesSet);
+
+  return { planned, missedDates, completedDates };
 };

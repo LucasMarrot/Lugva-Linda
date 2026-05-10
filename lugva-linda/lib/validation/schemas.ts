@@ -4,14 +4,7 @@ import { MANDATORY_TAGS, MANDATORY_TAGS_SET } from '../words/tags';
 import { extractNotesTextFromBlocks, NOTES_MAX_LENGTH } from '../words/notes';
 import { USER_COLOR_OPTIONS } from '../users/colors';
 
-const validGrades = [
-  Rating.Again,
-  Rating.Hard,
-  Rating.Good,
-  Rating.Easy,
-] as const;
-
-const reviewBatchSizes = [10, 20, 30] as const;
+export const REVIEW_BATCH_SIZES = [10, 20, 30] as const;
 
 const normalizeLabel = (value: string) =>
   value
@@ -23,7 +16,20 @@ const normalizeLabel = (value: string) =>
 export const languageIdSchema = z.uuid('ID de langue invalide.');
 export const wordIdSchema = z.uuid('ID de mot invalide.');
 
-export const reviewSelectionModeSchema = z.enum(['DUE_ONLY', 'ALLOW_EARLY']);
+export const reviewSelectionModeSchema = z.enum([
+  'DUE_ONLY',
+  'ALLOW_EARLY',
+  'PRACTICE',
+]);
+
+export type ReviewMode = z.infer<typeof reviewSelectionModeSchema>;
+
+const validGrades = [
+  Rating.Again,
+  Rating.Hard,
+  Rating.Good,
+  Rating.Easy,
+] as const;
 
 export const gradeSchema = z
   .number()
@@ -33,6 +39,8 @@ export const gradeSchema = z
       validGrades.includes(value as (typeof validGrades)[number]),
     'Note de revision invalide.',
   );
+
+export type ValidGrade = z.infer<typeof gradeSchema>;
 
 export const getDueWordsSchema = z.object({
   languageId: languageIdSchema,
@@ -44,6 +52,8 @@ export const getDueWordsSchema = z.object({
     .default(10),
   mode: reviewSelectionModeSchema.default('DUE_ONLY'),
 });
+
+export type GetDueWordsOptions = z.infer<typeof getDueWordsSchema>;
 
 export const processReviewSchema = z.object({
   wordId: wordIdSchema,
@@ -143,6 +153,10 @@ export const communityImportSelectionSchema = z.object({
   keepOwnNoteBlockIds: z.array(nonEmptyTextSchema.max(128)).max(500),
 });
 
+export type CommunityImportSelection = z.infer<
+  typeof communityImportSelectionSchema
+>;
+
 const stringArraySchema = z.array(
   nonEmptyTextSchema.max(
     64,
@@ -204,14 +218,18 @@ export const wordWriteSchema = z
     }
   });
 
+export type EditableWordSnapshot = z.infer<typeof wordWriteSchema>;
+
 export const reviewPageSearchSchema = z.object({
   lang: languageIdSchema.optional(),
   fill: z.coerce
     .number()
     .int('La taille de session doit etre un entier.')
     .refine(
-      (value): value is (typeof reviewBatchSizes)[number] =>
-        reviewBatchSizes.includes(value as (typeof reviewBatchSizes)[number]),
+      (value): value is (typeof REVIEW_BATCH_SIZES)[number] =>
+        REVIEW_BATCH_SIZES.includes(
+          value as (typeof REVIEW_BATCH_SIZES)[number],
+        ),
       'Taille de session invalide.',
     )
     .optional(),

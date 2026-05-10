@@ -16,6 +16,7 @@ type ActiveSessionScreenProps = {
   onComplete: (stats: SessionStats) => void;
   onQuit: () => void;
   languageName?: string;
+  isSimulationMode?: boolean;
 };
 
 export const ActiveSessionScreen = ({
@@ -23,9 +24,10 @@ export const ActiveSessionScreen = ({
   onComplete,
   onQuit,
   languageName = 'Anglais',
+  isSimulationMode = false,
 }: ActiveSessionScreenProps) => {
   const { currentWord, progress, cardState, showLapseTransition, actions } =
-    useReviewSession(initialWords, onComplete);
+    useReviewSession(initialWords, onComplete, isSimulationMode);
 
   if (!currentWord) return null;
 

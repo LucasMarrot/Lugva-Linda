@@ -9,23 +9,23 @@ import { ActiveSessionScreen } from './screens/ActiveSessionScreen';
 import { PostSessionScreen } from './screens/PostSessionScreen';
 import { EmptySessionScreen } from './screens/EmptySessionScreen';
 import type { SessionStats } from '@/hooks/useReviewSession';
+import { ReviewMode } from '@/lib/validation/schemas';
+import { RouteErrorState } from '../shared';
 
 type SessionState = 'pre' | 'active' | 'post';
 
-export type ReviewSessionIntent =
-  | { mode: 'DUE_ONLY' }
-  | { mode: 'FORCED_FILL'; targetCount: number };
-
 type ReviewSessionContainerProps = {
   initialWords: Word[];
-  sessionIntent?: ReviewSessionIntent;
+  mode?: ReviewMode;
   languageName?: string;
+  isSimulationMode?: boolean;
 };
 
 export const ReviewSessionContainer = ({
   initialWords,
-  sessionIntent = { mode: 'DUE_ONLY' },
+  mode = 'DUE_ONLY',
   languageName = 'Anglais',
+  isSimulationMode = false,
 }: ReviewSessionContainerProps) => {
   const router = useRouter();
   const [sessionState, setSessionState] = useState<SessionState>('pre');
@@ -33,27 +33,28 @@ export const ReviewSessionContainer = ({
 
   const handleGoHome = () => router.push('/');
 
-  if (initialWords.length === 0)
-    return (
-      <EmptySessionScreen onQuit={handleGoHome} languageName={languageName} />
-    );
-
   if (sessionState === 'pre')
-    return (
-      <PreSessionScreen
-        wordCount={initialWords.length}
-        sessionIntent={sessionIntent}
-        languageName={languageName}
-        onStart={() => setSessionState('active')}
-        onQuit={handleGoHome}
-      />
-    );
+    if (initialWords.length === 0)
+      return (
+        <EmptySessionScreen onQuit={handleGoHome} languageName={languageName} />
+      );
+    else
+      return (
+        <PreSessionScreen
+          wordCount={initialWords.length}
+          mode={mode}
+          languageName={languageName}
+          onStart={() => setSessionState('active')}
+          onQuit={handleGoHome}
+        />
+      );
 
   if (sessionState === 'active')
     return (
       <ActiveSessionScreen
         initialWords={initialWords}
         languageName={languageName}
+        isSimulationMode={isSimulationMode}
         onComplete={(sessionStats) => {
           setStats(sessionStats);
           setSessionState('post');
@@ -71,5 +72,11 @@ export const ReviewSessionContainer = ({
       />
     );
 
-  return null;
+  return (
+    <RouteErrorState
+      title="Erreur de session"
+      description="L'état de la session est inconnu."
+      onRetry={handleGoHome}
+    />
+  );
 };

@@ -13,6 +13,17 @@ export type UserProfile = {
   email: string;
   username: string | null;
   colorHex: string;
+  activeLanguageId: string | null;
+  learningLanguages: {
+    language: {
+      name: string;
+      id: string;
+      createdAt: Date;
+      code: string | null;
+      nameNorm: string;
+      createdBy: string;
+    };
+  }[];
 } | null;
 
 type UserContextType = {

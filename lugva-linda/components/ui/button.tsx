@@ -21,6 +21,9 @@ const buttonVariants = cva(
         link: 'text-primary underline-offset-4 hover:underline',
         warning: 'bg-orange-500 text-white hover:bg-orange-600',
         info: 'bg-blue-500 text-white hover:bg-blue-600',
+        valid: 'bg-green-500 text-white hover:bg-green-600',
+        outlineValid:
+          'border border-green-500 text-green-500 hover:bg-green-500 hover:text-white',
         outlineDestructive:
           'border border-destructive text-destructive hover:bg-destructive hover:text-white',
         outlineWarning:

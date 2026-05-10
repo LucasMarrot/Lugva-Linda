@@ -2,13 +2,13 @@
 
 import { Button } from '@/components/ui';
 import { Play, Clock, Brain } from 'lucide-react';
-import type { ReviewSessionIntent } from '../ReviewSessionContainer';
 import { cn } from '@/lib/utils';
 import { SessionHeader } from '../SessionHeader';
+import { ReviewMode } from '@/lib/validation/schemas';
 
 type PreSessionScreenProps = {
   wordCount: number;
-  sessionIntent: ReviewSessionIntent;
+  mode: ReviewMode;
   onStart: () => void;
   onQuit: () => void;
   languageName?: string;
@@ -16,12 +16,12 @@ type PreSessionScreenProps = {
 
 export const PreSessionScreen = ({
   wordCount,
-  sessionIntent,
+  mode,
   onStart,
   onQuit,
   languageName = 'Anglais',
 }: PreSessionScreenProps) => {
-  const isForcedFill = sessionIntent.mode === 'FORCED_FILL';
+  const isEarlyMode = mode === 'ALLOW_EARLY';
 
   // TODO : Intégrer un vrai calcul en fonction du temps des sessions précédentes, du nombre de mots, etc.
   // Calcul de l'estimation (30 secondes par mot)
@@ -46,14 +46,12 @@ export const PreSessionScreen = ({
         <h1 className="mb-2 text-3xl font-bold">Prêt pour la révision ?</h1>
         <p
           className={cn(
-            'mb-8',
-            isForcedFill
-              ? 'text-destructive font-medium'
-              : 'text-muted-foreground',
+            'mb-8 px-4',
+            isEarlyMode ? 'text-destructive' : 'text-muted-foreground',
           )}
         >
-          {isForcedFill
-            ? `Session forcée à ${sessionIntent.targetCount} mots : ce remplissage anticipé n'est pas optimisé pour l'apprentissage.`
+          {isEarlyMode
+            ? "Apprentissage prématuré : réviser vos mots avant l'échéance prévue n'est pas optimal pour la mémorisation à long terme."
             : 'Votre cerveau est sur le point de consolider de nouvelles connexions.'}
         </p>
 

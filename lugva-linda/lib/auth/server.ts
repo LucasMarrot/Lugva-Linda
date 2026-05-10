@@ -56,7 +56,7 @@ export const verifyWordOwnership = async (wordId: string, userId: string) => {
   }
 
   if (word.ownerId !== userId) {
-    throw new ForbiddenError('Acces refuse pour ce mot.');
+    throw new ForbiddenError('Accès refusé pour ce mot.');
   }
 
   return word;
@@ -84,6 +84,12 @@ export const getCurrentUserProfile = cache(async () => {
         email: true,
         username: true,
         colorHex: true,
+        activeLanguageId: true,
+        learningLanguages: {
+          include: {
+            language: true,
+          },
+        },
       },
     });
 
@@ -94,16 +100,17 @@ export const getCurrentUserProfile = cache(async () => {
         'Base de données injoignable, utilisation du profil de secours.',
       );
       toast.warning(
-        'Base de données injoignable, utilisation du profil de secours.',
+        'La base de données est momentanément indisponible. Certaines fonctionnalités pourraient ne pas fonctionner correctement.',
       );
       return {
         id: user.id,
         email: user.email ?? '',
         username: null,
         colorHex: '#3B82F6',
+        activeLanguageId: null,
+        learningLanguages: [],
       };
     }
-
     throw dbError;
   }
 });

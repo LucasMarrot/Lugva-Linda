@@ -10,6 +10,7 @@ import {
   checkWordTermNatureSchema,
   languageIdSchema,
   wordIdSchema,
+  CommunityImportSelection,
 } from '@/lib/validation/schemas';
 import { revalidatePath } from 'next/cache';
 import {
@@ -39,7 +40,6 @@ import {
 import { assertRateLimit } from '@/lib/security/rate-limit';
 import { assertCsrfForAction } from '@/lib/security/csrf';
 import {
-  type CommunityImportSelection,
   defaultCopyFieldOptions,
   defaultWordMergeStrategy,
   type CopyFieldOptions,

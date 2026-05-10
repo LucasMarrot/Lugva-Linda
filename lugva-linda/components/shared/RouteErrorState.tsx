@@ -45,7 +45,7 @@ export const RouteErrorState = ({
             disabled={!onRetry}
           >
             <RotateCcw className="mr-2 h-4 w-4" aria-hidden="true" />
-            Reessayer
+            Réessayer
           </Button>
           <Button asChild className="flex-1">
             <Link href={backHref}>Retour</Link>
