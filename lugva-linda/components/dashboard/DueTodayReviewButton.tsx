@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 import { Button } from '@/components/ui';
+import { frenchPluralize } from '@/lib/utils';
 
 const triggerConfetti = (buttonElement: HTMLElement, userColorHex?: string) => {
   const canvas = document.createElement('canvas');
@@ -219,7 +220,7 @@ export const DueTodayReviewButton = ({
           <Brain className="h-5 w-5" /> Réviser la séance du jour
         </span>
         <span className="text-xs font-normal opacity-80">
-          {formattedDate} — {todayWordCount} mots
+          {`${formattedDate} — ${todayWordCount} ${frenchPluralize(todayWordCount, 'mot')}`}
         </span>
       </Button>
     );
@@ -238,7 +239,7 @@ export const DueTodayReviewButton = ({
             <FastForward className="h-5 w-5" /> S&apos;avancer sur les révisions
           </span>
           <span className="text-xs font-normal opacity-80">
-            {formattedDate} — {nextSessionWordCount} mots
+            {`${formattedDate} — ${nextSessionWordCount} ${frenchPluralize(nextSessionWordCount, 'mot')}`}
           </span>
         </Link>
       </Button>
