@@ -23,6 +23,8 @@ const badgeVariants = cva(
           'border-primary text-primary [a&]:hover:bg-primary/10 [a&]:hover:text-primary',
         ghost: '[a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 [a&]:hover:underline',
+        validOutline:
+          'border-emerald-700 text-emerald-700 [a&]:hover:bg-emerald-700/10 [a&]:hover:text-emerald-700',
       },
     },
     defaultVariants: {

@@ -21,7 +21,7 @@ export const AudioPlayer = ({
     tone === 'muted'
       ? 'bg-destructive/4 border-destructive/30 border-dashed'
       : tone === 'valid'
-        ? 'bg-emerald-100/30 border-emerald-500/50'
+        ? 'bg-emerald-100/30 border-emerald-700/50'
         : 'bg-muted/30 border-border/50';
 
   return (

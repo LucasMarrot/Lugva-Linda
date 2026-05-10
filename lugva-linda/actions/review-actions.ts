@@ -106,10 +106,23 @@ const mapValidGradeToReviewGrade = (grade: ValidGrade): ReviewGrade => {
   return ReviewGrade.EASY;
 };
 
+type DailyStats = {
+  READING: number;
+  WRITING: number;
+  PRONUNCIATION: number;
+  total: number;
+};
+
+export type ReviewCalendarData = {
+  planned: Record<string, DailyStats>;
+  completed: Record<string, DailyStats>;
+  missedDates: string[];
+};
+
 export const getReviewCalendarData = async (
   languageId: string,
   daysLimit = 35,
-) => {
+): Promise<ReviewCalendarData> => {
   const user = await requireAuthenticatedUser();
   await verifyLanguageOwnership(languageId, user.id);
 
@@ -117,43 +130,83 @@ export const getReviewCalendarData = async (
   const limitDate = addDays(today, daysLimit);
   const todayStr = format(today, 'yyyy-MM-dd');
 
-  const logs = await prisma.reviewLog.findMany({
-    where: { ownerId: user.id, languageId },
-    select: { reviewDate: true },
-  });
-
-  const completedDates: string[] = [];
-  logs.forEach((log: { reviewDate: Date }) => {
-    const logDateStr = format(log.reviewDate, 'yyyy-MM-dd');
-    if (!completedDates.includes(logDateStr)) completedDates.push(logDateStr);
-  });
-
+  // 1. Récupération des cartes
   const cards = await prisma.card.findMany({
     where: { ownerId: user.id, languageId, word: { isDeleted: false } },
-    select: { due: true, state: true },
+    select: { due: true, state: true, type: true },
   });
 
-  const planned: Record<string, number> = {};
+  // 🚀 CORRECTION DE 'ANY' : On utilise notre type DailyStats
+  const planned: Record<string, DailyStats> = {};
   let earliestOverdue: Date | null = null;
 
-  for (const card of cards) {
+  cards.forEach((card) => {
     const cardDueDay = startOfDay(card.due);
-    const dateStr = format(cardDueDay, 'yyyy-MM-dd');
 
-    if (isBefore(cardDueDay, today)) {
-      planned[todayStr] = (planned[todayStr] || 0) + 1;
-
-      if (!earliestOverdue || isBefore(cardDueDay, earliestOverdue)) {
-        earliestOverdue = cardDueDay;
-      }
-    } else if (
-      cardDueDay.getTime() >= today.getTime() &&
-      cardDueDay.getTime() <= limitDate.getTime()
-    ) {
-      planned[dateStr] = (planned[dateStr] || 0) + 1;
+    // 🚀 CORRECTION DE 'limitDate' : On ignore les mots prévus trop loin dans le futur
+    if (cardDueDay.getTime() > limitDate.getTime()) {
+      return;
     }
-  }
 
+    const dateStr = format(cardDueDay, 'yyyy-MM-dd');
+    const isOverdue = isBefore(cardDueDay, today);
+    const targetDateStr = isOverdue ? todayStr : dateStr;
+
+    // Initialisation stricte de l'objet stats
+    if (!planned[targetDateStr]) {
+      planned[targetDateStr] = {
+        READING: 0,
+        WRITING: 0,
+        PRONUNCIATION: 0,
+        total: 0,
+      };
+    }
+
+    // Incrémentation (Adapté à ExerciseType de ton schema.prisma)
+    if (card.type === 'RECOGNITION') planned[targetDateStr].READING++;
+    else if (card.type === 'SPEAKING') planned[targetDateStr].PRONUNCIATION++;
+    else planned[targetDateStr].WRITING++; // REVERSE ou SPELLING
+
+    planned[targetDateStr].total++;
+
+    if (
+      isOverdue &&
+      (!earliestOverdue || isBefore(cardDueDay, earliestOverdue))
+    ) {
+      earliestOverdue = cardDueDay;
+    }
+  });
+
+  // 2. Récupération des logs (Sessions passées complétées)
+  const logs = await prisma.reviewLog.findMany({
+    where: { ownerId: user.id, languageId },
+    include: { card: true },
+  });
+
+  // 🚀 CORRECTION DE 'ANY' : On utilise notre type DailyStats
+  const completed: Record<string, DailyStats> = {};
+
+  logs.forEach((log) => {
+    const logDateStr = format(log.reviewDate, 'yyyy-MM-dd');
+
+    if (!completed[logDateStr]) {
+      completed[logDateStr] = {
+        READING: 0,
+        WRITING: 0,
+        PRONUNCIATION: 0,
+        total: 0,
+      };
+    }
+
+    if (log.card.type === 'RECOGNITION') completed[logDateStr].READING++;
+    else if (log.card.type === 'SPEAKING')
+      completed[logDateStr].PRONUNCIATION++;
+    else completed[logDateStr].WRITING++;
+
+    completed[logDateStr].total++;
+  });
+
+  // 3. Calcul des manqués
   const missedDatesSet = new Set<string>();
 
   if (earliestOverdue) {
@@ -177,5 +230,5 @@ export const getReviewCalendarData = async (
 
   const missedDates = Array.from(missedDatesSet);
 
-  return { planned, missedDates, completedDates };
+  return { planned, completed, missedDates };
 };

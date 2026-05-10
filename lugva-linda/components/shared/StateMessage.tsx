@@ -14,7 +14,7 @@ type StateMessageProps = {
 const toneStyles: Record<StateMessageTone, string> = {
   neutral: 'bg-muted/30 text-muted-foreground border-border/50',
   info: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  success: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
+  success: 'bg-emerald-700/10 text-emerald-700 border-emerald-700/20',
   error: 'bg-destructive/10 text-destructive border-destructive/30',
 };
 

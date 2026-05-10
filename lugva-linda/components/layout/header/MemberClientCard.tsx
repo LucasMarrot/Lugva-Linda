@@ -47,7 +47,7 @@ const MemberClientCard = ({
           <Circle
             className={
               isOnline
-                ? 'h-2.5 w-2.5 fill-emerald-500 text-emerald-500'
+                ? 'h-2.5 w-2.5 fill-emerald-700 text-emerald-700'
                 : 'text-muted-foreground h-2.5 w-2.5'
             }
           />
