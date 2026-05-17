@@ -9,7 +9,7 @@ import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { LearningActions } from '@/components/dashboard/LearningActions';
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
 import { StateMessage } from '@/components/shared';
-import { ReviewCalendar } from '@/components/dashboard/ReviewCalendar';
+import { ReviewCalendar } from '@/components/dashboard/review-calendar/ReviewCalendar';
 import { Header } from '@/components/layout/header/Header';
 import { getReviewCalendarData } from '@/actions/review-actions';
 

@@ -1,12 +1,13 @@
 import { redirect } from 'next/navigation';
 
-import { getDueWords } from '@/actions/review-actions';
+import { getDueCards } from '@/actions/review-actions';
 import { ReviewSessionContainer } from '@/components/review/ReviewSessionContainer';
 import { SimulationModeBanner } from '@/components/review/SimulationModeBanner';
-import { generateMockWords } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/server';
 import { ReviewMode, reviewPageSearchSchema } from '@/lib/validation/schemas';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
+import prisma from '@/lib/prisma';
+import { generateMockCards } from '@/lib/mock-data';
 
 export const metadata = {
   title: 'Révision | Lugva Linda',
@@ -63,6 +64,11 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
     .parse(rawSearchParams);
 
   const languageId = await resolveLanguageId(parsedSearchParams.lang);
+  const language = await prisma.language.findUnique({
+    where: { id: languageId },
+  });
+  const activeLanguageName = language?.name || 'Langue inconnue';
+
   const isDevelopment = process.env.NODE_ENV === 'development';
   const isSimulationEnabled = isDevelopment && parsedSearchParams.sim !== 'off';
   const isSimulationPanelVisible =
@@ -98,10 +104,10 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
     simPanel: 'hide',
   });
 
-  const wordsToReview =
+  const cardsToReview =
     isSimulationEnabled && isDevelopment
-      ? generateMockWords(sessionSize)
-      : await getDueWords({
+      ? generateMockCards(sessionSize)
+      : await getDueCards({
           languageId,
           limit: sessionSize,
           mode: reviewSelectionMode,
@@ -120,8 +126,10 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
       )}
 
       <ReviewSessionContainer
-        initialWords={wordsToReview}
+        initialCards={cardsToReview}
         mode={reviewSelectionMode}
+        languageName={activeLanguageName}
+        isSimulationMode={isSimulationEnabled}
       />
     </main>
   );

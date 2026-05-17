@@ -1,4 +1,4 @@
-import { ExerciseType, ReviewGrade, type Card } from '@prisma/client';
+import { ReviewGrade, type Card } from '@prisma/client';
 import { Rating } from 'ts-fsrs';
 
 import prisma from '@/lib/prisma';
@@ -121,7 +121,7 @@ const selectReviewCards = async (
   return cards;
 };
 
-export const getDueWordsForReview = async (
+export const getDueCardsForReview = async (
   userId: string,
   languageId: string,
   options: { limit: number; mode: ReviewMode },
@@ -135,28 +135,24 @@ export const getDueWordsForReview = async (
     options.mode,
   );
 
-  return cards.map((item) => ({
-    ...item.word,
-    cardId: item.id,
-  }));
+  return cards;
 };
 
-const getCardForReview = async (userId: string, wordId: string) => {
+const getCardForReviewById = async (userId: string, cardId: string) => {
   const card = await prisma.card.findFirst({
     where: {
       ownerId: userId,
-      wordId,
-      type: ExerciseType.RECOGNITION,
+      id: cardId,
     },
     include: { word: true },
   });
 
   if (!card) {
-    throw new NotFoundError('Carte de revision introuvable.');
+    throw new NotFoundError('Carte de révision introuvable.');
   }
 
   if (card.word.isDeleted || card.word.deleteToken !== BigInt(0)) {
-    throw new ForbiddenError('Cette carte appartient a un mot supprime.');
+    throw new ForbiddenError('Cette carte appartient à un mot supprimé.');
   }
 
   return card;
@@ -175,13 +171,13 @@ const buildNextCardUpdate = (
   lastReview: nextCard.last_review ?? null,
 });
 
-export const processReviewForWord = async (
+export const processReviewForCard = async (
   userId: string,
-  wordId: string,
+  cardId: string,
   grade: ReviewGrade,
   durationMs?: number,
 ) => {
-  const card = await getCardForReview(userId, wordId);
+  const card = await getCardForReviewById(userId, cardId);
 
   await assertUserLanguageAccess(userId, card.languageId);
 

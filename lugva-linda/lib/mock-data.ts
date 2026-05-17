@@ -1,14 +1,15 @@
 import type { Word } from '@prisma/client';
+import { ReviewCard } from './validation/schemas';
 
 /**
- * Génère un tableau de mots factices respectant strictement le type Prisma Word mis à jour.
+ * Génère un tableau de cartes factices pour la simulation.
  */
-export const generateMockWords = (count: number = 10): Word[] => {
+export const generateMockCards = (count: number = 10): ReviewCard[] => {
   return Array.from({ length: count }).map((_, index) => {
     const isEven = index % 2 === 0;
     const term = `Mot cible ${index + 1}`;
 
-    return {
+    const mockWord: Word = {
       id: `mock-word-id-${index}`,
       ownerId: 'mock-user-id',
       languageId: 'mock-language-id',
@@ -31,6 +32,27 @@ export const generateMockWords = (count: number = 10): Word[] => {
       deleteToken: BigInt(0),
       createdAt: new Date(),
       updatedAt: new Date(),
+    };
+
+    return {
+      id: `mock-card-id-${index}`,
+      wordId: mockWord.id,
+      ownerId: 'mock-user-id',
+      languageId: 'mock-language-id',
+      category: 'WRITING',
+      type: 'SPELLING',
+      due: new Date(),
+      stability: 0,
+      difficulty: 0,
+      elapsedDays: 0,
+      scheduledDays: 0,
+      reps: 0,
+      lapses: 0,
+      state: 0,
+      lastReview: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      word: mockWord,
     };
   });
 };

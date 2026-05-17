@@ -14,8 +14,8 @@ import {
   verifyLanguageOwnership,
 } from '@/lib/auth/server';
 import {
-  getDueWordsForReview,
-  processReviewForWord,
+  getDueCardsForReview,
+  processReviewForCard,
 } from '@/lib/services/review-service';
 import {
   logActionError,
@@ -34,8 +34,19 @@ import {
 } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 
+// --- UTILITAIRES ---
+
+const mapValidGradeToReviewGrade = (grade: ValidGrade): ReviewGrade => {
+  if (grade === Rating.Again) return ReviewGrade.AGAIN;
+  if (grade === Rating.Hard) return ReviewGrade.HARD;
+  if (grade === Rating.Good) return ReviewGrade.GOOD;
+  return ReviewGrade.EASY;
+};
+
+// --- ACTIONS DE RÉVISION ---
+
 export const processReview = async (
-  wordId: string,
+  cardId: string,
   grade: ValidGrade,
   durationMs?: number,
 ) => {
@@ -52,14 +63,14 @@ export const processReview = async (
     assertRateLimit(`process-review:${user.id}`, 120, 60_000);
 
     const parsed = processReviewSchema.parse({
-      wordId,
+      cardId,
       grade,
       durationMs,
     });
 
-    const result = await processReviewForWord(
+    const result = await processReviewForCard(
       user.id,
-      parsed.wordId,
+      parsed.cardId,
       mapValidGradeToReviewGrade(parsed.grade as ValidGrade),
       parsed.durationMs,
     );
@@ -74,8 +85,9 @@ export const processReview = async (
   }
 };
 
-export const getDueWords = async (options: GetDueWordsOptions) => {
+export const getDueCards = async (options: GetDueWordsOptions) => {
   let userId: string | null = null;
+  const startedAt = Date.now();
 
   try {
     const user = await requireAuthenticatedUser();
@@ -89,22 +101,21 @@ export const getDueWords = async (options: GetDueWordsOptions) => {
 
     await verifyLanguageOwnership(parsed.languageId, user.id);
 
-    return getDueWordsForReview(user.id, parsed.languageId, {
+    const cards = await getDueCardsForReview(user.id, parsed.languageId, {
       limit: parsed.limit,
       mode: parsed.mode,
     });
+
+    logActionSuccess('getDueCards', userId, startedAt);
+
+    return cards;
   } catch (error) {
-    logActionError('getDueWords', userId, error);
+    logActionError('getDueCards', userId, error, startedAt);
     throw toActionError(error);
   }
 };
 
-const mapValidGradeToReviewGrade = (grade: ValidGrade): ReviewGrade => {
-  if (grade === Rating.Again) return ReviewGrade.AGAIN;
-  if (grade === Rating.Hard) return ReviewGrade.HARD;
-  if (grade === Rating.Good) return ReviewGrade.GOOD;
-  return ReviewGrade.EASY;
-};
+// --- CALENDRIER DE RÉVISION ---
 
 type DailyStats = {
   READING: number;
@@ -130,20 +141,17 @@ export const getReviewCalendarData = async (
   const limitDate = addDays(today, daysLimit);
   const todayStr = format(today, 'yyyy-MM-dd');
 
-  // 1. Récupération des cartes
   const cards = await prisma.card.findMany({
     where: { ownerId: user.id, languageId, word: { isDeleted: false } },
     select: { due: true, state: true, type: true },
   });
 
-  // 🚀 CORRECTION DE 'ANY' : On utilise notre type DailyStats
   const planned: Record<string, DailyStats> = {};
   let earliestOverdue: Date | null = null;
 
   cards.forEach((card) => {
     const cardDueDay = startOfDay(card.due);
 
-    // 🚀 CORRECTION DE 'limitDate' : On ignore les mots prévus trop loin dans le futur
     if (cardDueDay.getTime() > limitDate.getTime()) {
       return;
     }
@@ -152,7 +160,6 @@ export const getReviewCalendarData = async (
     const isOverdue = isBefore(cardDueDay, today);
     const targetDateStr = isOverdue ? todayStr : dateStr;
 
-    // Initialisation stricte de l'objet stats
     if (!planned[targetDateStr]) {
       planned[targetDateStr] = {
         READING: 0,
@@ -162,10 +169,13 @@ export const getReviewCalendarData = async (
       };
     }
 
-    // Incrémentation (Adapté à ExerciseType de ton schema.prisma)
-    if (card.type === 'RECOGNITION') planned[targetDateStr].READING++;
-    else if (card.type === 'SPEAKING') planned[targetDateStr].PRONUNCIATION++;
-    else planned[targetDateStr].WRITING++; // REVERSE ou SPELLING
+    if (card.type === 'RECOGNITION' || card.type === 'REVERSE') {
+      planned[targetDateStr].READING++;
+    } else if (card.type === 'SPEAKING') {
+      planned[targetDateStr].PRONUNCIATION++;
+    } else {
+      planned[targetDateStr].WRITING++;
+    }
 
     planned[targetDateStr].total++;
 
@@ -177,13 +187,11 @@ export const getReviewCalendarData = async (
     }
   });
 
-  // 2. Récupération des logs (Sessions passées complétées)
   const logs = await prisma.reviewLog.findMany({
     where: { ownerId: user.id, languageId },
     include: { card: true },
   });
 
-  // 🚀 CORRECTION DE 'ANY' : On utilise notre type DailyStats
   const completed: Record<string, DailyStats> = {};
 
   logs.forEach((log) => {
@@ -198,15 +206,17 @@ export const getReviewCalendarData = async (
       };
     }
 
-    if (log.card.type === 'RECOGNITION') completed[logDateStr].READING++;
-    else if (log.card.type === 'SPEAKING')
+    if (log.card.type === 'RECOGNITION' || log.card.type === 'REVERSE') {
+      completed[logDateStr].READING++;
+    } else if (log.card.type === 'SPEAKING') {
       completed[logDateStr].PRONUNCIATION++;
-    else completed[logDateStr].WRITING++;
+    } else {
+      completed[logDateStr].WRITING++;
+    }
 
     completed[logDateStr].total++;
   });
 
-  // 3. Calcul des manqués
   const missedDatesSet = new Set<string>();
 
   if (earliestOverdue) {

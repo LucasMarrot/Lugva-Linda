@@ -3,13 +3,13 @@
 import { CardFace } from './CardFace';
 
 type RectoCardProps = {
-  word: string;
+  text: string;
 };
 
-export const RectoCard = ({ word }: RectoCardProps) => {
+export const RectoCard = ({ text }: RectoCardProps) => {
   return (
     <CardFace className="bg-primary text-primary-foreground border-primary shadow-xl">
-      <h2 className="text-center text-4xl font-bold tracking-tight">{word}</h2>
+      <h2 className="text-center text-4xl font-bold tracking-tight">{text}</h2>
     </CardFace>
   );
 };

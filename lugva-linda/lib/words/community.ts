@@ -1,4 +1,21 @@
 import type { Word } from '@prisma/client';
+import { NotesBlock } from './notes';
+
+export type EditableWordSnapshot = {
+  id: string;
+  languageId: string;
+  ownerId: string;
+  ownerName?: string;
+  ownerColorHex?: string;
+  isOwnedByCurrentUser: boolean;
+  term: string;
+  translation: string;
+  tags: string[];
+  synonyms: string[];
+  notesBlocks?: NotesBlock[] | null;
+  sourceWordId?: string | null;
+  customAudioUrl: string | null;
+};
 
 export type WordOwnerSummary = {
   id: string;

@@ -9,13 +9,23 @@ type FlashcardProps = {
   word: Word;
   isFlipped: boolean;
   onFlip: () => void;
+  mode?: 'RECOGNITION' | 'REVERSE';
 };
 
-export const Flashcard = ({ word, isFlipped, onFlip }: FlashcardProps) => {
+export const Flashcard = ({
+  word,
+  isFlipped,
+  onFlip,
+  mode = 'RECOGNITION',
+}: FlashcardProps) => {
+  const isReverse = mode === 'REVERSE';
+  const rectoText = isReverse ? word.translation : word.term;
+  const versoText = isReverse ? word.term : word.translation;
+
   return (
     <FlashcardMotion isFlipped={isFlipped} onFlip={onFlip}>
-      <RectoCard word={word.term} />
-      <VersoCard word={word} />
+      <RectoCard text={rectoText} />
+      <VersoCard word={word} mainText={versoText} />
     </FlashcardMotion>
   );
 };

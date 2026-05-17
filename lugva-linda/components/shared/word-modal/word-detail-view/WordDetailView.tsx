@@ -9,7 +9,6 @@ import {
   SectionHeader,
 } from '@/components/shared/';
 import { type EditableWordSnapshot } from '@/lib/words/community';
-import { cn } from '@/lib/utils';
 import { WordActions } from './WordActions';
 import { SynonymsList } from './SynonymsList';
 
@@ -58,7 +57,7 @@ export const WordDetailView = ({
 
           {isExternalWord && word.ownerName && (
             <p className="text-muted-foreground text-xs">
-              Propriétaire: {word.ownerName}
+              Propriétaire : {word.ownerName}
             </p>
           )}
         </div>
@@ -66,22 +65,17 @@ export const WordDetailView = ({
         {word.tags && word.tags.length > 0 && (
           <div className="flex flex-wrap justify-center gap-2">
             {word.tags.map((tag, index) => (
-              <span
-                key={tag + index}
-                className={cn(
-                  index === 0
-                    ? 'bg-secondary text-secondary-foreground border'
-                    : 'text-foreground border',
-                  'inline-flex h-8 items-center justify-center rounded-full px-4 text-sm font-semibold whitespace-nowrap',
-                )}
+              <Badge
+                key={tag + String(index)}
+                variant={index === 0 ? 'secondaryOutline' : 'outline'}
+                className="p-2 px-4 text-sm"
               >
-                {index === 0 && (
-                  <Tag className="text-foreground h-4 w-4 shrink-0" />
-                )}
-                <Badge variant={'ghost'} className="text-md">
+                <span className="flex items-center justify-center gap-2">
+                  {index === 0 && <Tag className="h-4 w-4" />}
+
                   {tag}
-                </Badge>
-              </span>
+                </span>
+              </Badge>
             ))}
           </div>
         )}

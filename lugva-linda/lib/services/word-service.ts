@@ -498,14 +498,30 @@ export const createWordForUser = async (
       },
     });
 
-    await tx.card.create({
-      data: {
-        wordId: word.id,
-        ownerId: userId,
-        languageId,
-        category: ExerciseCategory.READING,
-        type: ExerciseType.RECOGNITION,
-      },
+    await tx.card.createMany({
+      data: [
+        {
+          wordId: word.id,
+          ownerId: userId,
+          languageId,
+          category: ExerciseCategory.READING,
+          type: ExerciseType.RECOGNITION,
+        },
+        {
+          wordId: word.id,
+          ownerId: userId,
+          languageId,
+          category: ExerciseCategory.WRITING,
+          type: ExerciseType.REVERSE,
+        },
+        {
+          wordId: word.id,
+          ownerId: userId,
+          languageId,
+          category: ExerciseCategory.WRITING,
+          type: ExerciseType.SPELLING,
+        },
+      ],
     });
 
     await synchronizeSynonymConnections(tx, {
@@ -872,14 +888,30 @@ export const importCommunityWordForUser = async (
         },
       });
 
-      await tx.card.create({
-        data: {
-          wordId: word.id,
-          ownerId: viewerId,
-          languageId: word.languageId,
-          category: ExerciseCategory.READING,
-          type: ExerciseType.RECOGNITION,
-        },
+      await tx.card.createMany({
+        data: [
+          {
+            wordId: word.id,
+            ownerId: viewerId,
+            languageId: word.languageId,
+            category: ExerciseCategory.READING,
+            type: ExerciseType.RECOGNITION,
+          },
+          {
+            wordId: word.id,
+            ownerId: viewerId,
+            languageId: word.languageId,
+            category: ExerciseCategory.WRITING,
+            type: ExerciseType.REVERSE,
+          },
+          {
+            wordId: word.id,
+            ownerId: viewerId,
+            languageId: word.languageId,
+            category: ExerciseCategory.WRITING,
+            type: ExerciseType.SPELLING,
+          },
+        ],
       });
 
       return tx.word.findUnique({
@@ -1096,14 +1128,30 @@ export const importCommunityWordWithSelectionForUser = async (
         },
       });
 
-      await tx.card.create({
-        data: {
-          wordId: word.id,
-          ownerId: viewerId,
-          languageId: word.languageId,
-          category: ExerciseCategory.READING,
-          type: ExerciseType.RECOGNITION,
-        },
+      await tx.card.createMany({
+        data: [
+          {
+            wordId: word.id,
+            ownerId: viewerId,
+            languageId: word.languageId,
+            category: ExerciseCategory.READING,
+            type: ExerciseType.RECOGNITION,
+          },
+          {
+            wordId: word.id,
+            ownerId: viewerId,
+            languageId: word.languageId,
+            category: ExerciseCategory.WRITING,
+            type: ExerciseType.REVERSE,
+          },
+          {
+            wordId: word.id,
+            ownerId: viewerId,
+            languageId: word.languageId,
+            category: ExerciseCategory.WRITING,
+            type: ExerciseType.SPELLING,
+          },
+        ],
       });
 
       return tx.word.findUnique({

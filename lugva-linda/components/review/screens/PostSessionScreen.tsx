@@ -9,13 +9,16 @@ type PostSessionScreenProps = {
   stats: SessionStats;
   onQuit: () => void;
   languageName?: string;
+  mode?: string;
 };
 
 export const PostSessionScreen = ({
   stats,
   onQuit,
   languageName = 'Anglais',
+  mode,
 }: PostSessionScreenProps) => {
+  const isPractice = mode === 'PRACTICE';
   const totalWords = stats.easy + stats.good + stats.hard;
 
   return (
@@ -28,42 +31,52 @@ export const PostSessionScreen = ({
         </div>
 
         <h1 className="mb-2 text-3xl font-bold">Session terminée !</h1>
-        <p className="text-muted-foreground mb-8">
-          Vous avez validé{' '}
-          <span className="text-foreground font-bold">
-            {totalWords} mots uniques
-          </span>
-          . Voici votre niveau de rétention final :
-        </p>
+        {!isPractice ? (
+          <>
+            <p className="text-muted-foreground mb-8">
+              Vous avez validé{' '}
+              <span className="text-foreground font-bold">
+                {totalWords} mots uniques
+              </span>
+              . Voici votre niveau de rétention final :
+            </p>
 
-        <div className="mb-8 grid w-full grid-cols-3 gap-3">
-          <div className="bg-card flex flex-col items-center rounded-xl border border-emerald-700/30 p-3 shadow-sm">
-            <span className="mb-1 text-3xl font-bold text-emerald-700">
-              {stats.easy}
-            </span>
-            <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-              Faciles
-            </span>
-          </div>
+            <div className="mb-8 grid w-full grid-cols-3 gap-3">
+              <div className="bg-card flex flex-col items-center rounded-xl border border-emerald-700/30 p-3 shadow-sm">
+                <span className="mb-1 text-3xl font-bold text-emerald-700">
+                  {stats.easy}
+                </span>
+                <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                  Faciles
+                </span>
+              </div>
 
-          <div className="bg-card flex flex-col items-center rounded-xl border border-blue-500/30 p-3 shadow-sm">
-            <span className="mb-1 text-3xl font-bold text-blue-500">
-              {stats.good}
-            </span>
-            <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-              Bons
-            </span>
-          </div>
+              <div className="bg-card flex flex-col items-center rounded-xl border border-blue-500/30 p-3 shadow-sm">
+                <span className="mb-1 text-3xl font-bold text-blue-500">
+                  {stats.good}
+                </span>
+                <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                  Bons
+                </span>
+              </div>
 
-          <div className="bg-card flex flex-col items-center rounded-xl border border-orange-500/30 p-3 shadow-sm">
-            <span className="mb-1 text-3xl font-bold text-orange-500">
-              {stats.hard}
-            </span>
-            <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-              Difficiles
-            </span>
-          </div>
-        </div>
+              <div className="bg-card flex flex-col items-center rounded-xl border border-orange-500/30 p-3 shadow-sm">
+                <span className="mb-1 text-3xl font-bold text-orange-500">
+                  {stats.hard}
+                </span>
+                <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                  Difficiles
+                </span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="text-muted-foreground mb-8">
+            {
+              "Bravo pour cette session d'entrainement ! Cependant, il est recommandé de suivre le planning des révisions pour optimiser votre apprentissage."
+            }
+          </p>
+        )}
 
         <Button
           variant="outline"

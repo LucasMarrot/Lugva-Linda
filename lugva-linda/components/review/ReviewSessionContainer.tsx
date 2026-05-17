@@ -2,27 +2,25 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Word } from '@prisma/client';
-
 import { PreSessionScreen } from './screens/PreSessionScreen';
 import { ActiveSessionScreen } from './screens/ActiveSessionScreen';
 import { PostSessionScreen } from './screens/PostSessionScreen';
 import { EmptySessionScreen } from './screens/EmptySessionScreen';
 import type { SessionStats } from '@/hooks/useReviewSession';
-import { ReviewMode } from '@/lib/validation/schemas';
+import { ReviewCard, ReviewMode } from '@/lib/validation/schemas';
 import { RouteErrorState } from '../shared';
 
 type SessionState = 'pre' | 'active' | 'post';
 
 type ReviewSessionContainerProps = {
-  initialWords: Word[];
+  initialCards: ReviewCard[];
   mode?: ReviewMode;
   languageName?: string;
   isSimulationMode?: boolean;
 };
 
 export const ReviewSessionContainer = ({
-  initialWords,
+  initialCards = [],
   mode = 'DUE_ONLY',
   languageName = 'Anglais',
   isSimulationMode = false,
@@ -34,14 +32,14 @@ export const ReviewSessionContainer = ({
   const handleGoHome = () => router.push('/');
 
   if (sessionState === 'pre')
-    if (initialWords.length === 0)
+    if (initialCards.length === 0)
       return (
         <EmptySessionScreen onQuit={handleGoHome} languageName={languageName} />
       );
     else
       return (
         <PreSessionScreen
-          wordCount={initialWords.length}
+          wordCount={initialCards.length}
           mode={mode}
           languageName={languageName}
           onStart={() => setSessionState('active')}
@@ -52,7 +50,8 @@ export const ReviewSessionContainer = ({
   if (sessionState === 'active')
     return (
       <ActiveSessionScreen
-        initialWords={initialWords}
+        initialCards={initialCards}
+        mode={mode}
         languageName={languageName}
         isSimulationMode={isSimulationMode}
         onComplete={(sessionStats) => {
@@ -69,6 +68,7 @@ export const ReviewSessionContainer = ({
         stats={stats}
         onQuit={handleGoHome}
         languageName={languageName}
+        mode={mode}
       />
     );
 

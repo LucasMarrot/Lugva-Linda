@@ -3,6 +3,7 @@ import { Rating } from 'ts-fsrs';
 import { MANDATORY_TAGS, MANDATORY_TAGS_SET } from '../words/tags';
 import { extractNotesTextFromBlocks, NOTES_MAX_LENGTH } from '../words/notes';
 import { USER_COLOR_OPTIONS } from '../users/colors';
+import { Card, Word } from '@prisma/client';
 
 export const REVIEW_BATCH_SIZES = [10, 20, 30] as const;
 
@@ -15,6 +16,7 @@ const normalizeLabel = (value: string) =>
 
 export const languageIdSchema = z.uuid('ID de langue invalide.');
 export const wordIdSchema = z.uuid('ID de mot invalide.');
+export const cardIdSchema = z.uuid('ID de carte invalide.');
 
 export const reviewSelectionModeSchema = z.enum([
   'DUE_ONLY',
@@ -56,7 +58,7 @@ export const getDueWordsSchema = z.object({
 export type GetDueWordsOptions = z.infer<typeof getDueWordsSchema>;
 
 export const processReviewSchema = z.object({
-  wordId: wordIdSchema,
+  cardId: cardIdSchema,
   grade: gradeSchema,
   durationMs: z
     .number()
@@ -218,8 +220,6 @@ export const wordWriteSchema = z
     }
   });
 
-export type EditableWordSnapshot = z.infer<typeof wordWriteSchema>;
-
 export const reviewPageSearchSchema = z.object({
   lang: languageIdSchema.optional(),
   fill: z.coerce
@@ -236,3 +236,7 @@ export const reviewPageSearchSchema = z.object({
   sim: z.enum(['on', 'off']).optional(),
   simPanel: z.enum(['show', 'hide']).optional(),
 });
+
+export type ReviewCard = Card & {
+  word: Word;
+};

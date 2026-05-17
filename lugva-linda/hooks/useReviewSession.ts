@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Word } from '@prisma/client';
 import { Rating } from 'ts-fsrs';
 import { processReview } from '@/actions/review-actions';
+import { ReviewCard } from '@/lib/validation/schemas';
 
 export type SessionStats = {
   easy: number;
@@ -11,23 +11,29 @@ export type SessionStats = {
   again: number;
 };
 
+export type CardState = {
+  isFlipped: boolean;
+  hasBeenRevealed: boolean;
+  isSubmitting: boolean;
+};
+
 type ValidGrade = Exclude<Rating, Rating.Manual>;
 
 export const useReviewSession = (
-  initialWords: Word[],
+  initialCards: ReviewCard[],
   onComplete: (stats: SessionStats) => void,
   isSimulationMode: boolean = false,
 ) => {
   const router = useRouter();
 
-  const [queue] = useState<Word[]>(initialWords);
-  const [lapses, setLapses] = useState<Word[]>([]);
+  const [queue] = useState<ReviewCard[]>(initialCards || []);
+  const [lapses, setLapses] = useState<ReviewCard[]>([]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [phase, setPhase] = useState<'normal' | 'lapses'>('normal');
   const [showLapseTransition, setShowLapseTransition] = useState(false);
 
-  const [cardState, setCardState] = useState({
+  const [cardState, setCardState] = useState<CardState>({
     isFlipped: false,
     hasBeenRevealed: false,
     isSubmitting: false,
@@ -41,18 +47,20 @@ export const useReviewSession = (
   });
   const [startTime, setStartTime] = useState<number>(() => Date.now());
 
-  const currentWord =
+  const currentCard =
     phase === 'normal' ? queue[currentIndex] : lapses[currentIndex];
 
   const handleFlip = useCallback(() => {
-    if (!cardState.isFlipped) {
-      setCardState((prev) => ({
-        ...prev,
-        isFlipped: true,
-        hasBeenRevealed: true,
-      }));
-    }
-  }, [cardState.isFlipped]);
+    setCardState((prev) => {
+      if (!prev.hasBeenRevealed) {
+        setTimeout(() => {
+          setCardState((current) => ({ ...current, hasBeenRevealed: true }));
+        }, 150);
+      }
+
+      return { ...prev, isFlipped: !prev.isFlipped };
+    });
+  }, []);
 
   const dismissTransition = useCallback(() => {
     setShowLapseTransition(false);
@@ -61,38 +69,33 @@ export const useReviewSession = (
 
   const handleRate = useCallback(
     async (grade: ValidGrade) => {
-      if (cardState.isSubmitting || !currentWord) return;
+      if (!currentCard || cardState.isSubmitting) return;
 
       setCardState((prev) => ({ ...prev, isSubmitting: true }));
       const durationMs = Date.now() - startTime;
 
       try {
         if (!isSimulationMode) {
-          await processReview(currentWord.id, grade, durationMs);
+          await processReview(currentCard.id, grade, durationMs);
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, 300));
         }
 
-        let nextStats = { ...stats };
-        let nextLapsesCount = lapses.length;
+        const nextStats = { ...stats };
+        if (grade === Rating.Again) nextStats.again += 1;
+        if (grade === Rating.Hard) nextStats.hard += 1;
+        if (grade === Rating.Good) nextStats.good += 1;
+        if (grade === Rating.Easy) nextStats.easy += 1;
 
-        if (phase === 'normal') {
-          nextStats = {
-            ...stats,
-            easy: grade === Rating.Easy ? stats.easy + 1 : stats.easy,
-            good: grade === Rating.Good ? stats.good + 1 : stats.good,
-            hard: grade === Rating.Hard ? stats.hard + 1 : stats.hard,
-            again: grade === Rating.Again ? stats.again + 1 : stats.again,
-          };
-          setStats(nextStats);
+        setStats(nextStats);
 
-          if (grade === Rating.Again) {
-            setLapses((prev) => [...prev, currentWord]);
-            nextLapsesCount++;
-          }
-        } else {
-          if (grade === Rating.Again) {
-            setLapses((prev) => [...prev, currentWord]);
-            nextLapsesCount++;
-          }
+        const nextLapsesCount =
+          lapses.length + (grade === Rating.Again ? 1 : 0);
+        let nextLapses = lapses;
+
+        if (grade === Rating.Again && phase === 'normal') {
+          nextLapses = [...lapses, currentCard];
+          setLapses(nextLapses);
         }
 
         if (phase === 'normal') {
@@ -138,12 +141,12 @@ export const useReviewSession = (
     },
     [
       cardState.isSubmitting,
-      currentWord,
+      currentCard,
       isSimulationMode,
       phase,
       currentIndex,
       queue.length,
-      lapses.length,
+      lapses,
       stats,
       startTime,
       router,
@@ -151,8 +154,56 @@ export const useReviewSession = (
     ],
   );
 
+  const handleNext = useCallback(() => {
+    if (phase === 'normal') {
+      if (currentIndex + 1 < queue.length) {
+        setCurrentIndex((prev) => prev + 1);
+        setCardState({
+          isFlipped: false,
+          hasBeenRevealed: false,
+          isSubmitting: false,
+        });
+        setStartTime(Date.now());
+      } else if (lapses.length > 0) {
+        setPhase('lapses');
+        setCurrentIndex(0);
+        setShowLapseTransition(true);
+        setCardState({
+          isFlipped: false,
+          hasBeenRevealed: false,
+          isSubmitting: false,
+        });
+      } else {
+        if (!isSimulationMode) router.refresh();
+        onComplete(stats);
+      }
+    } else {
+      if (currentIndex + 1 < lapses.length) {
+        setCurrentIndex((prev) => prev + 1);
+        setCardState({
+          isFlipped: false,
+          hasBeenRevealed: false,
+          isSubmitting: false,
+        });
+        setStartTime(Date.now());
+      } else {
+        if (!isSimulationMode) router.refresh();
+        onComplete(stats);
+      }
+    }
+  }, [
+    phase,
+    currentIndex,
+    queue.length,
+    lapses.length,
+    isSimulationMode,
+    router,
+    onComplete,
+    stats,
+  ]);
+
   return {
-    currentWord,
+    currentCard,
     progress: {
       initialCount: queue.length,
       currentIndex:
@@ -165,6 +216,7 @@ export const useReviewSession = (
       handleFlip,
       handleRate,
       dismissTransition,
+      handleNext,
     },
   };
 };
