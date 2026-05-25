@@ -39,22 +39,22 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <PresenceProvider>
-          <ToastProvider>
-            <CommunityImportProvider>
-              <WordModalProvider>
-                <UserProvider initialUser={profile}>
+        <ToastProvider>
+          <UserProvider initialUser={profile}>
+            <PresenceProvider>
+              <CommunityImportProvider>
+                <WordModalProvider>
                   <ActiveLanguageProvider
                     languages={languages}
                     activeLanguageId={activeLanguageId ?? ''}
                   >
                     {children}
                   </ActiveLanguageProvider>
-                </UserProvider>
-              </WordModalProvider>
-            </CommunityImportProvider>
-          </ToastProvider>
-        </PresenceProvider>
+                </WordModalProvider>
+              </CommunityImportProvider>
+            </PresenceProvider>
+          </UserProvider>
+        </ToastProvider>
       </body>
     </html>
   );

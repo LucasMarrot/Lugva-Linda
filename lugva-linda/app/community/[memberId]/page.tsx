@@ -6,7 +6,6 @@ import { EncyclopediaClient } from '@/components/encyclopedia/EncyclopediaClient
 import { createClient } from '@/lib/supabase/server';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 import { listMemberWordsInLanguage } from '@/lib/services/word-service';
-import { toDisplayName } from '@/lib/words/community';
 import prisma from '@/lib/prisma';
 
 type MemberPageProps = {
@@ -68,13 +67,7 @@ export default async function MemberPage(props: MemberPageProps) {
       activeLanguageId={activeLanguageId}
     >
       <div className="bg-background min-h-dvh">
-        <Header
-          title={`Encyclopedie de ${toDisplayName(
-            member.email,
-            member.id,
-            member.username,
-          )}`}
-        />
+        <Header />
 
         <main className="pt-4">
           <EncyclopediaClient

@@ -13,7 +13,7 @@ type LapseTransitionScreenProps = {
 export const LapseTransitionScreen = ({
   onContinue,
   onQuit,
-  languageName = 'Anglais',
+  languageName = 'ERREUR',
 }: LapseTransitionScreenProps) => {
   return (
     <div className="flex h-[calc(100dvh-4rem)] flex-col p-4 text-center">

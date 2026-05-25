@@ -19,7 +19,7 @@ export const PreSessionScreen = ({
   mode,
   onStart,
   onQuit,
-  languageName = 'Anglais',
+  languageName = 'ERREUR',
 }: PreSessionScreenProps) => {
   const isEarlyMode = mode === 'ALLOW_EARLY';
 

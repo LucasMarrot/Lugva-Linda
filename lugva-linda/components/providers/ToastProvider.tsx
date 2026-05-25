@@ -17,6 +17,11 @@ type ToastApi = {
   error: (message: string) => void;
   success: (message: string) => void;
   info: (message: string) => void;
+  challenge: (
+    message: ReactNode,
+    onAccept: () => void,
+    onDecline: () => void,
+  ) => void;
 };
 
 const ToastContext = createContext<ToastApi | undefined>(undefined);
@@ -52,14 +57,33 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const challenge = useCallback(
+    (message: ReactNode, onAccept: () => void, onDecline: () => void) => {
+      sonnerToast(message, {
+        duration: 10000,
+        action: {
+          label: 'Accepter',
+          onClick: onAccept,
+        },
+        cancel: {
+          label: 'Refuser',
+          onClick: onDecline,
+        },
+        className: '!bg-primary-soft !text-primary !border-primary !shadow-2xl',
+      });
+    },
+    [],
+  );
+
   const api = useMemo<ToastApi>(
     () => ({
       show,
       error: (message) => show(message, 'error'),
       success: (message) => show(message, 'success'),
       info: (message) => show(message, 'info'),
+      challenge,
     }),
-    [show],
+    [show, challenge],
   );
 
   return (
@@ -72,10 +96,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
 
 export const useToast = () => {
   const context = useContext(ToastContext);
-
-  if (!context) {
+  if (!context)
     throw new Error('useToast doit etre utilise dans un ToastProvider');
-  }
-
   return context;
 };

@@ -15,7 +15,7 @@ type PostSessionScreenProps = {
 export const PostSessionScreen = ({
   stats,
   onQuit,
-  languageName = 'Anglais',
+  languageName = 'ERREUR',
   mode,
 }: PostSessionScreenProps) => {
   const isPractice = mode === 'PRACTICE';

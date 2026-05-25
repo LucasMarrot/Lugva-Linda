@@ -26,7 +26,7 @@ export const ActiveSessionScreen = ({
   mode = 'DUE_ONLY',
   onComplete,
   onQuit,
-  languageName = 'Français',
+  languageName = 'ERREUR',
   isSimulationMode = false,
 }: ActiveSessionScreenProps) => {
   const { currentCard, progress, cardState, showLapseTransition, actions } =
