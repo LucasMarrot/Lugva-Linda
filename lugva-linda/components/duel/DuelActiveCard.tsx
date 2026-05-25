@@ -97,6 +97,7 @@ export const DuelActiveCard = ({
                   inputValue={inputValue}
                   setInputValue={setInputValue}
                   onSubmit={onSubmit}
+                  mandatoryTag={currentWord.mandatoryTag}
                 />
               </div>
             )}

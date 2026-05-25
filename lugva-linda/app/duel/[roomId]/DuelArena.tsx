@@ -79,10 +79,10 @@ export const DuelArena = ({
           onQuit={actions.handleSurrender}
         />
 
-        <div className="mb-2 flex shrink-0 flex-col gap-3">
+        <div className="mb-2 flex shrink-0 flex-col gap-3 py-4">
           <DynamicProgressBar
             initialCount={deck.length}
-            currentIndex={state.currentWordIndex}
+            currentIndex={state.currentWordIndex + 1}
             lapsesCount={0}
           />
 
@@ -102,22 +102,20 @@ export const DuelArena = ({
 
         <div className="relative flex flex-1 flex-col justify-center px-4">
           <SessionLayoutMotion>
-            <div className="flex min-h-10 flex-col items-center justify-end gap-2 pb-2">
-              <div className="flex min-h-8 flex-wrap items-end justify-center gap-2">
-                {state.opponentStatus !== 'playing' && (
-                  <Badge
-                    variant="outline"
-                    className="border shadow-sm"
-                    style={{
-                      backgroundColor: toTint(opponentColor),
-                      color: opponentColor,
-                      borderColor: toTint(opponentColor),
-                    }}
-                  >
-                    {opponentName} : {getStatusText(state.opponentStatus)}
-                  </Badge>
-                )}
-              </div>
+            <div className="flex min-h-8 flex-wrap items-end justify-center gap-2">
+              {state.opponentStatus !== 'playing' && (
+                <Badge
+                  variant="outline"
+                  className="border shadow-sm"
+                  style={{
+                    backgroundColor: toTint(opponentColor),
+                    color: opponentColor,
+                    borderColor: toTint(opponentColor),
+                  }}
+                >
+                  {opponentName} : {getStatusText(state.opponentStatus)}
+                </Badge>
+              )}
             </div>
 
             <DuelActiveCard
@@ -137,7 +135,7 @@ export const DuelArena = ({
               opponentColor={opponentColor}
             />
 
-            <div className="mt-4 flex min-h-14 w-full flex-col items-center justify-center gap-4">
+            <div className="mt-2 flex min-h-14 w-full flex-col items-center justify-center gap-4">
               {state.roundState === 'playing' &&
                 state.myStatus === 'playing' && (
                   <Button

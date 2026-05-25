@@ -52,7 +52,7 @@ export const ActiveSessionScreen = ({
       <div className="mb-2 flex shrink-0 flex-col gap-3 py-4">
         <DynamicProgressBar
           initialCount={progress.initialCount}
-          currentIndex={progress.currentIndex}
+          currentIndex={progress.currentIndex + 1}
           lapsesCount={progress.lapsesCount}
         />
         <div className="flex flex-col items-center justify-center gap-2 px-4">

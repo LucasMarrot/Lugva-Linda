@@ -4,7 +4,7 @@ import React from 'react';
 import { CardFace } from './CardFace';
 import { AudioPlayer, RichTextViewer } from '@/components/shared';
 import { Badge, Button } from '@/components/ui';
-import { Eye, EyeClosed, Tag } from 'lucide-react';
+import { Eye, EyeClosed } from 'lucide-react';
 import { Word } from '@prisma/client';
 import { NotesBlock } from '@/lib/words/notes';
 
@@ -36,18 +36,17 @@ export const VersoCard = ({ word, mainText }: VersoCardProps) => {
         </div>
       )}
 
-      {word.tags.length > 0 && !isNotesVisible && (
+      {word.tags.length > 1 && !isNotesVisible && (
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           {word.tags.map((tag, index) => {
+            if (index === 0) return undefined;
             return (
               <Badge
                 key={tag + String(index)}
-                variant={index === 0 ? 'primaryOutline' : 'outline'}
+                variant="outline"
                 className="text-sm"
               >
                 <span className="flex items-center justify-center gap-1">
-                  {index === 0 && <Tag className="h-4 w-4" />}
-
                   {tag}
                 </span>
               </Badge>

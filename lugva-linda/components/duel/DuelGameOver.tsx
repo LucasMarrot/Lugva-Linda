@@ -187,19 +187,6 @@ export const DuelGameOver = ({
         </div>
 
         <div className="mt-4 flex min-h-0 flex-1 flex-col gap-6">
-          <div className="shrink-0">
-            <DuelScoreBoard
-              myScore={displayedMyScore}
-              opponentScore={displayedOppScore}
-              myStreak={0}
-              opponentStreak={0}
-              currentUserName={currentUserName}
-              currentUserColor={currentUserColor}
-              opponentName={opponentName}
-              opponentColor={opponentColor}
-            />
-          </div>
-
           <AnimatePresence>
             {isRecapFinished && (
               <motion.div
@@ -230,6 +217,19 @@ export const DuelGameOver = ({
           <div className="relative flex min-h-0 flex-1 flex-col gap-2 overflow-hidden bg-transparent">
             <div className="shrink-0 px-4">
               <SectionHeader title="Récapitulatif du duel" />
+            </div>
+
+            <div className="m-4 shrink-0">
+              <DuelScoreBoard
+                myScore={displayedMyScore}
+                opponentScore={displayedOppScore}
+                myStreak={0}
+                opponentStreak={0}
+                currentUserName={currentUserName}
+                currentUserColor={currentUserColor}
+                opponentName={opponentName}
+                opponentColor={opponentColor}
+              />
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto p-4">

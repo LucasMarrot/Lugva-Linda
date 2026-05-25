@@ -7,6 +7,7 @@ export type DuelWord = {
   id: string;
   term: string;
   translation: string;
+  mandatoryTag: string;
   ownerId: string;
 };
 
@@ -24,7 +25,13 @@ export const generateDuelDeck = async (
       isDeleted: false,
       deleteToken: BigInt(0),
     },
-    select: { id: true, term: true, translation: true, ownerId: true },
+    select: {
+      id: true,
+      term: true,
+      translation: true,
+      ownerId: true,
+      mandatoryTag: true,
+    },
     take: 50,
   });
 
@@ -35,7 +42,13 @@ export const generateDuelDeck = async (
       isDeleted: false,
       deleteToken: BigInt(0),
     },
-    select: { id: true, term: true, translation: true, ownerId: true },
+    select: {
+      id: true,
+      term: true,
+      translation: true,
+      ownerId: true,
+      mandatoryTag: true,
+    },
     take: 50,
   });
 

@@ -18,6 +18,7 @@ import { SpellingHeader } from './spelling/SpellingHeader';
 import { SpellingTimerBorder } from './spelling/SpellingTimerBorder';
 import { SpellingForm } from './spelling/SpellingForm';
 import { SpellingActions } from './spelling/SpellingActions';
+import { Tag } from 'lucide-react';
 
 type SpellingExerciseProps = {
   card: ReviewCard;
@@ -133,12 +134,24 @@ export const SpellingExercise = ({
           )}
 
           {isFinished ? (
-            <h2 className="text-center text-4xl font-bold tracking-tight">
-              {card.word.translation}
-            </h2>
+            <>
+              <h2 className="text-center text-4xl font-bold tracking-tight">
+                {card.word.translation}
+              </h2>
+              <Badge
+                variant="outline"
+                className="text-primary-foreground border-2 text-lg"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  {card.word.mandatoryTag}
+                </span>
+              </Badge>
+            </>
           ) : (
             <SpellingForm
               translation={card.word.translation}
+              mandatoryTag={card.word.mandatoryTag}
               inputValue={inputValue}
               setInputValue={setInputValue}
               onSubmit={handleSubmit}

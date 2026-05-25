@@ -24,7 +24,7 @@ export const Flashcard = ({
 
   return (
     <FlashcardMotion isFlipped={isFlipped} onFlip={onFlip}>
-      <RectoCard text={rectoText} />
+      <RectoCard text={rectoText} mandatoryTag={word.mandatoryTag} />
       <VersoCard word={word} mainText={versoText} />
     </FlashcardMotion>
   );

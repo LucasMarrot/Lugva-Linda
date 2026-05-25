@@ -15,7 +15,7 @@ export const DynamicProgressBar = ({
   lapsesCount,
 }: DynamicProgressBarProps) => {
   const totalSegments = initialCount + lapsesCount;
-  const isLapseZone = currentIndex >= initialCount;
+  const isLapseZone = currentIndex > initialCount;
 
   const segments = Array.from({ length: totalSegments }).map((_, i) => {
     if (i < currentIndex) return 'done';
