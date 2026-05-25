@@ -12,6 +12,7 @@ import {
 import Link from 'next/link';
 import { useUser } from '../../providers/UserProvider';
 import { toDisplayName } from '@/lib/words/community';
+import { DarkModeToggle } from './DarkModeToggle';
 
 const SettingsButton = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -62,6 +63,7 @@ const SettingsButton = () => {
                 {user?.email}
               </span>
             </div>
+            <DarkModeToggle />
           </div>
 
           <Separator />

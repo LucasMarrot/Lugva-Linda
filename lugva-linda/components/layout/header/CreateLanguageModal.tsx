@@ -107,11 +107,11 @@ const CreateLanguageModal = ({
       <DialogContent>
         <DialogTitle>Ajouter une langue</DialogTitle>
         <DialogDescription>
-          Creez une nouvelle langue disponible pour votre espace.
+          Créez une nouvelle langue disponible pour votre espace.
         </DialogDescription>
         <div className="flex h-full flex-col">
           <PageHeader
-            title={'Creer une langue'}
+            title="Créer une langue"
             onClose={() => onOpenChange(false)}
           />
 

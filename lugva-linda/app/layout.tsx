@@ -8,6 +8,7 @@ import { CommunityImportProvider } from '@/components/providers/CommunityImportP
 import { UserProvider } from '@/components/providers/UserProvider';
 import { getCurrentUserProfile } from '@/lib/auth/server';
 import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -35,26 +36,33 @@ export default async function RootLayout({
     profile?.activeLanguageId || languages[0]?.id || null;
 
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ToastProvider>
-          <UserProvider initialUser={profile}>
-            <PresenceProvider>
-              <CommunityImportProvider>
-                <WordModalProvider>
-                  <ActiveLanguageProvider
-                    languages={languages}
-                    activeLanguageId={activeLanguageId ?? ''}
-                  >
-                    {children}
-                  </ActiveLanguageProvider>
-                </WordModalProvider>
-              </CommunityImportProvider>
-            </PresenceProvider>
-          </UserProvider>
-        </ToastProvider>
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ToastProvider>
+            <UserProvider initialUser={profile}>
+              <PresenceProvider>
+                <CommunityImportProvider>
+                  <WordModalProvider>
+                    <ActiveLanguageProvider
+                      languages={languages}
+                      activeLanguageId={activeLanguageId ?? ''}
+                    >
+                      {children}
+                    </ActiveLanguageProvider>
+                  </WordModalProvider>
+                </CommunityImportProvider>
+              </PresenceProvider>
+            </UserProvider>
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

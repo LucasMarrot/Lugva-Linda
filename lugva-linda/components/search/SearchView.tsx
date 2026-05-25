@@ -160,7 +160,7 @@ export const SearchView = ({
           {exactMatchExists && (
             <StateMessage
               tone="info"
-              message="Ce mot existe deja. Vous pouvez creer une autre nature."
+              message="Ce mot existe deja. Vous pouvez créer une autre nature."
             />
           )}
 

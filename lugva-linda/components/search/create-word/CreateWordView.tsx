@@ -221,10 +221,10 @@ export const CreateWordView = ({
 
       if (isEditing) {
         await updateWordAction(initialData.id, formData);
-        toast.success('Mot modifie avec succes.');
+        toast.success('Mot modifié avec succès.');
       } else {
         await createWord(formData);
-        toast.success('Mot cree avec succes.');
+        toast.success('Mot créé avec succès.');
       }
 
       onSuccess();

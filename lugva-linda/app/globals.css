@@ -2,7 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is([data-theme="dark"] *));
 
 @theme inline {
   --color-background: var(--background);
@@ -48,7 +48,8 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-:root {
+:root,
+[data-theme='light'] {
   --radius: 0.625rem;
   --safe-area-top: 8px;
   --safe-area-bottom: 12px;
@@ -87,7 +88,8 @@
   --sidebar-ring: oklch(0.705 0.015 286.067);
 }
 
-.dark {
+.dark,
+[data-theme='dark'] {
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
