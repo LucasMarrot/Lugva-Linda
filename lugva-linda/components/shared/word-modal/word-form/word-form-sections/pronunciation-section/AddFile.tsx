@@ -78,7 +78,7 @@ export const AddFile = ({
 
     if (!hasAllowedMime && !hasAllowedExtension) {
       const message =
-        'Format audio non supporte. Formats acceptes: MP3, M4A, WAV, OGG, WEBM, AAC.';
+        'Format audio non supporté. Formats acceptés : MP3, M4A, WAV, OGG, WEBM, AAC.';
       onValidationError?.(message);
       toast.error(message);
       resetInput();

@@ -108,7 +108,7 @@ const deleteAudioFromStorage = async (
 const validateAudioFile = (file: File) => {
   if (!AUDIO_ALLOWED_MIME_TYPES.has(file.type)) {
     throw new ValidationError(
-      'Format audio non supporte.',
+      'Format audio non supporté.',
       'INVALID_AUDIO_TYPE',
     );
   }

@@ -30,7 +30,7 @@ const AUDIO_ALLOWED_MIME_TYPES = new Set([
 ]);
 
 const AUDIO_INVALID_TYPE_MESSAGE =
-  'Format audio non supporte. Formats acceptes: MP3, M4A, WAV, OGG, WEBM, AAC.';
+  'Format audio non supporté. Formats acceptés : MP3, M4A, WAV, OGG, WEBM, AAC.';
 const AUDIO_TOO_LARGE_MESSAGE =
   'Fichier audio trop volumineux. Taille maximale: 10 Mo.';
 

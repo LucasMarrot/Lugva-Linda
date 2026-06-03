@@ -150,7 +150,7 @@ const CreateLanguageModal = ({
                 className="w-full"
                 disabled={!isLanguageValid || isSubmitting}
               >
-                {isSubmitting ? 'Creation...' : 'Creer'}
+                {isSubmitting ? 'Création...' : 'Créer'}
               </Button>
             </DialogFooter>
           </form>
