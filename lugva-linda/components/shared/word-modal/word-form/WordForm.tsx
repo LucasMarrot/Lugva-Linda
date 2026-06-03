@@ -61,7 +61,9 @@ const parseActionError = (rawMessage: string) => {
 };
 
 const validateAudioFile = (file: File) => {
-  if (!AUDIO_ALLOWED_MIME_TYPES.has(file.type)) {
+  const baseMimeType = file.type.split(';')[0].trim().toLowerCase();
+
+  if (!AUDIO_ALLOWED_MIME_TYPES.has(baseMimeType)) {
     return AUDIO_INVALID_TYPE_MESSAGE;
   }
 
