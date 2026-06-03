@@ -4,8 +4,6 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateUserColor } from '@/actions/user-actions';
 import { userColorSchema } from '@/lib/validation/schemas';
-import { USER_COLOR_OPTIONS } from '@/lib/users/colors';
-import { cn } from '@/lib/utils';
 import {
   Button,
   Card,
@@ -15,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui';
-import { StateMessage } from '@/components/shared';
+import { StateMessage, ColorSelection } from '@/components/shared';
 import { parseActionError, StatusState } from './parseActionError';
 
 type ColorSectionProps = {
@@ -70,46 +68,14 @@ export const ColorSection = ({ initialColorHex }: ColorSectionProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div
-            className="border-border h-12 w-12 rounded-lg border"
-            style={{ backgroundColor: selectedColor }}
-          />
-          <div>
-            <p className="text-sm font-semibold">
-              {selectedColor === initialColorHex
-                ? 'Couleur actuelle'
-                : 'Nouvelle couleur'}
-            </p>
-            <p className="text-muted-foreground text-xs">{selectedColor}</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-5 gap-3">
-          {USER_COLOR_OPTIONS.map((color) => {
-            const isActive = color === selectedColor;
-            return (
-              <button
-                key={color}
-                type="button"
-                aria-pressed={isActive}
-                aria-label={`Choisir ${color}`}
-                className={cn(
-                  'h-10 w-10 rounded-full border transition-shadow',
-                  isActive
-                    ? 'border-foreground ring-foreground/40 ring-2'
-                    : 'border-border cursor-pointer',
-                  color === initialColorHex && 'ring-foreground/40 ring-2',
-                )}
-                style={{ backgroundColor: color }}
-                onClick={() => {
-                  setSelectedColor(color);
-                  if (colorStatus) setColorStatus(null);
-                }}
-              />
-            );
-          })}
-        </div>
+        <ColorSelection
+          value={selectedColor}
+          initialColor={initialColorHex}
+          onChange={(newColor) => {
+            setSelectedColor(newColor);
+            if (colorStatus) setColorStatus(null);
+          }}
+        />
 
         {colorError && (
           <p className="text-destructive text-sm font-medium">{colorError}</p>

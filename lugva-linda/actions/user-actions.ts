@@ -232,3 +232,39 @@ export async function deleteAccountAction() {
 
   redirect('/auth/login');
 }
+
+export async function completeUserProfileAction(input: {
+  username: string;
+  colorHex: string;
+}) {
+  let userId: string | null = null;
+  const startedAt = Date.now();
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+
+    await assertCsrfForAction({ subject: user.id });
+    assertRateLimit(`complete-profile:${user.id}`, 10, 60_000);
+
+    const parsedUsername = usernameSchema.parse(input.username);
+    const parsedColor = userColorSchema.parse(input.colorHex);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        username: parsedUsername,
+        colorHex: parsedColor,
+      },
+    });
+
+    revalidatePath('/settings');
+    revalidatePath('/community');
+    revalidatePath('/', 'layout');
+
+    logActionSuccess('completeUserProfileAction', userId, startedAt);
+  } catch (error) {
+    logActionError('completeUserProfileAction', userId, error, startedAt);
+    throw toActionError(error);
+  }
+}
