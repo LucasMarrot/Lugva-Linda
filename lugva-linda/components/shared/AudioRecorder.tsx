@@ -1,17 +1,22 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { AudioPlayer } from '@/components/shared';
+import { Trash2, Undo2 } from 'lucide-react';
+import { AudioPlayer } from '@/components/shared/AudioPlayer';
+import { Button } from '@/components/ui';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
-import { AddFile } from './AddFile';
-import { Recorder } from './Recorder';
+import { Recorder } from './word-modal/word-form/word-form-sections/pronunciation-section/Recorder';
+import { AddFile } from './word-modal/word-form/word-form-sections/pronunciation-section/AddFile';
 
-interface AudioRecorderProps {
+export interface AudioRecorderProps {
   onAudioReady: (file: File | null) => void;
   existingAudioUrl?: string | null;
   errorMessage?: string | null;
   onValidationError?: (message: string | null) => void;
+  isExistingAudioRemoved?: boolean;
+  onRemoveExistingAudio?: () => void;
+  onRestoreExistingAudio?: () => void;
 }
 
 export const AudioRecorder = ({
@@ -19,6 +24,9 @@ export const AudioRecorder = ({
   existingAudioUrl,
   errorMessage,
   onValidationError,
+  isExistingAudioRemoved,
+  onRemoveExistingAudio,
+  onRestoreExistingAudio,
 }: AudioRecorderProps) => {
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null);
 
@@ -45,24 +53,17 @@ export const AudioRecorder = ({
 
   const clearUploadedAudio = useCallback(
     (notifyParent: boolean) => {
-      // Revoke object URLs when replacing/removing uploads to avoid memory leaks.
       setUploadedAudioUrl((previous) => {
         if (previous) URL.revokeObjectURL(previous);
-
         return null;
       });
-
-      if (notifyParent) {
-        onAudioReady(null);
-      }
+      if (notifyParent) onAudioReady(null);
     },
     [onAudioReady],
   );
 
   const handleStartRecording = async () => {
-    if (hasUploadedAudio) {
-      clearUploadedAudio(true);
-    }
+    if (hasUploadedAudio) clearUploadedAudio(true);
     onValidationError?.(null);
     await startRecording();
   };
@@ -70,14 +71,8 @@ export const AudioRecorder = ({
   const handleFileReady = useCallback(
     (file: File) => {
       onValidationError?.(null);
-
-      if (recordedAudioUrl) {
-        deleteRecordedAudio();
-      }
-
-      if (hasUploadedAudio) {
-        clearUploadedAudio(false);
-      }
+      if (recordedAudioUrl) deleteRecordedAudio();
+      if (hasUploadedAudio) clearUploadedAudio(false);
 
       const nextUrl = URL.createObjectURL(file);
       setUploadedAudioUrl(nextUrl);
@@ -93,41 +88,55 @@ export const AudioRecorder = ({
     ],
   );
 
-  const handleDelete = () => {
+  const handleDeleteActive = () => {
     if (hasUploadedAudio) {
       clearUploadedAudio(true);
-      onValidationError?.(null);
-      return;
+    } else {
+      deleteRecordedAudio();
     }
-
-    deleteRecordedAudio();
     onValidationError?.(null);
   };
 
   useEffect(() => {
-    if (errorEvent) {
-      toast.error(errorEvent.message);
-    }
+    if (errorEvent) toast.error(errorEvent.message);
   }, [errorEvent, toast]);
 
   useEffect(() => {
     return () => {
-      if (uploadedAudioUrl) {
-        URL.revokeObjectURL(uploadedAudioUrl);
-      }
+      if (uploadedAudioUrl) URL.revokeObjectURL(uploadedAudioUrl);
     };
   }, [uploadedAudioUrl]);
 
   return (
     <div className="space-y-2">
-      {existingAudioUrl && (
+      {existingAudioUrl && !isExistingAudioRemoved && (
         <AudioPlayer
           audioUrl={existingAudioUrl}
           label={
             activeAudioUrl ? 'Ancienne prononciation' : 'Prononciation actuelle'
           }
           tone={activeAudioUrl ? 'muted' : 'default'}
+          onDelete={onRemoveExistingAudio}
         />
+      )}
+
+      {existingAudioUrl && isExistingAudioRemoved && (
+        <div className="border-destructive/30 bg-destructive/10 animate-in fade-in flex items-center justify-between rounded-lg border p-3 duration-200">
+          <span className="text-destructive flex items-center gap-2 text-sm font-medium">
+            <Trash2 className="h-4 w-4" />
+            Prononciation supprimée
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            type="button"
+            onClick={onRestoreExistingAudio}
+            className="text-destructive hover:text-destructive hover:bg-destructive/20 h-8 px-2"
+          >
+            <Undo2 className="mr-1 h-4 w-4" />
+            Annuler
+          </Button>
+        </div>
       )}
 
       {!activeAudioUrl ? (
@@ -138,7 +147,6 @@ export const AudioRecorder = ({
             onStopRecording={stopRecording}
             errorMessage={errorMessage}
           />
-
           <AddFile
             isDisabled={isRecording}
             onFileReady={handleFileReady}
@@ -149,7 +157,7 @@ export const AudioRecorder = ({
       ) : (
         <AudioPlayer
           audioUrl={activeAudioUrl}
-          onDelete={handleDelete}
+          onDelete={handleDeleteActive}
           label="Nouvelle prononciation"
         />
       )}

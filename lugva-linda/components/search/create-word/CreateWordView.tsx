@@ -10,7 +10,6 @@ import {
   updateWordAction,
 } from '@/actions/word-actions';
 import { SynonymSelector } from './SynonymSelector';
-import { AudioRecorder } from './AudioRecorder';
 import { cn, toUpperCaseFirstWord } from '@/lib/utils';
 import { useToast } from '@/components/providers/ToastProvider';
 import { createWordFormSchema } from '@/lib/validation/schemas';
@@ -24,7 +23,7 @@ import {
   type NotesBlock,
   serializeNotesBlocks,
 } from '@/lib/words/notes';
-import { RichTextEditor } from '@/components/shared';
+import { AudioRecorder, RichTextEditor } from '@/components/shared';
 
 type CreateWordViewProps = {
   initialQuery?: string;

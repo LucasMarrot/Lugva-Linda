@@ -102,6 +102,7 @@ export const WordForm = ({
     string | null
   >(mandatoryTags[0] ?? null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [shouldRemoveAudio, setShouldRemoveAudio] = useState(false);
   const [pronunciationError, setPronunciationError] = useState<string | null>(
     null,
   );
@@ -188,6 +189,8 @@ export const WordForm = ({
       }
 
       formData.append('audioFile', audioFile);
+    } else if (shouldRemoveAudio) {
+      formData.append('removeAudio', 'true');
     }
 
     try {
@@ -268,6 +271,9 @@ export const WordForm = ({
           errorMessage={pronunciationError}
           onValidationError={handlePronunciationValidation}
           onAudioReady={handleAudioReady}
+          isExistingAudioRemoved={shouldRemoveAudio}
+          onRemoveExistingAudio={() => setShouldRemoveAudio(true)}
+          onRestoreExistingAudio={() => setShouldRemoveAudio(false)}
         />
 
         <SynonymsSection

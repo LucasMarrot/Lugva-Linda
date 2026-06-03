@@ -390,9 +390,11 @@ export async function updateWordAction(wordId: string, formData: FormData) {
     const validatedWordId = wordIdSchema.parse(normalizeText(wordId));
     const input = parseWordFormData(formData);
     const audioFile = formData.get('audioFile') as File | null;
+    const removeAudio = formData.get('removeAudio') === 'true';
 
     await updateWordForOwner(user.id, validatedWordId, input, {
       audioFile,
+      removeAudio,
       supabase,
     });
 

@@ -1223,7 +1223,11 @@ export const updateWordForOwner = async (
   ownerId: string,
   wordId: string,
   input: WordInput,
-  options?: { audioFile?: File | null; supabase?: SupabaseClient },
+  options?: {
+    audioFile?: File | null;
+    removeAudio?: boolean;
+    supabase?: SupabaseClient;
+  },
 ) => {
   const existingWord = await prisma.word.findUnique({ where: { id: wordId } });
   if (!existingWord || existingWord.ownerId !== ownerId) {
@@ -1239,6 +1243,7 @@ export const updateWordForOwner = async (
     normalizedInput.term,
   );
   const { notesBlocks, ...wordData } = normalizedInput;
+
   await assertNoActiveDuplicate(
     ownerId,
     existingWord.languageId,
@@ -1247,11 +1252,22 @@ export const updateWordForOwner = async (
     wordId,
   );
 
-  let audioData:
-    | { customAudioPath: string; customAudioUrl: string }
+  let audioUpdateData:
+    | { customAudioPath: string | null; customAudioUrl: string | null }
     | undefined;
+
   if (options?.audioFile && options.supabase && options.audioFile.size > 0) {
-    audioData = await uploadAudio(options.supabase, ownerId, options.audioFile);
+    const uploaded = await uploadAudio(
+      options.supabase,
+      ownerId,
+      options.audioFile,
+    );
+    audioUpdateData = {
+      customAudioPath: uploaded.customAudioPath,
+      customAudioUrl: uploaded.customAudioUrl,
+    };
+  } else if (options?.removeAudio) {
+    audioUpdateData = { customAudioPath: null, customAudioUrl: null };
   }
 
   const updatedWord = await prisma.$transaction(async (tx) => {
@@ -1261,7 +1277,7 @@ export const updateWordForOwner = async (
         ...wordData,
         synonyms: sanitizedSynonyms,
         notesBlocks: toNullableJsonInput(notesBlocks),
-        ...(audioData ?? {}),
+        ...(audioUpdateData !== undefined ? audioUpdateData : {}),
       },
     });
 
@@ -1278,7 +1294,14 @@ export const updateWordForOwner = async (
     return word;
   });
 
-  if (audioData && options?.supabase && existingWord.customAudioPath) {
+  const hasNewAudio = Boolean(options?.audioFile && options.audioFile.size > 0);
+  const isExplicitlyRemoved = Boolean(options?.removeAudio);
+
+  if (
+    (hasNewAudio || isExplicitlyRemoved) &&
+    options?.supabase &&
+    existingWord.customAudioPath
+  ) {
     await deleteAudioFromStorage(
       options.supabase,
       existingWord.customAudioPath,
