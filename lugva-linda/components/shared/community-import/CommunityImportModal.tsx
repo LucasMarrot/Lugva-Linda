@@ -16,9 +16,9 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui';
-import { CommunityImportPanels } from './CommunityImportPanels';
-import { useCommunityImportPreview } from './useCommunityImportPreview';
-import { useCommunityImportSelection } from './useCommunityImportSelection';
+import { CommunityImportPanels } from '@/components/shared/community-import/CommunityImportPanels';
+import { useCommunityImportPreview } from '@/components/shared/community-import/useCommunityImportPreview';
+import { useCommunityImportSelection } from '@/components/shared/community-import/useCommunityImportSelection';
 
 type CommunityImportModalProps = {
   sourceWordId: string | null;
@@ -70,14 +70,11 @@ export const CommunityImportModal = ({
 
       await importWordFromCommunitySelectionAction(sourceWordId, payload);
       toast.success('Mot ajoute à votre encyclopedie.');
+      window.location.reload();
 
       onImportingChange?.(null);
       onImportSuccess?.();
       handleClose();
-
-      if (window.location.pathname === '/search') {
-        window.location.assign('/search');
-      }
     } catch (error) {
       onImportingChange?.(null);
       toast.error(parseActionErrorMessage(error));
