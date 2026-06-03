@@ -31,10 +31,6 @@ export default async function WordsPage(props: WordsPageProps) {
     redirect('/setup');
   }
 
-  if (lang !== activeLanguageId) {
-    redirect(`/words?lang=${activeLanguageId}`);
-  }
-
   const words = await prisma.word.findMany({
     where: {
       ownerId: user.id,
