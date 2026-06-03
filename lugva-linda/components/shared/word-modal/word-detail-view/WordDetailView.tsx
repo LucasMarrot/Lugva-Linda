@@ -39,7 +39,7 @@ export const WordDetailView = ({
 
   return (
     <>
-      <div className="max-h-[70dvh] min-h-0 flex-1 space-y-8 overflow-x-hidden overflow-y-auto p-6">
+      <div className="min-h-0 flex-1 space-y-8 overflow-x-hidden overflow-y-auto p-6 sm:max-h-[70dvh]">
         <div className="space-y-2 text-center">
           <h2
             className="text-primary text-4xl font-extrabold"

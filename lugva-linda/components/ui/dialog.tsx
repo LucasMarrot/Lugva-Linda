@@ -91,7 +91,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        'border-border/70 bg-background/95 shrink-0 border-t p-4 backdrop-blur-sm sm:rounded-b-2xl',
+        'border-border/70 bg-background/95 shrink-0 border-t p-4 pb-8 backdrop-blur-sm sm:rounded-b-2xl sm:pb-4',
         className,
       )}
       {...props}
