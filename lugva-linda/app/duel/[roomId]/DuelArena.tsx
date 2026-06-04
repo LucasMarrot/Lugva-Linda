@@ -13,6 +13,7 @@ import { DuelExerciseInfo } from '@/components/duel/DuelExerciseInfo';
 import { DuelGameOver } from '@/components/duel/DuelGameOver';
 import { DuelScoreBoard } from '@/components/duel/DuelScoreBoard';
 import { useDuelGame } from '@/hooks/useDuelGame';
+import { useUserColor } from '@/hooks/useUserColor';
 
 type DuelArenaProps = {
   deck: DuelWord[];
@@ -49,6 +50,9 @@ export const DuelArena = ({
 }: DuelArenaProps) => {
   const { state, actions } = useDuelGame({ deck, channel });
 
+  const themeCurrentUserColor = useUserColor(currentUserColor);
+  const themeOpponentColor = useUserColor(opponentColor);
+
   const wordOwnerColor =
     state.currentWord.ownerId === currentUserId
       ? currentUserColor
@@ -63,9 +67,9 @@ export const DuelArena = ({
         myStatus={state.myStatus}
         opponentStatus={state.opponentStatus}
         currentUserName={currentUserName}
-        currentUserColor={currentUserColor}
+        currentUserColor={themeCurrentUserColor || currentUserColor}
         opponentName={opponentName}
-        opponentColor={opponentColor}
+        opponentColor={themeOpponentColor || opponentColor}
         languageName={languageName}
       />
     );
@@ -92,9 +96,9 @@ export const DuelArena = ({
             myStreak={state.myStreak}
             opponentStreak={state.opponentStreak}
             currentUserName={currentUserName}
-            currentUserColor={currentUserColor}
+            currentUserColor={themeCurrentUserColor || currentUserColor}
             opponentName={opponentName}
-            opponentColor={opponentColor}
+            opponentColor={themeOpponentColor || opponentColor}
           />
 
           <DuelExerciseInfo />
@@ -108,9 +112,11 @@ export const DuelArena = ({
                   variant="outline"
                   className="border shadow-sm"
                   style={{
-                    backgroundColor: toTint(opponentColor),
-                    color: opponentColor,
-                    borderColor: toTint(opponentColor),
+                    backgroundColor: toTint(
+                      themeOpponentColor || opponentColor,
+                    ),
+                    color: themeOpponentColor || opponentColor,
+                    borderColor: toTint(themeOpponentColor || opponentColor),
                   }}
                 >
                   {opponentName} : {getStatusText(state.opponentStatus)}
@@ -131,8 +137,8 @@ export const DuelArena = ({
               opponentName={opponentName}
               myRoundPoints={state.myRoundPoints}
               opponentRoundPoints={state.opponentRoundPoints}
-              currentUserColor={currentUserColor}
-              opponentColor={opponentColor}
+              currentUserColor={themeCurrentUserColor || currentUserColor}
+              opponentColor={themeOpponentColor || opponentColor}
             />
 
             <div className="mt-2 flex min-h-14 w-full flex-col items-center justify-center gap-4">

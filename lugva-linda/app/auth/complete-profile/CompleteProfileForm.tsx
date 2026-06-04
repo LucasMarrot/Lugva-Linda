@@ -25,6 +25,7 @@ import {
   userPasswordSchema,
   userColorSchema,
 } from '@/lib/validation/schemas';
+import { DEFAULT_USER_COLOR, USER_COLOR_OPTIONS } from '@/lib/users/colors';
 
 const completeProfileSchema = z.object({
   username: usernameSchema,
@@ -32,14 +33,27 @@ const completeProfileSchema = z.object({
   colorHex: userColorSchema,
 });
 
-export const CompleteProfileForm = () => {
+type CompleteProfileFormProps = {
+  unavailableColors: string[];
+};
+
+export const CompleteProfileForm = ({
+  unavailableColors,
+}: CompleteProfileFormProps) => {
   const router = useRouter();
   const toast = useToast();
 
   const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [colorHex, setColorHex] = useState('#1B1B1B');
+  const [colorHex, setColorHex] = useState<string>(() => {
+    if (!unavailableColors.includes(DEFAULT_USER_COLOR))
+      return DEFAULT_USER_COLOR;
+    return (
+      USER_COLOR_OPTIONS.find((c) => !unavailableColors.includes(c)) ||
+      DEFAULT_USER_COLOR
+    );
+  });
 
   const validation = useMemo(
     () => completeProfileSchema.safeParse({ username, password, colorHex }),
@@ -159,7 +173,11 @@ export const CompleteProfileForm = () => {
 
             <div className="space-y-2">
               <Label htmlFor="colorHex">Couleur de profil</Label>
-              <ColorSelection value={colorHex} onChange={setColorHex} />
+              <ColorSelection
+                value={colorHex}
+                onChange={setColorHex}
+                unavailableColors={unavailableColors}
+              />
               {colorError && (
                 <p className="text-destructive text-sm font-medium">
                   {colorError}

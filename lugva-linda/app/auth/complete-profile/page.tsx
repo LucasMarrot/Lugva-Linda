@@ -23,5 +23,12 @@ export default async function CompleteProfilePage() {
     redirect('/');
   }
 
-  return <CompleteProfileForm />;
+  const takenColors = await prisma.user.findMany({
+    where: { id: { not: user.id } },
+    select: { colorHex: true },
+  });
+
+  const unavailableColors = takenColors.map((u) => u.colorHex as string);
+
+  return <CompleteProfileForm unavailableColors={unavailableColors} />;
 }

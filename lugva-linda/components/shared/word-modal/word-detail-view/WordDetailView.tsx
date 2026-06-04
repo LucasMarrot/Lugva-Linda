@@ -11,6 +11,7 @@ import {
 import { type EditableWordSnapshot } from '@/lib/words/community';
 import { WordActions } from './WordActions';
 import { SynonymsList } from './SynonymsList';
+import { useUserColor } from '@/hooks/useUserColor';
 
 type WordDetailViewProps = {
   word: EditableWordSnapshot;
@@ -35,6 +36,7 @@ export const WordDetailView = ({
   isAddingExternalWord = false,
   onSynonymSelect,
 }: WordDetailViewProps) => {
+  const dynamicColor = useUserColor(word.ownerColorHex);
   const isExternalWord = canAdd;
 
   return (
@@ -44,8 +46,8 @@ export const WordDetailView = ({
           <h2
             className="text-primary text-4xl font-extrabold"
             style={
-              isExternalWord && word.ownerColorHex
-                ? { color: word.ownerColorHex }
+              isExternalWord && dynamicColor
+                ? { color: dynamicColor }
                 : undefined
             }
           >

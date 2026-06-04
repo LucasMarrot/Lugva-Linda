@@ -250,6 +250,13 @@ export async function completeUserProfileAction(input: {
     const parsedUsername = usernameSchema.parse(input.username);
     const parsedColor = userColorSchema.parse(input.colorHex);
 
+    const colorTaken = await prisma.user.findFirst({
+      where: { colorHex: parsedColor, id: { not: user.id } },
+    });
+
+    if (colorTaken)
+      throw new DuplicateError('Cette couleur est déjà utilisée.');
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -267,4 +274,15 @@ export async function completeUserProfileAction(input: {
     logActionError('completeUserProfileAction', userId, error, startedAt);
     throw toActionError(error);
   }
+}
+
+export async function getUnavailableColorsAction() {
+  const user = await requireAuthenticatedUser();
+
+  const takenColors = await prisma.user.findMany({
+    where: { id: { not: user.id } },
+    select: { colorHex: true },
+  });
+
+  return takenColors.map((u) => u.colorHex as string);
 }

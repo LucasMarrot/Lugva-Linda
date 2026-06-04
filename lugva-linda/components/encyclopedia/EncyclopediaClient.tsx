@@ -6,9 +6,9 @@ import type { Word } from '@prisma/client';
 import { useWordModal } from '../providers/WordModalProvider';
 import { AlphabetNav } from './AlphabetNav';
 import { TagFilter } from './TagFilter';
-import { StateMessage, WordListItem } from '@/components/shared/';
+import { StateMessage } from '@/components/shared/';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
-import { getWordVisualMeta, toWordSnapshot } from '@/hooks/useWordSnapshot';
+import { EncyclopediaItem } from './EncyclopediaItem';
 
 type EncyclopediaClientProps = {
   words: Word[];
@@ -91,24 +91,16 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
             </h2>
 
             <div className="space-y-3">
-              {groupedWords[letter].map((word) => {
-                const visualMeta = getWordVisualMeta(word, mode);
-
-                return (
-                  <WordListItem
-                    key={word.id}
-                    word={word}
-                    ownerName={visualMeta.ownerName}
-                    primaryColor={visualMeta.primaryColor}
-                    onAdd={
-                      visualMeta.isExternal && addingWordId !== word.id
-                        ? () => importWord(word.id)
-                        : undefined
-                    }
-                    onClick={() => openWord(toWordSnapshot(word, mode))}
-                  />
-                );
-              })}
+              {groupedWords[letter].map((word) => (
+                <EncyclopediaItem
+                  key={word.id}
+                  word={word}
+                  mode={mode}
+                  addingWordId={addingWordId}
+                  onImport={importWord}
+                  onOpen={openWord}
+                />
+              ))}
             </div>
           </div>
         ))}

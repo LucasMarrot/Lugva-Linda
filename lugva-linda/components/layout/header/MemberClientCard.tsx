@@ -4,6 +4,7 @@ import { toTint } from '@/lib/utils';
 import Link from 'next/link';
 import { Circle, Swords } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { useUserColor } from '@/hooks/useUserColor';
 
 type MemberClientCardProps = {
   member: CommunityMemberSummary;
@@ -18,6 +19,7 @@ const MemberClientCard = ({
   activeLanguageId,
 }: MemberClientCardProps) => {
   const { onlineUserIds, sendChallenge } = usePresence();
+  const dynamicColor = useUserColor(member.colorHex);
   const isOnline = onlineUserIds.has(member.id);
 
   const cleanLanguageId = activeLanguageId.replace('?lang=', '');
@@ -29,14 +31,16 @@ const MemberClientCard = ({
     sendChallenge(member.id, cleanLanguageId);
   };
 
+  if (!member || !dynamicColor) return null;
+
   return (
     <Link
       key={member.id}
       href={`/community/${member.id}${activeLanguageId}`}
       className="group relative block rounded-lg border px-2 py-1.5 transition-colors"
       style={{
-        borderColor: `${member.colorHex}66`,
-        backgroundColor: toTint(member.colorHex),
+        borderColor: `${dynamicColor}66`,
+        backgroundColor: toTint(dynamicColor),
       }}
       onClick={() => setIsOpen(false)}
     >
@@ -44,7 +48,7 @@ const MemberClientCard = ({
         <div className="min-w-0">
           <p
             className="truncate text-sm font-semibold sm:text-[0.95rem]"
-            style={{ color: member.colorHex }}
+            style={{ color: dynamicColor }}
           >
             {member.displayName}
           </p>
