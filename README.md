@@ -115,10 +115,6 @@ lugva-linda/
 - Les battles/duels n'impactent pas la planification ni les statistiques FSRS.
 - La progression est indépendante par type d'exercice.
 
-## Roadmap
-
-La roadmap produit et les epics sont détaillés dans [lugva-linda/docs/epics.md](lugva-linda/docs/epics.md).
-
 ## Déploiement
 
 Le déploiement cible est Vercel. Avant de déployer, ajoutez les variables d'environnement nécessaires dans la configuration du projet Vercel (mêmes clés que dans `.env`).
