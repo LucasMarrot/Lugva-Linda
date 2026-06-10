@@ -30,12 +30,11 @@ export async function getDashboardData(
     },
   });
 
-  const wordsToReview = await prisma.card.count({
+  const cardsToReview = await prisma.card.count({
     where: {
       ownerId: user.id,
       languageId,
       due: { lte: new Date() },
-      state: { not: 0 },
       word: {
         isDeleted: false,
         deleteToken: BigInt(0),
@@ -46,6 +45,6 @@ export async function getDashboardData(
   return {
     languages,
     totalWords,
-    wordsToReview,
+    cardsToReview,
   };
 }

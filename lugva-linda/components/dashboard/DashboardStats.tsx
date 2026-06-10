@@ -4,19 +4,19 @@ import { StateMessage } from '@/components/shared/';
 
 type DashboardStatsProps = {
   totalWords: number;
-  wordsToReview: number;
+  cardsToReview: number;
 };
 
 export const DashboardStats = ({
   totalWords,
-  wordsToReview,
+  cardsToReview,
 }: DashboardStatsProps) => {
   return (
     <section className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <StatCard
-          title="À réviser"
-          value={wordsToReview}
+          title="À réviser aujourd'hui"
+          value={cardsToReview}
           icon={Brain}
           variant="primary"
         />

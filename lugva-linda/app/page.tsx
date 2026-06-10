@@ -68,7 +68,7 @@ export default async function HomePage() {
       <main className="space-y-8 px-4 pt-4">
         <DashboardStats
           totalWords={dashboardData!.totalWords}
-          wordsToReview={dashboardData!.wordsToReview}
+          cardsToReview={dashboardData!.cardsToReview}
         />
 
         <div className="flex flex-col items-start gap-10 md:flex-row">

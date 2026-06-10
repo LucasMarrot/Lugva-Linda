@@ -31,7 +31,7 @@ export const StatCard = ({
         <span className="text-3xl font-bold tracking-tight">{value}</span>
         <span
           className={cn(
-            'mt-1 text-[10px] font-medium tracking-wider uppercase',
+            'mt-1 text-center text-[10px] font-medium tracking-wider uppercase',
             isPrimary ? 'opacity-80' : 'text-muted-foreground',
           )}
         >
