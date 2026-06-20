@@ -14,6 +14,16 @@ const normalizeLabel = (value: string) =>
     .trim()
     .toLowerCase();
 
+export const formalizeText = (text: string) => {
+  if (!text) return text;
+  return text
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(', ');
+};
+
 export const languageIdSchema = z.uuid('ID de langue invalide.');
 export const wordIdSchema = z.uuid('ID de mot invalide.');
 export const cardIdSchema = z.uuid('ID de carte invalide.');
@@ -73,10 +83,9 @@ export const nonEmptyTextSchema = z
   .min(1, 'Ce champ est obligatoire.');
 
 export const createLanguageFormSchema = z.object({
-  name: nonEmptyTextSchema.max(
-    64,
-    'Le nom de la langue ne doit pas depasser 64 caracteres.',
-  ),
+  name: nonEmptyTextSchema
+    .max(64, 'Le nom de la langue ne doit pas depasser 64 caracteres.')
+    .transform(formalizeText),
 });
 
 export const buildCreateLanguageFormSchema = (existingNames: string[]) => {
@@ -123,22 +132,19 @@ export const mandatoryTagSchema = z.enum(MANDATORY_TAGS, {
 });
 
 export const createWordFormSchema = z.object({
-  word: nonEmptyTextSchema.max(
-    128,
-    'Le mot ne doit pas depasser 128 caracteres.',
-  ),
-  translation: nonEmptyTextSchema.max(
-    256,
-    'La traduction ne doit pas depasser 256 caracteres.',
-  ),
+  word: nonEmptyTextSchema
+    .max(128, 'Le mot ne doit pas depasser 128 caracteres.')
+    .transform(formalizeText),
+  translation: nonEmptyTextSchema
+    .max(256, 'La traduction ne doit pas depasser 256 caracteres.')
+    .transform(formalizeText),
   mandatoryTag: mandatoryTagSchema,
 });
 
 export const checkWordTermNatureSchema = z.object({
-  word: nonEmptyTextSchema.max(
-    128,
-    'Le mot ne doit pas depasser 128 caracteres.',
-  ),
+  word: nonEmptyTextSchema
+    .max(128, 'Le mot ne doit pas depasser 128 caracteres.')
+    .transform(formalizeText),
   languageId: languageIdSchema,
   mandatoryTag: mandatoryTagSchema,
   excludeWordId: wordIdSchema.optional(),
@@ -159,31 +165,30 @@ export type CommunityImportSelection = z.infer<
   typeof communityImportSelectionSchema
 >;
 
-const stringArraySchema = z.array(
-  nonEmptyTextSchema.max(
-    64,
-    'Chaque valeur ne doit pas depasser 64 caracteres.',
-  ),
-);
-
 const notesBlockSchema = z.looseObject({
   id: nonEmptyTextSchema.max(128, 'ID de bloc invalide.'),
   type: nonEmptyTextSchema.max(64, 'Type de bloc invalide.'),
 });
 
+const formalizedStringArraySchema = z.array(
+  nonEmptyTextSchema
+    .max(64, 'Chaque valeur ne doit pas depasser 64 caracteres.')
+    .transform(formalizeText),
+);
+
 export const wordWriteSchema = z
   .object({
-    term: nonEmptyTextSchema.max(
-      128,
-      'Le terme ne doit pas depasser 128 caracteres.',
-    ),
-    translation: nonEmptyTextSchema.max(
-      256,
-      'La traduction ne doit pas depasser 256 caracteres.',
-    ),
-    tags: stringArraySchema.max(20, 'Maximum 20 tags.'),
-    synonyms: stringArraySchema.max(20, 'Maximum 20 synonymes.'),
-    relatedWords: stringArraySchema.max(20, 'Maximum 20 mots lies.'),
+    term: nonEmptyTextSchema
+      .max(128, 'Le terme ne doit pas depasser 128 caracteres.')
+      .transform(formalizeText),
+    translation: nonEmptyTextSchema
+      .max(256, 'La traduction ne doit pas depasser 256 caracteres.')
+      .transform(formalizeText),
+
+    tags: formalizedStringArraySchema.max(20, 'Maximum 20 tags.'),
+    synonyms: formalizedStringArraySchema.max(20, 'Maximum 20 synonymes.'),
+    relatedWords: formalizedStringArraySchema.max(20, 'Maximum 20 mots lies.'),
+
     notesBlocks: z
       .array(notesBlockSchema)
       .max(500, 'Les notes ne doivent pas depasser 500 blocs.')
