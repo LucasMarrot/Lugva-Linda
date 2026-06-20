@@ -12,9 +12,9 @@ import { WordBasicsSection } from './word-form-sections/WordBasicsSection';
 import { NatureSection } from './word-form-sections/nature-section/NatureSection';
 import { CustomTagsSection } from './word-form-sections/custom-tags-section/CustomTagsSection';
 import { PronunciationSection } from './word-form-sections/pronunciation-section/PronunciationSection';
-import { SynonymsSection } from './word-form-sections/synonym-section/SynonymsSection';
 import { NotesSection } from './word-form-sections/NotesSection';
 import { useWordDuplicateCheck } from './useWordDuplicateCheck';
+import { RelatedWordsSection } from './word-form-sections/related-words-section/RelatedWordsSection';
 
 const AUDIO_MAX_BYTES = 10 * 1024 * 1024;
 const AUDIO_ALLOWED_MIME_TYPES = new Set([
@@ -113,11 +113,11 @@ export const WordForm = ({
 
   const langId = isEditing ? initialData.languageId : currentLangId;
   const defaultWord = isEditing
-    ? initialData.term
+    ? [initialData.term, ...(initialData.synonyms || [])].join(', ')
     : toUpperCaseFirstWord(initialQuery);
   const defaultTranslation = initialData?.translation || '';
   const defaultNotesBlocks = initialData?.notesBlocks;
-  const defaultSynonyms = initialData?.synonyms || [];
+  const defaultRelatedWords = initialData?.relatedWords || [];
 
   const [wordValue, setWordValue] = useState(defaultWord);
   const [translationValue, setTranslationValue] = useState(defaultTranslation);
@@ -278,10 +278,10 @@ export const WordForm = ({
           onRestoreExistingAudio={() => setShouldRemoveAudio(false)}
         />
 
-        <SynonymsSection
+        <RelatedWordsSection
           currentLangId={langId}
           currentWord={wordValue}
-          initialSynonyms={defaultSynonyms}
+          initialRelatedWords={defaultRelatedWords}
         />
 
         <NotesSection

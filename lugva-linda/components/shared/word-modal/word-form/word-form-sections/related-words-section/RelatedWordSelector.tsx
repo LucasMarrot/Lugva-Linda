@@ -7,19 +7,19 @@ import { searchWords } from '@/actions/word-actions';
 import { type WordCommunityView } from '@/lib/words/community';
 import { SectionHeader } from '@/components/shared';
 
-type SynonymSelectorProps = {
+type RelatedWordSelectorProps = {
   currentLangId: string;
   currentWord: string;
-  selectedSynonyms: string[];
-  setSelectedSynonyms: React.Dispatch<React.SetStateAction<string[]>>;
+  selectedRelatedWords: string[];
+  setSelectedRelatedWords: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
-export const SynonymSelector = ({
+export const RelatedWordSelector = ({
   currentLangId,
   currentWord,
-  selectedSynonyms,
-  setSelectedSynonyms,
-}: SynonymSelectorProps) => {
+  selectedRelatedWords,
+  setSelectedRelatedWords,
+}: RelatedWordSelectorProps) => {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<WordCommunityView[]>([]);
@@ -33,46 +33,51 @@ export const SynonymSelector = ({
       try {
         setIsLoading(true);
         const res = await searchWords(query.trim(), currentLangId);
-
         const filtered = res.filter(
           (r) =>
             r.isOwnedByCurrentUser &&
             r.term.toLowerCase() !== currentWord.trim().toLowerCase() &&
-            !selectedSynonyms.includes(r.term),
+            !selectedRelatedWords.includes(r.term),
         );
         setResults(filtered);
       } catch (error) {
-        console.error('Erreur recherche synonymes:', error);
+        console.error('Erreur recherche mots liés:', error);
       } finally {
         setIsLoading(false);
       }
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [query, currentLangId, currentWord, selectedSynonyms]);
+  }, [query, currentLangId, currentWord, selectedRelatedWords]);
 
-  const addSynonym = (word: string) => {
-    setSelectedSynonyms((prev) => [...prev, word]);
+  const addRelatedWord = (word: string) => {
+    setSelectedRelatedWords((prev) => [...prev, word]);
     setQuery('');
   };
 
-  const removeSynonym = (synToRemove: string) => {
-    setSelectedSynonyms((prev) => prev.filter((syn) => syn !== synToRemove));
+  const removeRelatedWord = (wordToRemove: string) => {
+    setSelectedRelatedWords((prev) =>
+      prev.filter((word) => word !== wordToRemove),
+    );
   };
 
   return (
     <div className="space-y-3">
-      <SectionHeader title="Lier des synonymes" />
-      {selectedSynonyms.length > 0 && (
+      <SectionHeader
+        title="Mots liés"
+        description="Associez des mots du même champ lexical (ex: Hi / Hello)"
+      />
+
+      {selectedRelatedWords.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-2">
-          {selectedSynonyms.map((syn) => (
+          {selectedRelatedWords.map((word) => (
             <Badge
-              key={syn}
+              key={word}
               variant="default"
-              onDelete={() => removeSynonym(syn)}
-              deleteLabel={'Retirer ' + syn}
+              onDelete={() => removeRelatedWord(word)}
+              deleteLabel={'Retirer ' + word}
             >
-              {syn}
+              {word}
             </Badge>
           ))}
         </div>
@@ -107,7 +112,7 @@ export const SynonymSelector = ({
               <button
                 key={res.id}
                 type="button"
-                onClick={() => addSynonym(res.term)}
+                onClick={() => addRelatedWord(res.term)}
                 className="hover:bg-accent flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors"
               >
                 <span className="text-foreground font-medium">{res.term}</span>

@@ -55,5 +55,6 @@ export const toWordSnapshot = (
     synonyms: word.synonyms,
     sourceWordId: word.sourceWordId,
     customAudioUrl: word.customAudioUrl,
+    relatedWords: word.relatedWords,
   };
 };

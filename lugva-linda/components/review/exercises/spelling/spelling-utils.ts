@@ -1,5 +1,6 @@
 import { Rating } from 'ts-fsrs';
 import { ValidGrade } from '@/lib/validation/schemas';
+import { Word } from '@prisma/client';
 
 export type GradeUI = {
   label: string;
@@ -37,4 +38,11 @@ export const getSubtleStyles = (attemptCount: number, fast: boolean) => {
   if (attemptCount === 1 || attemptCount === 2)
     return 'bg-orange-500/5 border-orange-500/40 shadow-[inset_0_0_60px_rgba(249,115,22,0.2),0_8px_30px_rgba(249,115,22,0.15)]';
   return 'bg-destructive/5 border-destructive/50 shadow-[inset_0_0_60px_rgba(239,68,68,0.2),0_8px_30px_rgba(239,68,68,0.15)]';
+};
+
+export const checkSpellingAnswer = (inputValue: string, word: Word) => {
+  const normalizedInput = normalizeWord(inputValue);
+  const validAnswers = [word.term, ...(word.synonyms || [])].map(normalizeWord);
+
+  return validAnswers.includes(normalizedInput);
 };

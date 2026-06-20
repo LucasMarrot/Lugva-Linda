@@ -465,7 +465,71 @@ export const createWordForUser = async (
   options?: { audioFile?: File | null; supabase?: SupabaseClient },
 ) => {
   const languageId = await resolveLanguageId(userId, input.languageId);
-  const normalizedInput = buildInput(input);
+
+  const rawTerms = input.term
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const mainTerm = rawTerms[0] || input.term;
+  const extraSynonyms = rawTerms.slice(1);
+
+  const combinedSynonyms = [...input.synonyms, ...extraSynonyms];
+
+  const normalizedInput = buildInput({
+    ...input,
+    term: mainTerm,
+    synonyms: combinedSynonyms,
+  });
+
+  const existingConcept = await prisma.word.findFirst({
+    where: {
+      ownerId: userId,
+      languageId,
+      translationNormalized: normalizedInput.translationNormalized,
+      isDeleted: false,
+      deleteToken: ACTIVE_DELETE_TOKEN,
+    },
+  });
+
+  if (existingConcept) {
+    const termsToMerge = [normalizedInput.term, ...normalizedInput.synonyms];
+    const nextSynonymsRaw = mergeTermsByNormalized(
+      existingConcept.synonyms,
+      termsToMerge,
+    );
+    const sanitizedNextSynonyms = sanitizeSynonymsForTerm(
+      nextSynonymsRaw,
+      existingConcept.term,
+    );
+
+    const nextRelatedWords = mergeTermsByNormalized(
+      existingConcept.relatedWords || [],
+      normalizedInput.relatedWords,
+    );
+
+    return prisma.$transaction(async (tx) => {
+      const updatedWord = await tx.word.update({
+        where: { id: existingConcept.id },
+        data: {
+          synonyms: sanitizedNextSynonyms,
+          relatedWords: nextRelatedWords,
+        },
+      });
+
+      await synchronizeSynonymConnections(tx, {
+        ownerId: userId,
+        languageId,
+        wordId: updatedWord.id,
+        previousTerm: existingConcept.term,
+        nextTerm: updatedWord.term,
+        previousSynonyms: existingConcept.synonyms,
+        nextSynonyms: updatedWord.synonyms,
+      });
+
+      return updatedWord;
+    });
+  }
+
   const sanitizedSynonyms = sanitizeSynonymsForTerm(
     normalizedInput.synonyms,
     normalizedInput.term,
@@ -1236,10 +1300,22 @@ export const updateWordForOwner = async (
     throw new NotFoundError('Mot introuvable.');
   }
 
+  const rawTerms = input.term
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const mainTerm = rawTerms[0] || input.term;
+  const extraSynonyms = rawTerms.slice(1);
+
+  const combinedSynonyms = [...input.synonyms, ...extraSynonyms];
+
   const normalizedInput = buildInput({
     ...input,
+    term: mainTerm,
+    synonyms: combinedSynonyms,
     languageId: existingWord.languageId,
   });
+
   const sanitizedSynonyms = sanitizeSynonymsForTerm(
     normalizedInput.synonyms,
     normalizedInput.term,

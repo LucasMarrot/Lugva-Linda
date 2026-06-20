@@ -101,12 +101,12 @@ export const WordModalProvider: FC<{ children: ReactNode }> = ({
     }
   };
 
-  const handleSynonymSelect = async (synonymText: string) => {
+  const handleRelatedWordSelect = async (relatedWordText: string) => {
     if (!activeWord) return;
 
     try {
       const foundWord = await getWordByTextAction(
-        synonymText,
+        relatedWordText,
         activeWord.languageId,
       );
 
@@ -117,13 +117,13 @@ export const WordModalProvider: FC<{ children: ReactNode }> = ({
         });
       } else {
         toast.info(
-          `Le mot "${synonymText}" n'a pas encore de fiche dans votre encyclopedie.`,
+          `Le mot "${relatedWordText}" n'a pas encore de fiche dans votre encyclopedie.`,
         );
       }
     } catch (error) {
-      console.error('Erreur lors de la recherche du synonyme :', error);
+      console.error('Erreur lors de la recherche du mot lié :', error);
       toast.error(
-        'Une erreur est survenue pendant la recherche du synonyme. Reessayez.',
+        'Une erreur est survenue pendant la recherche du mot lié. Reessayez.',
       );
     }
   };
@@ -163,7 +163,7 @@ export const WordModalProvider: FC<{ children: ReactNode }> = ({
         onStartEdit={startEditing}
         onCancelEdit={cancelEditing}
         onEditSuccess={handleEditSuccess}
-        onSynonymSelect={handleSynonymSelect}
+        onRelatedWordSelect={handleRelatedWordSelect}
         canEdit={!!activeWord?.isOwnedByCurrentUser}
         canDelete={!!activeWord?.isOwnedByCurrentUser}
         canAdd={!!activeWord && !activeWord.isOwnedByCurrentUser}

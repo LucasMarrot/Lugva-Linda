@@ -10,9 +10,9 @@ import { CardFace } from '../flashcard/faces/CardFace';
 import { VersoCard } from '../flashcard/faces/VersoCard';
 import { cn } from '@/lib/utils';
 import {
-  normalizeWord,
   getSubtleStyles,
   getGradeUI,
+  checkSpellingAnswer,
 } from './spelling/spelling-utils';
 import { SpellingHeader } from './spelling/SpellingHeader';
 import { SpellingTimerBorder } from './spelling/SpellingTimerBorder';
@@ -69,7 +69,7 @@ export const SpellingExercise = ({
     e.preventDefault();
     if (!inputValue.trim()) return;
 
-    if (normalizeWord(inputValue) === normalizeWord(card.word.term)) {
+    if (checkSpellingAnswer(inputValue, card.word)) {
       terminateExercise(currentTargetGrade);
     } else {
       const newAttempts = [...attempts, inputValue];
@@ -83,6 +83,10 @@ export const SpellingExercise = ({
     if (isPractice) onNext();
     else onRate(finalGrade as ValidGrade);
   };
+
+  const displayTerms = [card.word.term, ...(card.word.synonyms || [])]
+    .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+    .join(' / ');
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-col gap-4">
@@ -159,7 +163,7 @@ export const SpellingExercise = ({
           )}
         </CardFace>
 
-        <VersoCard word={card.word} mainText={card.word.term} />
+        <VersoCard word={card.word} mainText={displayTerms} />
       </FlashcardMotion>
 
       <SpellingActions

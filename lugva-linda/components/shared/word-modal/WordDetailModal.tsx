@@ -19,7 +19,7 @@ type WordDetailModalProps = {
   onStartEdit?: () => void;
   onCancelEdit?: () => void;
   onEditSuccess?: () => void;
-  onSynonymSelect: (synonym: string) => void;
+  onRelatedWordSelect: (word: string) => void;
   canEdit?: boolean;
   canDelete?: boolean;
   canAdd?: boolean;
@@ -36,7 +36,7 @@ export const WordDetailModal = ({
   onStartEdit,
   onCancelEdit,
   onEditSuccess,
-  onSynonymSelect,
+  onRelatedWordSelect,
   canEdit = false,
   canDelete = false,
   canAdd = false,
@@ -85,7 +85,7 @@ export const WordDetailModal = ({
                 onDelete={onDelete}
                 onAddExternalWord={onAddExternalWord}
                 isAddingExternalWord={isAddingExternalWord}
-                onSynonymSelect={onSynonymSelect}
+                onRelatedWordSelect={onRelatedWordSelect}
               />
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto p-6">

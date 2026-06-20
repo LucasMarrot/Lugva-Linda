@@ -10,7 +10,7 @@ import {
 } from '@/components/shared/';
 import { type EditableWordSnapshot } from '@/lib/words/community';
 import { WordActions } from './WordActions';
-import { SynonymsList } from './SynonymsList';
+import { RelatedWordsList } from '../RelatedWordsList';
 
 type WordDetailViewProps = {
   word: EditableWordSnapshot;
@@ -21,7 +21,7 @@ type WordDetailViewProps = {
   onDelete?: (wordId: string) => void;
   onAddExternalWord?: (word: EditableWordSnapshot) => Promise<void>;
   isAddingExternalWord?: boolean;
-  onSynonymSelect: (synonym: string) => void;
+  onRelatedWordSelect: (word: string) => void;
 };
 
 export const WordDetailView = ({
@@ -33,9 +33,13 @@ export const WordDetailView = ({
   onDelete,
   onAddExternalWord,
   isAddingExternalWord = false,
-  onSynonymSelect,
+  onRelatedWordSelect,
 }: WordDetailViewProps) => {
   const isExternalWord = canAdd;
+
+  const displayTerms = [word.term, ...(word.synonyms || [])]
+    .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+    .join(' / ');
 
   return (
     <>
@@ -49,7 +53,7 @@ export const WordDetailView = ({
                 : undefined
             }
           >
-            {word.term}
+            {displayTerms}
           </h2>
           <p className="text-foreground text-xl font-medium">
             {word.translation}
@@ -90,12 +94,12 @@ export const WordDetailView = ({
           </>
         )}
 
-        {word.synonyms && word.synonyms.length > 0 && (
+        {word.relatedWords && word.relatedWords.length > 0 && (
           <>
             <Separator />
-            <SynonymsList
-              synonyms={word.synonyms}
-              onSynonymClick={onSynonymSelect}
+            <RelatedWordsList
+              relatedWords={word.relatedWords}
+              onRelatedWordClick={onRelatedWordSelect}
             />
           </>
         )}

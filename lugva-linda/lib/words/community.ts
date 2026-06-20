@@ -15,6 +15,7 @@ export type EditableWordSnapshot = {
   notesBlocks?: NotesBlock[] | null;
   sourceWordId?: string | null;
   customAudioUrl: string | null;
+  relatedWords: string[];
 };
 
 export type WordOwnerSummary = {

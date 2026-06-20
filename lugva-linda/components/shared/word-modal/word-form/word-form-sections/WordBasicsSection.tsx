@@ -42,6 +42,10 @@ export const WordBasicsSection = ({
           required
           autoFocus={!isEditing}
         />
+        <p className="text-muted-foreground mt-1 text-xs">
+          Séparez les synonymes exacts par des virgules (ex: Perhaps, Maybe)
+        </p>
+
         {wordError && (
           <p className="text-destructive text-sm font-medium">{wordError}</p>
         )}

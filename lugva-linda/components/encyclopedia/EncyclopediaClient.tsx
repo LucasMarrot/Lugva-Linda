@@ -6,9 +6,16 @@ import type { Word } from '@prisma/client';
 import { useWordModal } from '../providers/WordModalProvider';
 import { AlphabetNav } from './AlphabetNav';
 import { TagFilter } from './TagFilter';
-import { StateMessage, WordListItem } from '@/components/shared/';
+import { StateMessage } from '@/components/shared/';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
-import { getWordVisualMeta, toWordSnapshot } from '@/hooks/useWordSnapshot';
+import { EncyclopediaItem } from './EncyclopediaItem';
+
+export type VisualWord = Word & {
+  visualId: string;
+  displayTerm: string;
+  displaySynonyms: string[];
+  originalWord: Word;
+};
 
 type EncyclopediaClientProps = {
   words: Word[];
@@ -45,26 +52,65 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
     );
   };
 
-  const filteredWords = useMemo(() => {
-    if (selectedTags.length === 0) return words;
-    return words.filter((word) =>
-      word.tags?.some((tag) => selectedTags.includes(tag)),
+  const visualWords: VisualWord[] = useMemo(() => {
+    const flatArray = words.flatMap((word) => {
+      // 1. La carte visuelle principale
+      const entries: VisualWord[] = [
+        {
+          ...word,
+          visualId: `${word.id}-main`,
+          displayTerm: word.term,
+          displaySynonyms: word.synonyms || [],
+          originalWord: word,
+        },
+      ];
+
+      // 2. Les cartes visuelles pour chaque synonyme
+      if (word.synonyms && word.synonyms.length > 0) {
+        word.synonyms.forEach((syn, index) => {
+          entries.push({
+            ...word,
+            visualId: `${word.id}-syn-${index}`,
+            displayTerm: syn,
+            // On met le terme principal et les autres synonymes dans le tableau displaySynonyms
+            displaySynonyms: [
+              word.term,
+              ...word.synonyms.filter((s) => s !== syn),
+            ],
+            originalWord: word,
+          });
+        });
+      }
+
+      return entries;
+    });
+
+    // Tri alphabétique sur le terme affiché
+    return flatArray.sort((a, b) =>
+      a.displayTerm.localeCompare(b.displayTerm, 'fr', { sensitivity: 'base' }),
     );
-  }, [words, selectedTags]);
+  }, [words]);
+
+  const filteredWords = useMemo(() => {
+    if (selectedTags.length === 0) return visualWords;
+    return visualWords.filter((vw) =>
+      vw.tags?.some((tag) => selectedTags.includes(tag)),
+    );
+  }, [visualWords, selectedTags]);
 
   const groupedWords = useMemo(() => {
     return filteredWords.reduce(
-      (acc, word) => {
-        const firstLetter = word.term
+      (acc, vw) => {
+        const firstLetter = vw.displayTerm
           .normalize('NFD')
           .replace(/[\u0300-\u036f]/g, '')
           .charAt(0)
           .toUpperCase();
         if (!acc[firstLetter]) acc[firstLetter] = [];
-        acc[firstLetter].push(word);
+        acc[firstLetter].push(vw);
         return acc;
       },
-      {} as Record<string, Word[]>,
+      {} as Record<string, VisualWord[]>,
     );
   }, [filteredWords]);
 
@@ -91,24 +137,18 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
             </h2>
 
             <div className="space-y-3">
-              {groupedWords[letter].map((word) => {
-                const visualMeta = getWordVisualMeta(word, mode);
-
-                return (
-                  <WordListItem
-                    key={word.id}
-                    word={word}
-                    ownerName={visualMeta.ownerName}
-                    primaryColor={visualMeta.primaryColor}
-                    onAdd={
-                      visualMeta.isExternal && addingWordId !== word.id
-                        ? () => importWord(word.id)
-                        : undefined
-                    }
-                    onClick={() => openWord(toWordSnapshot(word, mode))}
+              <div className="space-y-3">
+                {groupedWords[letter].map((vw) => (
+                  <EncyclopediaItem
+                    key={vw.visualId}
+                    visualWord={vw}
+                    mode={mode}
+                    addingWordId={addingWordId}
+                    onImport={importWord}
+                    onOpen={openWord}
                   />
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
         ))}
