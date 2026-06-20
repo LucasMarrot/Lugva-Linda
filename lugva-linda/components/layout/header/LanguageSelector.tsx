@@ -33,41 +33,47 @@ export const LanguageSelector = () => {
   };
 
   return (
-    <Select
-      value={currentLangId}
-      onValueChange={handleLanguageChange}
-      disabled={isSwitchingLanguage}
-    >
-      <SelectTrigger className="border-border bg-background h-9 w-32.5 focus:ring-0">
-        <SelectValue placeholder="Langue" />
-      </SelectTrigger>
+    <>
+      <Select
+        value={currentLangId}
+        onValueChange={handleLanguageChange}
+        disabled={isSwitchingLanguage}
+      >
+        <SelectTrigger className="border-border bg-background h-9 w-32.5 focus:ring-0">
+          <SelectValue placeholder="Langue" />
+        </SelectTrigger>
 
-      <SelectContent>
-        {languages.map((lang) => (
-          <SelectItem key={lang.id} value={lang.id} className="cursor-pointer">
-            {lang.name}
-          </SelectItem>
-        ))}
+        <SelectContent>
+          {languages.map((lang) => (
+            <SelectItem
+              key={lang.id}
+              value={lang.id}
+              className="cursor-pointer"
+            >
+              {lang.name}
+            </SelectItem>
+          ))}
 
-        <Separator />
+          <Separator />
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start px-2"
-          disabled={isSwitchingLanguage}
-          onClick={() => setIsCreateLanguageModalOpen(true)}
-        >
-          + Nouvelle langue
-        </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start px-2"
+            disabled={isSwitchingLanguage}
+            onClick={() => setIsCreateLanguageModalOpen(true)}
+          >
+            + Nouvelle langue
+          </Button>
+        </SelectContent>
+      </Select>
 
-        <CreateLanguageModal
-          isOpen={isCreateLanguageModalOpen}
-          onOpenChange={setIsCreateLanguageModalOpen}
-          existingLanguageNames={existingLanguageNames}
-        />
-      </SelectContent>
-    </Select>
+      <CreateLanguageModal
+        isOpen={isCreateLanguageModalOpen}
+        onOpenChange={setIsCreateLanguageModalOpen}
+        existingLanguageNames={existingLanguageNames}
+      />
+    </>
   );
 };

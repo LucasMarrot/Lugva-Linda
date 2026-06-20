@@ -6,11 +6,11 @@ import { Search, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Input, Button } from '@/components/ui';
 import { searchWords } from '@/actions/word-actions';
-import { SectionHeader, StateMessage, WordListItem } from '@/components/shared';
+import { SectionHeader, StateMessage } from '@/components/shared';
 import { type WordCommunityView } from '@/lib/words/community';
 import { useWordModal } from '@/components/providers/WordModalProvider';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
-import { getWordVisualMeta, toWordSnapshot } from '@/hooks/useWordSnapshot';
+import { SearchWordItem } from './SearchWordItem';
 
 type SearchViewProps = {
   query: string;
@@ -97,33 +97,6 @@ export const SearchView = ({
     searchInputRef.current?.blur();
   };
 
-  const renderWordItem = (word: WordCommunityView) => {
-    const mode = word.isOwnedByCurrentUser ? 'owner' : 'external';
-    const visualMeta = getWordVisualMeta(word, mode);
-
-    return (
-      <WordListItem
-        key={word.id}
-        word={word}
-        ownerName={visualMeta.ownerName}
-        primaryColor={visualMeta.primaryColor}
-        onAdd={
-          !word.isOwnedByCurrentUser && addingWordId !== word.id
-            ? () => importWord(word.id)
-            : undefined
-        }
-        onRedirect={
-          word.isOwnedByCurrentUser
-            ? () => {
-                router.push(`/words?lang=${word.languageId}#word-${word.id}`);
-              }
-            : undefined
-        }
-        onClick={() => openWord(toWordSnapshot(word, mode))}
-      />
-    );
-  };
-
   return (
     <div className="space-y-6">
       <form className="relative" onSubmit={handleSearchSubmit}>
@@ -183,7 +156,18 @@ export const SearchView = ({
                         message="Aucun résultat dans votre encyclopédie."
                       />
                     ) : (
-                      ownedResults.map(renderWordItem)
+                      ownedResults.map((word) => (
+                        <SearchWordItem
+                          key={word.id}
+                          word={word}
+                          addingWordId={addingWordId}
+                          onImport={importWord}
+                          onOpen={openWord}
+                          onRedirect={() => {
+                            router.push(`/words?word-${word.id}`);
+                          }}
+                        />
+                      ))
                     )}
                   </div>
                 </div>
@@ -200,7 +184,15 @@ export const SearchView = ({
                         message="Aucun résultat dans la communauté."
                       />
                     ) : (
-                      communityResults.map(renderWordItem)
+                      communityResults.map((word) => (
+                        <SearchWordItem
+                          key={word.id}
+                          word={word}
+                          addingWordId={addingWordId}
+                          onImport={importWord}
+                          onOpen={openWord}
+                        />
+                      ))
                     )}
                   </div>
                 </div>

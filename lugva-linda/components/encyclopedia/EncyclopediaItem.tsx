@@ -1,5 +1,8 @@
+'use client';
+
 import { getWordVisualMeta, toWordSnapshot } from '@/hooks/useWordSnapshot';
 import { WordListItem } from '../shared';
+import { useUserColor } from '@/hooks/useUserColor';
 import { EditableWordSnapshot } from '@/lib/words/community';
 import type { VisualWord } from './EncyclopediaClient';
 
@@ -19,6 +22,7 @@ export const EncyclopediaItem = ({
   onOpen,
 }: EncyclopediaItemProps) => {
   const visualMeta = getWordVisualMeta(visualWord.originalWord, mode);
+  const dynamicColor = useUserColor(visualMeta.primaryColor);
 
   const displayWord = {
     ...visualWord.originalWord,
@@ -30,7 +34,7 @@ export const EncyclopediaItem = ({
     <WordListItem
       word={displayWord}
       ownerName={visualMeta.ownerName}
-      primaryColor={visualMeta.primaryColor}
+      primaryColor={dynamicColor}
       onAdd={
         visualMeta.isExternal && addingWordId !== visualWord.originalWord.id
           ? () => onImport(visualWord.originalWord.id)

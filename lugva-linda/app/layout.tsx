@@ -1,14 +1,17 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { ToastProvider } from '@/components/providers/ToastProvider';
-import { WordModalProvider } from '@/components/providers/WordModalProvider';
-import { PresenceProvider } from '@/components/providers/PresenceProvider';
-import { CommunityImportProvider } from '@/components/providers/CommunityImportProvider';
-import { UserProvider } from '@/components/providers/UserProvider';
+import {
+  ToastProvider,
+  UserProvider,
+  PresenceProvider,
+  CommunityImportProvider,
+  WordModalProvider,
+  ActiveLanguageProvider,
+  ThemeProvider,
+} from '@/components/providers';
 import { getCurrentUserProfile } from '@/lib/auth/server';
-import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
-import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { getThemeColor } from '@/lib/users/colors';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -34,9 +37,20 @@ export default async function RootLayout({
   const languages = profile?.learningLanguages.map((ll) => ll.language) || [];
   const activeLanguageId =
     profile?.activeLanguageId || languages[0]?.id || null;
+  const userColor = profile?.colorHex || '';
+  const darkColor = userColor ? getThemeColor(userColor, 'dark') : '';
 
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html
+      lang="fr"
+      suppressHydrationWarning
+      style={
+        {
+          '--user-primary-light': userColor || undefined,
+          '--user-primary-dark': darkColor || undefined,
+        } as React.CSSProperties
+      }
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

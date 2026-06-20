@@ -50,8 +50,7 @@ const SettingsButton = () => {
         <div className="flex flex-col space-y-3">
           <div className="flex items-center space-x-3 p-2">
             <div
-              className="border-border h-10 w-10 shrink-0 rounded-lg border shadow-sm"
-              style={{ backgroundColor: user?.colorHex }}
+              className="border-border bg-primary h-10 w-10 shrink-0 rounded-lg border shadow-sm"
               aria-label="Couleur de profil"
             />
             <div className="flex flex-col overflow-hidden">

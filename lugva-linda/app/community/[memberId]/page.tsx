@@ -8,6 +8,8 @@ import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 import { listMemberWordsInLanguage } from '@/lib/services/word-service';
 import prisma from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 type MemberPageProps = {
   params: Promise<{ memberId: string }>;
   searchParams: Promise<{ lang?: string }>;

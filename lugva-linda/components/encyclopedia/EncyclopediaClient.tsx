@@ -7,6 +7,7 @@ import { useWordModal } from '../providers/WordModalProvider';
 import { AlphabetNav } from './AlphabetNav';
 import { TagFilter } from './TagFilter';
 import { StateMessage } from '@/components/shared/';
+import { StateMessage } from '@/components/shared/';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
 import { EncyclopediaItem } from './EncyclopediaItem';
 

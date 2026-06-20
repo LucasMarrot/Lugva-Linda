@@ -1,8 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateUserColor } from '@/actions/user-actions';
+import {
+  getUnavailableColorsAction,
+  updateUserColor,
+} from '@/actions/user-actions';
 import { userColorSchema } from '@/lib/validation/schemas';
 import {
   Button,
@@ -27,6 +30,13 @@ export const ColorSection = ({ initialColorHex }: ColorSectionProps) => {
   const [colorBaseline, setColorBaseline] = useState(initialColorHex);
   const [colorStatus, setColorStatus] = useState<StatusState>(null);
   const [isUpdatingColor, setIsUpdatingColor] = useState(false);
+  const [unavailableColors, setUnavailableColors] = useState<string[]>([]);
+
+  useEffect(() => {
+    getUnavailableColorsAction()
+      .then(setUnavailableColors)
+      .catch(console.error);
+  }, []);
 
   const colorValidation = useMemo(
     () => userColorSchema.safeParse(selectedColor),
@@ -75,6 +85,7 @@ export const ColorSection = ({ initialColorHex }: ColorSectionProps) => {
             setSelectedColor(newColor);
             if (colorStatus) setColorStatus(null);
           }}
+          unavailableColors={unavailableColors}
         />
 
         {colorError && (
