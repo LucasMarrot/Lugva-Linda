@@ -7,7 +7,6 @@ import { useWordModal } from '../providers/WordModalProvider';
 import { AlphabetNav } from './AlphabetNav';
 import { TagFilter } from './TagFilter';
 import { StateMessage } from '@/components/shared/';
-import { StateMessage } from '@/components/shared/';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
 import { EncyclopediaItem } from './EncyclopediaItem';
 
@@ -66,14 +65,12 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
         },
       ];
 
-      // 2. Les cartes visuelles pour chaque synonyme
       if (word.synonyms && word.synonyms.length > 0) {
         word.synonyms.forEach((syn, index) => {
           entries.push({
             ...word,
             visualId: `${word.id}-syn-${index}`,
             displayTerm: syn,
-            // On met le terme principal et les autres synonymes dans le tableau displaySynonyms
             displaySynonyms: [
               word.term,
               ...word.synonyms.filter((s) => s !== syn),
@@ -86,7 +83,6 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
       return entries;
     });
 
-    // Tri alphabétique sur le terme affiché
     return flatArray.sort((a, b) =>
       a.displayTerm.localeCompare(b.displayTerm, 'fr', { sensitivity: 'base' }),
     );
