@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { DuelWord } from '@/actions/duel-actions';
 import { normalizeWord } from '@/components/review/exercises/spelling/spelling-utils';
+import { formatConcept } from '@/lib/utils';
 
 export type PlayerStatus =
   | 'playing'
@@ -92,12 +93,10 @@ export const useDuelGame = ({ deck, channel }: UseDuelGameProps) => {
       setIsLocked(false);
 
       const currentDeckWord = deck[currentWordIndexRef.current];
-      const displayTerms = [
+      const displayTerms = formatConcept(
         currentDeckWord.term,
-        ...(currentDeckWord.synonyms || []),
-      ]
-        .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
-        .join(' / ');
+        currentDeckWord.synonyms,
+      );
 
       setMatchHistory((prev) => [
         ...prev,

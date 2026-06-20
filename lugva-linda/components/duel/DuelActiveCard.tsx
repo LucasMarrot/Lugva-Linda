@@ -8,7 +8,7 @@ import { CardFace } from '@/components/review/flashcard/faces/CardFace';
 import { FlashcardMotion } from '@/components/review/flashcard/FlashCardMotion';
 import { SpellingForm } from '@/components/review/exercises/spelling/SpellingForm';
 import { SpellingTimerBorder } from '@/components/review/exercises/spelling/SpellingTimerBorder';
-import { cn, toTint } from '@/lib/utils';
+import { cn, formatConcept, toTint } from '@/lib/utils';
 
 type PlayerStatus = 'playing' | 'found' | 'skipped' | 'timeout' | 'surrendered';
 type RoundState = 'playing' | 'ended' | 'game-over';
@@ -44,9 +44,7 @@ export const DuelActiveCard = ({
   currentUserColor,
   opponentColor,
 }: DuelActiveCardProps) => {
-  const displayTerms = [currentWord.term, ...(currentWord.synonyms || [])]
-    .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
-    .join(' / ');
+  const displayTerms = formatConcept(currentWord.term, currentWord.synonyms);
 
   return (
     <div

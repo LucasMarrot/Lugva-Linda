@@ -17,3 +17,13 @@ export const toTint = (hex: string) => `${hex}1A`;
 
 export const toUpperCaseFirstWord = (str: string) =>
   str.charAt(0).toLocaleUpperCase() + str.slice(1).toLocaleLowerCase();
+
+export const formatConcept = (
+  term: string,
+  synonyms?: string[] | null,
+  separator: string = ' / ',
+) => {
+  return [term, ...(synonyms || [])]
+    .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+    .join(separator);
+};

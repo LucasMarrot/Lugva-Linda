@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui';
 import { FlashcardMotion } from '../flashcard/FlashCardMotion';
 import { CardFace } from '../flashcard/faces/CardFace';
 import { VersoCard } from '../flashcard/faces/VersoCard';
-import { cn } from '@/lib/utils';
+import { cn, formatConcept } from '@/lib/utils';
 import {
   getSubtleStyles,
   getGradeUI,
@@ -84,9 +84,7 @@ export const SpellingExercise = ({
     else onRate(finalGrade as ValidGrade);
   };
 
-  const displayTerms = [card.word.term, ...(card.word.synonyms || [])]
-    .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
-    .join(' / ');
+  const displayTerms = formatConcept(card.word.term, card.word.synonyms);
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-col gap-4">

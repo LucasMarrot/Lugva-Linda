@@ -11,6 +11,7 @@ import {
 import { type EditableWordSnapshot } from '@/lib/words/community';
 import { WordActions } from './WordActions';
 import { RelatedWordsList } from '../RelatedWordsList';
+import { formatConcept } from '@/lib/utils';
 
 type WordDetailViewProps = {
   word: EditableWordSnapshot;
@@ -37,9 +38,7 @@ export const WordDetailView = ({
 }: WordDetailViewProps) => {
   const isExternalWord = canAdd;
 
-  const displayTerms = [word.term, ...(word.synonyms || [])]
-    .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
-    .join(' / ');
+  const displayTerms = formatConcept(word.term, word.synonyms);
 
   return (
     <>

@@ -4,6 +4,7 @@ import type { Word } from '@prisma/client';
 import { RectoCard } from './faces/RectoCard';
 import { VersoCard } from './faces/VersoCard';
 import { FlashcardMotion } from './FlashCardMotion';
+import { formatConcept } from '@/lib/utils';
 
 type FlashcardProps = {
   word: Word;
@@ -20,9 +21,7 @@ export const Flashcard = ({
 }: FlashcardProps) => {
   const isReverse = mode === 'REVERSE';
 
-  const displayTerms = [word.term, ...(word.synonyms || [])]
-    .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
-    .join(' / ');
+  const displayTerms = formatConcept(word.term, word.synonyms);
 
   const rectoText = isReverse ? word.translation : displayTerms;
   const versoText = isReverse ? displayTerms : word.translation;

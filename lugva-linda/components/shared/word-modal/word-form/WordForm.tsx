@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui';
 import { createWord, updateWordAction } from '@/actions/word-actions';
-import { toUpperCaseFirstWord } from '@/lib/utils';
+import { formatConcept, toUpperCaseFirstWord } from '@/lib/utils';
 import { useToast } from '@/components/providers/ToastProvider';
 import { createWordFormSchema } from '@/lib/validation/schemas';
 import { type EditableWordSnapshot } from '@/lib/words/community';
@@ -113,7 +113,7 @@ export const WordForm = ({
 
   const langId = isEditing ? initialData.languageId : currentLangId;
   const defaultWord = isEditing
-    ? [initialData.term, ...(initialData.synonyms || [])].join(', ')
+    ? formatConcept(initialData.term, initialData.synonyms, ', ')
     : toUpperCaseFirstWord(initialQuery);
   const defaultTranslation = initialData?.translation || '';
   const defaultNotesBlocks = initialData?.notesBlocks;
