@@ -44,6 +44,10 @@ export const DuelActiveCard = ({
   currentUserColor,
   opponentColor,
 }: DuelActiveCardProps) => {
+  const displayTerms = [currentWord.term, ...(currentWord.synonyms || [])]
+    .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+    .join(' / ');
+
   return (
     <div
       className="mx-auto flex w-full max-w-sm flex-col"
@@ -110,7 +114,7 @@ export const DuelActiveCard = ({
           >
             <div className="space-y-2 text-center">
               <h2 className="text-primary text-center text-3xl font-bold">
-                {currentWord.term}
+                {displayTerms}
               </h2>
               <p className="text-muted-foreground text-xl font-medium">
                 {currentWord.translation}

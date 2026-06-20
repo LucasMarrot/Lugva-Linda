@@ -9,6 +9,7 @@ export type DuelWord = {
   translation: string;
   mandatoryTag: string;
   ownerId: string;
+  synonyms: string[];
 };
 
 export const generateDuelDeck = async (
@@ -18,6 +19,16 @@ export const generateDuelDeck = async (
 ): Promise<DuelWord[]> => {
   await requireAuthenticatedUser();
 
+  const selectFields = {
+    id: true,
+    term: true,
+    translation: true,
+    translationNormalized: true,
+    ownerId: true,
+    mandatoryTag: true,
+    synonyms: true,
+  };
+
   const challengerWords = await prisma.word.findMany({
     where: {
       ownerId: challengerId,
@@ -25,13 +36,7 @@ export const generateDuelDeck = async (
       isDeleted: false,
       deleteToken: BigInt(0),
     },
-    select: {
-      id: true,
-      term: true,
-      translation: true,
-      ownerId: true,
-      mandatoryTag: true,
-    },
+    select: selectFields,
     take: 50,
   });
 
@@ -42,13 +47,7 @@ export const generateDuelDeck = async (
       isDeleted: false,
       deleteToken: BigInt(0),
     },
-    select: {
-      id: true,
-      term: true,
-      translation: true,
-      ownerId: true,
-      mandatoryTag: true,
-    },
+    select: selectFields,
     take: 50,
   });
 
@@ -58,11 +57,52 @@ export const generateDuelDeck = async (
 
   const selectedChallengerWords = shuffle(challengerWords).slice(0, 5);
   const selectedTargetWords = shuffle(targetWords).slice(0, 5);
+  const initialSelection = [...selectedChallengerWords, ...selectedTargetWords];
 
-  const finalDeck = shuffle([
-    ...selectedChallengerWords,
-    ...selectedTargetWords,
-  ]);
+  const selectedTranslations = initialSelection.map(
+    (w) => w.translationNormalized,
+  );
 
-  return finalDeck;
+  const allMatchingWords = await prisma.word.findMany({
+    where: {
+      ownerId: { in: [challengerId, targetId] },
+      languageId,
+      translationNormalized: { in: selectedTranslations },
+      isDeleted: false,
+      deleteToken: BigInt(0),
+    },
+    select: {
+      term: true,
+      synonyms: true,
+      translationNormalized: true,
+    },
+  });
+
+  const validTermsByTranslation = new Map<string, Set<string>>();
+  for (const word of allMatchingWords) {
+    if (!validTermsByTranslation.has(word.translationNormalized)) {
+      validTermsByTranslation.set(word.translationNormalized, new Set());
+    }
+    const set = validTermsByTranslation.get(word.translationNormalized)!;
+    set.add(word.term);
+    word.synonyms.forEach((s) => set.add(s));
+  }
+
+  return initialSelection.map((word) => {
+    const allValidTerms = Array.from(
+      validTermsByTranslation.get(word.translationNormalized) ||
+        new Set<string>(),
+    );
+
+    const mergedSynonyms = allValidTerms.filter((t) => t !== word.term);
+
+    return {
+      id: word.id,
+      term: word.term,
+      translation: word.translation,
+      mandatoryTag: word.mandatoryTag,
+      ownerId: word.ownerId,
+      synonyms: mergedSynonyms,
+    };
+  });
 };

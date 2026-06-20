@@ -91,12 +91,20 @@ export const useDuelGame = ({ deck, channel }: UseDuelGameProps) => {
       setRoundState('ended');
       setIsLocked(false);
 
+      const currentDeckWord = deck[currentWordIndexRef.current];
+      const displayTerms = [
+        currentDeckWord.term,
+        ...(currentDeckWord.synonyms || []),
+      ]
+        .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+        .join(' / ');
+
       setMatchHistory((prev) => [
         ...prev,
         {
-          id: deck[currentWordIndexRef.current].id,
-          term: deck[currentWordIndexRef.current].term,
-          translation: deck[currentWordIndexRef.current].translation,
+          id: currentDeckWord.id,
+          term: displayTerms,
+          translation: currentDeckWord.translation,
           myStatus: myStatusRef.current,
           opponentStatus: opponentStatusRef.current,
           myPoints: myRoundPointsRef.current,
@@ -236,7 +244,12 @@ export const useDuelGame = ({ deck, channel }: UseDuelGameProps) => {
     if (myStatusRef.current !== 'playing' || isLocked || !inputValue.trim())
       return;
 
-    if (normalizeWord(inputValue) === normalizeWord(currentWord.term)) {
+    const validAnswers = [
+      currentWord.term,
+      ...(currentWord.synonyms || []),
+    ].map(normalizeWord);
+
+    if (validAnswers.includes(normalizeWord(inputValue))) {
       const isFirstTry = attempts.length === 0;
       const newStreak = isFirstTry ? myStreak + 1 : 0;
 
