@@ -19,8 +19,13 @@ export const Flashcard = ({
   mode = 'RECOGNITION',
 }: FlashcardProps) => {
   const isReverse = mode === 'REVERSE';
-  const rectoText = isReverse ? word.translation : word.term;
-  const versoText = isReverse ? word.term : word.translation;
+
+  const displayTerms = [word.term, ...(word.synonyms || [])]
+    .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+    .join(' / ');
+
+  const rectoText = isReverse ? word.translation : displayTerms;
+  const versoText = isReverse ? displayTerms : word.translation;
 
   return (
     <FlashcardMotion isFlipped={isFlipped} onFlip={onFlip}>

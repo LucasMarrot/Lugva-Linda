@@ -25,12 +25,12 @@ export const VersoCard = ({ word, mainText }: VersoCardProps) => {
         {mainText}
       </h2>
 
-      {word.synonyms.length > 0 && !isNotesVisible && (
+      {word.relatedWords && word.relatedWords.length > 0 && !isNotesVisible && (
         <div className="mt-2 flex flex-wrap justify-center gap-1">
-          {word.synonyms.map((syn, idx) => (
+          {word.relatedWords.map((relatedWord, idx) => (
             <span key={idx} className="text-sm italic opacity-80">
-              {syn}
-              {idx < word.synonyms.length - 1 ? ', ' : ''}
+              {relatedWord}
+              {idx < word.relatedWords.length - 1 ? ', ' : ''}
             </span>
           ))}
         </div>
