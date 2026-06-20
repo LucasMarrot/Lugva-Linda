@@ -295,9 +295,9 @@ export const parseWordFormData = (formData: FormData): WordInput => {
   };
 };
 
-const areStringArraysEqual = (left: string[], right: string[]) =>
-  left.length === right.length &&
-  left.every((value, index) => value === right[index]);
+// const areStringArraysEqual = (left: string[], right: string[]) =>
+//   left.length === right.length &&
+//   left.every((value, index) => value === right[index]);
 
 const toUniqueTermsByNormalized = (values: string[]) => {
   const uniqueByNormalized = new Map<string, string>();
@@ -353,111 +353,111 @@ const removeTermsByNormalized = (
 const sanitizeSynonymsForTerm = (synonyms: string[], term: string) =>
   removeTermsByNormalized(synonyms, new Set([normalizeForLookup(term)]));
 
-type SynchronizeSynonymConnectionsInput = {
-  ownerId: string;
-  languageId: string;
-  wordId: string;
-  previousTerm: string;
-  nextTerm: string;
-  previousSynonyms: string[];
-  nextSynonyms: string[];
-};
+// type SynchronizeSynonymConnectionsInput = {
+//   ownerId: string;
+//   languageId: string;
+//   wordId: string;
+//   previousTerm: string;
+//   nextTerm: string;
+//   previousSynonyms: string[];
+//   nextSynonyms: string[];
+// };
 
-const synchronizeSynonymConnections = async (
-  tx: Prisma.TransactionClient,
-  input: SynchronizeSynonymConnectionsInput,
-) => {
-  const previousSynonyms = toUniqueTermsByNormalized(input.previousSynonyms);
-  const nextSynonyms = toUniqueTermsByNormalized(input.nextSynonyms);
+// const synchronizeSynonymConnections = async (
+//   tx: Prisma.TransactionClient,
+//   input: SynchronizeSynonymConnectionsInput,
+// ) => {
+//   const previousSynonyms = toUniqueTermsByNormalized(input.previousSynonyms);
+//   const nextSynonyms = toUniqueTermsByNormalized(input.nextSynonyms);
 
-  const removedSynonymLookups = new Set<string>();
-  for (const normalized of previousSynonyms.keys()) {
-    if (!nextSynonyms.has(normalized)) {
-      removedSynonymLookups.add(normalized);
-    }
-  }
+//   const removedSynonymLookups = new Set<string>();
+//   for (const normalized of previousSynonyms.keys()) {
+//     if (!nextSynonyms.has(normalized)) {
+//       removedSynonymLookups.add(normalized);
+//     }
+//   }
 
-  const candidateLookups = new Set<string>([
-    ...Array.from(removedSynonymLookups),
-    ...Array.from(nextSynonyms.keys()),
-  ]);
+//   const candidateLookups = new Set<string>([
+//     ...Array.from(removedSynonymLookups),
+//     ...Array.from(nextSynonyms.keys()),
+//   ]);
 
-  if (candidateLookups.size === 0) {
-    return;
-  }
+//   if (candidateLookups.size === 0) {
+//     return;
+//   }
 
-  const relatedWords = await tx.word.findMany({
-    where: {
-      ownerId: input.ownerId,
-      languageId: input.languageId,
-      id: { not: input.wordId },
-      termNormalized: { in: Array.from(candidateLookups) },
-      isDeleted: false,
-      deleteToken: ACTIVE_DELETE_TOKEN,
-    },
-    select: {
-      id: true,
-      termNormalized: true,
-      synonyms: true,
-    },
-  });
+//   const relatedWords = await tx.word.findMany({
+//     where: {
+//       ownerId: input.ownerId,
+//       languageId: input.languageId,
+//       id: { not: input.wordId },
+//       termNormalized: { in: Array.from(candidateLookups) },
+//       isDeleted: false,
+//       deleteToken: ACTIVE_DELETE_TOKEN,
+//     },
+//     select: {
+//       id: true,
+//       termNormalized: true,
+//       synonyms: true,
+//     },
+//   });
 
-  const previousTermLookup = normalizeForLookup(input.previousTerm);
-  const nextTermLookup = normalizeForLookup(input.nextTerm);
-  const hasRenamedTerm = previousTermLookup !== nextTermLookup;
-  const connectedTerms = toUniqueTermsByNormalized([
-    input.nextTerm,
-    ...nextSynonyms.values(),
-  ]);
+//   const previousTermLookup = normalizeForLookup(input.previousTerm);
+//   const nextTermLookup = normalizeForLookup(input.nextTerm);
+//   const hasRenamedTerm = previousTermLookup !== nextTermLookup;
+//   const connectedTerms = toUniqueTermsByNormalized([
+//     input.nextTerm,
+//     ...nextSynonyms.values(),
+//   ]);
 
-  for (const relatedWord of relatedWords) {
-    const wasConnected = previousSynonyms.has(relatedWord.termNormalized);
-    const isConnected = nextSynonyms.has(relatedWord.termNormalized);
+//   for (const relatedWord of relatedWords) {
+//     const wasConnected = previousSynonyms.has(relatedWord.termNormalized);
+//     const isConnected = nextSynonyms.has(relatedWord.termNormalized);
 
-    if (!wasConnected && !isConnected) {
-      continue;
-    }
+//     if (!wasConnected && !isConnected) {
+//       continue;
+//     }
 
-    let nextRelatedSynonyms = relatedWord.synonyms;
-    const termsToRemove = new Set<string>();
+//     let nextRelatedSynonyms = relatedWord.synonyms;
+//     const termsToRemove = new Set<string>();
 
-    if (wasConnected && !isConnected) {
-      termsToRemove.add(previousTermLookup);
-      termsToRemove.add(nextTermLookup);
-    } else if (hasRenamedTerm) {
-      termsToRemove.add(previousTermLookup);
-    }
+//     if (wasConnected && !isConnected) {
+//       termsToRemove.add(previousTermLookup);
+//       termsToRemove.add(nextTermLookup);
+//     } else if (hasRenamedTerm) {
+//       termsToRemove.add(previousTermLookup);
+//     }
 
-    if (termsToRemove.size > 0) {
-      nextRelatedSynonyms = removeTermsByNormalized(
-        nextRelatedSynonyms,
-        termsToRemove,
-      );
-    }
+//     if (termsToRemove.size > 0) {
+//       nextRelatedSynonyms = removeTermsByNormalized(
+//         nextRelatedSynonyms,
+//         termsToRemove,
+//       );
+//     }
 
-    if (isConnected) {
-      const connectedTermsForRelatedWord: string[] = [];
+//     if (isConnected) {
+//       const connectedTermsForRelatedWord: string[] = [];
 
-      for (const [normalized, term] of connectedTerms.entries()) {
-        if (normalized !== relatedWord.termNormalized) {
-          connectedTermsForRelatedWord.push(term);
-        }
-      }
+//       for (const [normalized, term] of connectedTerms.entries()) {
+//         if (normalized !== relatedWord.termNormalized) {
+//           connectedTermsForRelatedWord.push(term);
+//         }
+//       }
 
-      nextRelatedSynonyms = mergeTermsByNormalized(
-        nextRelatedSynonyms,
-        connectedTermsForRelatedWord,
-      );
-    }
+//       nextRelatedSynonyms = mergeTermsByNormalized(
+//         nextRelatedSynonyms,
+//         connectedTermsForRelatedWord,
+//       );
+//     }
 
-    if (!areStringArraysEqual(relatedWord.synonyms, nextRelatedSynonyms)) {
-      await tx.word.update({
-        where: { id: relatedWord.id },
-        data: { synonyms: nextRelatedSynonyms },
-      });
-    }
-  }
-};
+//     if (!areStringArraysEqual(relatedWord.synonyms, nextRelatedSynonyms)) {
+//       await tx.word.update({
+//         where: { id: relatedWord.id },
+//         data: { synonyms: nextRelatedSynonyms },
+//       });
+//     }
+//   }
+// };
 
 export const createWordForUser = async (
   userId: string,
@@ -516,14 +516,14 @@ export const createWordForUser = async (
         },
       });
 
-      await synchronizeSynonymConnections(tx, {
+      await synchronizeRelatedWordsConnections(tx, {
         ownerId: userId,
         languageId,
         wordId: updatedWord.id,
         previousTerm: existingConcept.term,
         nextTerm: updatedWord.term,
-        previousSynonyms: existingConcept.synonyms,
-        nextSynonyms: updatedWord.synonyms,
+        previousRelatedWords: existingConcept.relatedWords || [],
+        nextRelatedWords: updatedWord.relatedWords || [],
       });
 
       return updatedWord;
@@ -590,14 +590,14 @@ export const createWordForUser = async (
       ],
     });
 
-    await synchronizeSynonymConnections(tx, {
+    await synchronizeRelatedWordsConnections(tx, {
       ownerId: userId,
       languageId,
       wordId: word.id,
       previousTerm: word.term,
       nextTerm: word.term,
-      previousSynonyms: [],
-      nextSynonyms: word.synonyms,
+      previousRelatedWords: [],
+      nextRelatedWords: word.relatedWords || [],
     });
 
     return word;
@@ -1359,14 +1359,14 @@ export const updateWordForOwner = async (
       },
     });
 
-    await synchronizeSynonymConnections(tx, {
+    await synchronizeRelatedWordsConnections(tx, {
       ownerId,
       languageId: existingWord.languageId,
       wordId: word.id,
       previousTerm: existingWord.term,
       nextTerm: word.term,
-      previousSynonyms: existingWord.synonyms,
-      nextSynonyms: word.synonyms,
+      previousRelatedWords: existingWord.relatedWords || [],
+      nextRelatedWords: word.relatedWords || [],
     });
 
     return word;
@@ -1464,4 +1464,66 @@ export const hardDeleteWordForOwner = async (
   await prisma.word.delete({
     where: { id: wordId },
   });
+};
+
+const synchronizeRelatedWordsConnections = async (
+  tx: Prisma.TransactionClient,
+  params: {
+    ownerId: string;
+    languageId: string;
+    wordId: string;
+    previousTerm: string;
+    nextTerm: string;
+    previousRelatedWords: string[];
+    nextRelatedWords: string[];
+  },
+) => {
+  const {
+    ownerId,
+    languageId,
+    previousTerm,
+    nextTerm,
+    previousRelatedWords,
+    nextRelatedWords,
+  } = params;
+
+  const previousSet = new Set(previousRelatedWords);
+  const nextSet = new Set(nextRelatedWords);
+
+  const termsToRemoveFrom = previousRelatedWords.filter(
+    (t) => !nextSet.has(t) || previousTerm !== nextTerm,
+  );
+  const termsToAddTo = nextRelatedWords.filter(
+    (t) => !previousSet.has(t) || previousTerm !== nextTerm,
+  );
+
+  if (termsToRemoveFrom.length > 0) {
+    const wordsToClean = await tx.word.findMany({
+      where: { ownerId, languageId, term: { in: termsToRemoveFrom } },
+    });
+    for (const w of wordsToClean) {
+      const updatedRelated = (w.relatedWords || []).filter(
+        (rw) => rw !== previousTerm,
+      );
+      await tx.word.update({
+        where: { id: w.id },
+        data: { relatedWords: updatedRelated },
+      });
+    }
+  }
+
+  if (termsToAddTo.length > 0) {
+    const wordsToAdd = await tx.word.findMany({
+      where: { ownerId, languageId, term: { in: termsToAddTo } },
+    });
+    for (const w of wordsToAdd) {
+      const currentRelated = w.relatedWords || [];
+      if (!currentRelated.includes(nextTerm)) {
+        await tx.word.update({
+          where: { id: w.id },
+          data: { relatedWords: [...currentRelated, nextTerm] },
+        });
+      }
+    }
+  }
 };
