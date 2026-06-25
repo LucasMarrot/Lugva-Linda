@@ -84,6 +84,7 @@ export const getCurrentUserProfile = cache(async () => {
         username: true,
         colorHex: true,
         activeLanguageId: true,
+        role: true,
         learningLanguages: {
           include: {
             language: true,
@@ -105,6 +106,7 @@ export const getCurrentUserProfile = cache(async () => {
         colorHex: '#3B82F6',
         activeLanguageId: null,
         learningLanguages: [],
+        role: 'USER',
       };
     }
     throw dbError;
