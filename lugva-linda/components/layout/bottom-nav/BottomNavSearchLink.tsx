@@ -10,13 +10,22 @@ import {
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const buildCurrentRoute = (
   pathname: string,
   searchParams: ReturnType<typeof useSearchParams>,
 ) => buildRouteWithSearchParams(pathname, searchParams.toString());
 
-export const BottomNavSearchLink = () => {
+type BottomNavSearchLinkProps = {
+  href?: string;
+  fullWidth?: boolean;
+};
+
+export const BottomNavSearchLink = ({
+  href = '/search',
+  fullWidth = false,
+}: BottomNavSearchLinkProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -45,11 +54,15 @@ export const BottomNavSearchLink = () => {
 
   return (
     <Link
-      href="/search"
+      href={href}
       scroll={false}
       onClick={handleClick}
       aria-label="Rechercher ou ajouter un mot"
-      className="bg-primary text-primary-foreground ring-background/50 hover:bg-primary/90 absolute -top-16 right-6 flex h-14 -translate-y-4 items-center overflow-hidden rounded-full shadow-lg ring-2 transition-colors active:scale-95"
+      className={cn(
+        `bg-primary text-primary-foreground ring-background/50 hover:bg-primary/90 absolute -top-16 right-6 flex h-14 -translate-y-4 items-center overflow-hidden rounded-full shadow-lg ring-2 transition-colors active:scale-95`,
+        fullWidth &&
+          'top-6 right-[50%] flex w-[calc(100%-2rem)] translate-x-[50%] items-center justify-center',
+      )}
     >
       <div className="flex h-14 w-14 shrink-0 items-center justify-center">
         <Plus className="h-6 w-6" />

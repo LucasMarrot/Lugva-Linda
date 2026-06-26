@@ -14,7 +14,11 @@ import { useUser } from '../../providers/UserProvider';
 import { toDisplayName } from '@/lib/words/community';
 import { DarkModeToggle } from './DarkModeToggle';
 
-const SettingsButton = () => {
+type SettingsButtonProps = {
+  hideProfileEdit?: boolean;
+};
+
+const SettingsButton = ({ hideProfileEdit }: SettingsButtonProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const signOutRef = useRef<HTMLFormElement | null>(null);
 
@@ -68,17 +72,19 @@ const SettingsButton = () => {
           <Separator />
 
           <div className="flex flex-col space-y-1">
-            <Button
-              variant="ghost"
-              className="w-full cursor-pointer justify-start"
-              asChild
-              onClick={() => setIsOpen(false)}
-            >
-              <Link href="/settings">
-                <UserCog className="mr-2 h-4 w-4" />
-                Modifier mes informations
-              </Link>
-            </Button>
+            {!hideProfileEdit && (
+              <Button
+                variant="ghost"
+                className="w-full cursor-pointer justify-start"
+                asChild
+                onClick={() => setIsOpen(false)}
+              >
+                <Link href="/settings">
+                  <UserCog className="mr-2 h-4 w-4" />
+                  Modifier mes informations
+                </Link>
+              </Button>
+            )}
 
             <form
               ref={signOutRef}
