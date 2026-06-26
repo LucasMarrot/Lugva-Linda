@@ -17,6 +17,7 @@ type SearchViewProps = {
   setQuery: (q: string) => void;
   currentLangId: string;
   onCreateClick: () => void;
+  isContributorMode?: boolean;
 };
 
 export const SearchView = ({
@@ -24,6 +25,7 @@ export const SearchView = ({
   setQuery,
   currentLangId,
   onCreateClick,
+  isContributorMode = false,
 }: SearchViewProps) => {
   const router = useRouter();
   const { openWord } = useWordModal();
@@ -59,7 +61,11 @@ export const SearchView = ({
       setSearchError(null);
 
       try {
-        const results = await searchWords(trimmedQuery, currentLangId);
+        const results = await searchWords(
+          trimmedQuery,
+          currentLangId,
+          isContributorMode,
+        );
 
         if (latestRequestRef.current !== requestId) {
           return;
@@ -74,7 +80,7 @@ export const SearchView = ({
 
         setSearchResults([]);
         setSearchError(
-          'Impossible de lancer la recherche. Merci de reessayer.',
+          'Impossible de lancer la recherche. Merci de réessayer.',
         );
       } finally {
         if (latestRequestRef.current === requestId) {
@@ -84,7 +90,7 @@ export const SearchView = ({
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [query, currentLangId]);
+  }, [query, currentLangId, isContributorMode]);
 
   const exactMatchExists = searchResults.some(
     (word) =>
@@ -171,31 +177,32 @@ export const SearchView = ({
                     )}
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <SectionHeader
-                    title="Résultats dans la communauté"
-                    className="mb-3"
-                  />
+                {!isContributorMode && (
                   <div className="space-y-2">
-                    {communityResults.length === 0 ? (
-                      <StateMessage
-                        tone="neutral"
-                        message="Aucun résultat dans la communauté."
-                      />
-                    ) : (
-                      communityResults.map((word) => (
-                        <SearchWordItem
-                          key={word.id}
-                          word={word}
-                          addingWordId={addingWordId}
-                          onImport={importWord}
-                          onOpen={openWord}
+                    <SectionHeader
+                      title="Résultats dans la communauté"
+                      className="mb-3"
+                    />
+                    <div className="space-y-2">
+                      {communityResults.length === 0 ? (
+                        <StateMessage
+                          tone="neutral"
+                          message="Aucun résultat dans la communauté."
                         />
-                      ))
-                    )}
+                      ) : (
+                        communityResults.map((word) => (
+                          <SearchWordItem
+                            key={word.id}
+                            word={word}
+                            addingWordId={addingWordId}
+                            onImport={importWord}
+                            onOpen={openWord}
+                          />
+                        ))
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </>
             )}
           </div>

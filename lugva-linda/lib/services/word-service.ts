@@ -295,10 +295,6 @@ export const parseWordFormData = (formData: FormData): WordInput => {
   };
 };
 
-// const areStringArraysEqual = (left: string[], right: string[]) =>
-//   left.length === right.length &&
-//   left.every((value, index) => value === right[index]);
-
 const toUniqueTermsByNormalized = (values: string[]) => {
   const uniqueByNormalized = new Map<string, string>();
 
@@ -353,118 +349,17 @@ const removeTermsByNormalized = (
 const sanitizeSynonymsForTerm = (synonyms: string[], term: string) =>
   removeTermsByNormalized(synonyms, new Set([normalizeForLookup(term)]));
 
-// type SynchronizeSynonymConnectionsInput = {
-//   ownerId: string;
-//   languageId: string;
-//   wordId: string;
-//   previousTerm: string;
-//   nextTerm: string;
-//   previousSynonyms: string[];
-//   nextSynonyms: string[];
-// };
-
-// const synchronizeSynonymConnections = async (
-//   tx: Prisma.TransactionClient,
-//   input: SynchronizeSynonymConnectionsInput,
-// ) => {
-//   const previousSynonyms = toUniqueTermsByNormalized(input.previousSynonyms);
-//   const nextSynonyms = toUniqueTermsByNormalized(input.nextSynonyms);
-
-//   const removedSynonymLookups = new Set<string>();
-//   for (const normalized of previousSynonyms.keys()) {
-//     if (!nextSynonyms.has(normalized)) {
-//       removedSynonymLookups.add(normalized);
-//     }
-//   }
-
-//   const candidateLookups = new Set<string>([
-//     ...Array.from(removedSynonymLookups),
-//     ...Array.from(nextSynonyms.keys()),
-//   ]);
-
-//   if (candidateLookups.size === 0) {
-//     return;
-//   }
-
-//   const relatedWords = await tx.word.findMany({
-//     where: {
-//       ownerId: input.ownerId,
-//       languageId: input.languageId,
-//       id: { not: input.wordId },
-//       termNormalized: { in: Array.from(candidateLookups) },
-//       isDeleted: false,
-//       deleteToken: ACTIVE_DELETE_TOKEN,
-//     },
-//     select: {
-//       id: true,
-//       termNormalized: true,
-//       synonyms: true,
-//     },
-//   });
-
-//   const previousTermLookup = normalizeForLookup(input.previousTerm);
-//   const nextTermLookup = normalizeForLookup(input.nextTerm);
-//   const hasRenamedTerm = previousTermLookup !== nextTermLookup;
-//   const connectedTerms = toUniqueTermsByNormalized([
-//     input.nextTerm,
-//     ...nextSynonyms.values(),
-//   ]);
-
-//   for (const relatedWord of relatedWords) {
-//     const wasConnected = previousSynonyms.has(relatedWord.termNormalized);
-//     const isConnected = nextSynonyms.has(relatedWord.termNormalized);
-
-//     if (!wasConnected && !isConnected) {
-//       continue;
-//     }
-
-//     let nextRelatedSynonyms = relatedWord.synonyms;
-//     const termsToRemove = new Set<string>();
-
-//     if (wasConnected && !isConnected) {
-//       termsToRemove.add(previousTermLookup);
-//       termsToRemove.add(nextTermLookup);
-//     } else if (hasRenamedTerm) {
-//       termsToRemove.add(previousTermLookup);
-//     }
-
-//     if (termsToRemove.size > 0) {
-//       nextRelatedSynonyms = removeTermsByNormalized(
-//         nextRelatedSynonyms,
-//         termsToRemove,
-//       );
-//     }
-
-//     if (isConnected) {
-//       const connectedTermsForRelatedWord: string[] = [];
-
-//       for (const [normalized, term] of connectedTerms.entries()) {
-//         if (normalized !== relatedWord.termNormalized) {
-//           connectedTermsForRelatedWord.push(term);
-//         }
-//       }
-
-//       nextRelatedSynonyms = mergeTermsByNormalized(
-//         nextRelatedSynonyms,
-//         connectedTermsForRelatedWord,
-//       );
-//     }
-
-//     if (!areStringArraysEqual(relatedWord.synonyms, nextRelatedSynonyms)) {
-//       await tx.word.update({
-//         where: { id: relatedWord.id },
-//         data: { synonyms: nextRelatedSynonyms },
-//       });
-//     }
-//   }
-// };
-
 export const createWordForUser = async (
-  userId: string,
+  ownerId: string,
   input: WordInput,
-  options?: { audioFile?: File | null; supabase?: SupabaseClient },
+  options?: {
+    audioFile?: File | null;
+    supabase?: SupabaseClient;
+    createdById?: string;
+  },
 ) => {
-  const languageId = await resolveLanguageId(userId, input.languageId);
+  const creatorId = options?.createdById ?? ownerId;
+  const languageId = await resolveLanguageId(ownerId, input.languageId);
 
   const rawTerms = input.term
     .split(',')
@@ -483,7 +378,7 @@ export const createWordForUser = async (
 
   const existingConcept = await prisma.word.findFirst({
     where: {
-      ownerId: userId,
+      ownerId,
       languageId,
       translationNormalized: normalizedInput.translationNormalized,
       isDeleted: false,
@@ -517,7 +412,7 @@ export const createWordForUser = async (
       });
 
       await synchronizeRelatedWordsConnections(tx, {
-        ownerId: userId,
+        ownerId,
         languageId,
         wordId: updatedWord.id,
         previousTerm: existingConcept.term,
@@ -537,7 +432,7 @@ export const createWordForUser = async (
   const { notesBlocks, ...wordData } = normalizedInput;
 
   await assertNoActiveDuplicate(
-    userId,
+    ownerId,
     languageId,
     normalizedInput.termNormalized,
     normalizedInput.mandatoryTag,
@@ -547,14 +442,14 @@ export const createWordForUser = async (
     | { customAudioPath: string; customAudioUrl: string }
     | undefined;
   if (options?.audioFile && options.supabase && options.audioFile.size > 0) {
-    audioData = await uploadAudio(options.supabase, userId, options.audioFile);
+    audioData = await uploadAudio(options.supabase, ownerId, options.audioFile);
   }
 
   return prisma.$transaction(async (tx) => {
     const word = await tx.word.create({
       data: {
-        ownerId: userId,
-        createdById: userId,
+        ownerId,
+        createdById: creatorId,
         languageId,
         ...wordData,
         synonyms: sanitizedSynonyms,
@@ -568,21 +463,21 @@ export const createWordForUser = async (
       data: [
         {
           wordId: word.id,
-          ownerId: userId,
+          ownerId,
           languageId,
           category: ExerciseCategory.READING,
           type: ExerciseType.RECOGNITION,
         },
         {
           wordId: word.id,
-          ownerId: userId,
+          ownerId,
           languageId,
           category: ExerciseCategory.WRITING,
           type: ExerciseType.REVERSE,
         },
         {
           wordId: word.id,
-          ownerId: userId,
+          ownerId,
           languageId,
           category: ExerciseCategory.WRITING,
           type: ExerciseType.SPELLING,
@@ -591,7 +486,7 @@ export const createWordForUser = async (
     });
 
     await synchronizeRelatedWordsConnections(tx, {
-      ownerId: userId,
+      ownerId,
       languageId,
       wordId: word.id,
       previousTerm: word.term,
@@ -608,6 +503,7 @@ export const searchWordsInLanguage = async (
   viewerId: string,
   languageId: string,
   query: string,
+  options?: { excludeCommunity?: boolean },
 ) => {
   const normalizedQuery = normalizeText(query);
   if (!normalizedQuery) return [];
@@ -617,6 +513,7 @@ export const searchWordsInLanguage = async (
       languageId,
       isDeleted: false,
       deleteToken: ACTIVE_DELETE_TOKEN,
+      ...(options?.excludeCommunity ? { ownerId: viewerId } : {}),
       OR: [
         { term: { contains: normalizedQuery, mode: 'insensitive' } },
         { translation: { contains: normalizedQuery, mode: 'insensitive' } },
@@ -632,7 +529,7 @@ export const searchWordsInLanguage = async (
         },
       },
     },
-    take: 60,
+    take: options?.excludeCommunity ? 20 : 60,
   });
 
   const mapped = words.map((word) => toCommunityView(word, viewerId));

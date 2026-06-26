@@ -1,6 +1,7 @@
 'use server';
 
 import {
+  getCurrentUserProfile,
   requireAuthenticatedUser,
   verifyLanguageOwnership,
 } from '@/lib/auth/server';
@@ -80,12 +81,20 @@ export async function createWord(formData: FormData) {
     assertRateLimit(`create-word:${user.id}`, 30, 60_000);
     const supabase = await createClient();
 
+    let effectiveOwnerId = user.id;
+    const profile = await getCurrentUserProfile();
+
+    if (profile?.role === 'CONTRIBUTOR' && profile.targetOwnerId) {
+      effectiveOwnerId = profile.targetOwnerId;
+    }
+
     const input = parseWordFormData(formData);
     const audioFile = formData.get('audioFile') as File | null;
 
-    await createWordForUser(user.id, input, {
+    await createWordForUser(effectiveOwnerId, input, {
       audioFile,
       supabase,
+      createdById: user.id,
     });
 
     revalidatePath('/');
@@ -110,6 +119,13 @@ export async function checkWordTermNatureAvailabilityAction(input: {
     userId = user.id;
     assertRateLimit(`check-word-term-nature:${user.id}`, 120, 60_000);
 
+    let effectiveOwnerId = user.id;
+    const profile = await getCurrentUserProfile();
+
+    if (profile?.role === 'CONTRIBUTOR' && profile.targetOwnerId) {
+      effectiveOwnerId = profile.targetOwnerId;
+    }
+
     const parsed = checkWordTermNatureSchema.parse({
       word: normalizeText(input.word),
       languageId: languageIdSchema.parse(normalizeText(input.languageId)),
@@ -119,10 +135,12 @@ export async function checkWordTermNatureAvailabilityAction(input: {
         : undefined,
     });
 
-    await verifyLanguageOwnership(parsed.languageId, user.id);
+    if (profile?.role !== 'CONTRIBUTOR') {
+      await verifyLanguageOwnership(parsed.languageId, user.id);
+    }
 
     const isDuplicate = await checkWordTermNatureDuplicateForOwner(
-      user.id,
+      effectiveOwnerId,
       parsed.languageId,
       parsed.word,
       parsed.mandatoryTag,
@@ -139,24 +157,45 @@ export async function checkWordTermNatureAvailabilityAction(input: {
   }
 }
 
-export async function searchWords(query: string, languageId: string) {
+export async function searchWords(
+  query: string,
+  languageId: string,
+  isContributorMode: boolean = false,
+) {
   let userId: string | null = null;
 
   try {
     const user = await requireAuthenticatedUser();
     userId = user.id;
 
+    let effectiveOwnerId = user.id;
+
+    if (isContributorMode) {
+      const profile = await getCurrentUserProfile();
+      if (profile?.role === 'CONTRIBUTOR' && profile.targetOwnerId) {
+        effectiveOwnerId = profile.targetOwnerId;
+      }
+    }
+
     const requestedLanguageId = normalizeText(languageId);
     if (requestedLanguageId) {
       const parsedLanguageId = languageIdSchema.parse(requestedLanguageId);
-      await verifyLanguageOwnership(parsedLanguageId, user.id);
-      return searchWordsInLanguage(user.id, parsedLanguageId, query);
+
+      if (!isContributorMode) {
+        await verifyLanguageOwnership(parsedLanguageId, user.id);
+      }
+
+      return searchWordsInLanguage(effectiveOwnerId, parsedLanguageId, query, {
+        excludeCommunity: isContributorMode,
+      });
     }
 
     const { activeLanguageId } = await resolveActiveLanguageForUser(user.id);
     if (!activeLanguageId) return [];
 
-    return searchWordsInLanguage(user.id, activeLanguageId, query);
+    return searchWordsInLanguage(effectiveOwnerId, activeLanguageId, query, {
+      excludeCommunity: isContributorMode,
+    });
   } catch (error) {
     logActionError('searchWords', userId, error);
     throw toActionError(error);

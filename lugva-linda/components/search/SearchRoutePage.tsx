@@ -14,6 +14,7 @@ import { PageHeader } from '../shared';
 type SearchRoutePageProps = {
   initialQuery: string;
   currentLangId: string;
+  isContributorMode?: boolean;
 };
 
 const ANIMATION_DURATION_MS = 220;
@@ -21,6 +22,7 @@ const ANIMATION_DURATION_MS = 220;
 export const SearchRoutePage = ({
   initialQuery,
   currentLangId,
+  isContributorMode = false,
 }: SearchRoutePageProps) => {
   const router = useRouter();
   const shouldReduceMotion = useReducedMotion();
@@ -114,6 +116,7 @@ export const SearchRoutePage = ({
             setQuery={setQuery}
             currentLangId={currentLangId}
             onCreateClick={() => setIsCreating(true)}
+            isContributorMode={isContributorMode}
           />
         ) : (
           <WordForm
@@ -121,6 +124,7 @@ export const SearchRoutePage = ({
             currentLangId={currentLangId}
             onCancel={() => setIsCreating(false)}
             onSuccess={handleSuccess}
+            isContributorMode={isContributorMode}
           />
         )}
       </main>

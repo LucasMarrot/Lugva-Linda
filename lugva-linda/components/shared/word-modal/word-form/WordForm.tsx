@@ -80,6 +80,7 @@ type WordFormProps = {
   initialData?: EditableWordSnapshot;
   onCancel: () => void;
   onSuccess: () => void;
+  isContributorMode?: boolean;
 };
 
 export const WordForm = ({
@@ -87,6 +88,7 @@ export const WordForm = ({
   currentLangId = '',
   initialData,
   onSuccess,
+  isContributorMode = false,
 }: WordFormProps) => {
   const isEditing = !!initialData;
   const toast = useToast();
@@ -266,7 +268,9 @@ export const WordForm = ({
           onSelectTag={setSelectedMandatoryTag}
         />
 
-        <CustomTagsSection langId={langId} initialSelectedTags={customTags} />
+        {!isContributorMode && (
+          <CustomTagsSection langId={langId} initialSelectedTags={customTags} />
+        )}
 
         <PronunciationSection
           existingAudioUrl={initialData?.customAudioUrl}
@@ -278,17 +282,21 @@ export const WordForm = ({
           onRestoreExistingAudio={() => setShouldRemoveAudio(false)}
         />
 
-        <RelatedWordsSection
-          currentLangId={langId}
-          currentWord={wordValue}
-          initialRelatedWords={defaultRelatedWords}
-        />
+        {!isContributorMode && (
+          <>
+            <RelatedWordsSection
+              currentLangId={langId}
+              currentWord={wordValue}
+              initialRelatedWords={defaultRelatedWords}
+            />
 
-        <NotesSection
-          initialBlocks={defaultNotesBlocks}
-          disabled={isSubmitting}
-          onValidationChange={setHasNotesError}
-        />
+            <NotesSection
+              initialBlocks={defaultNotesBlocks}
+              disabled={isSubmitting}
+              onValidationChange={setHasNotesError}
+            />
+          </>
+        )}
 
         <Button
           type="submit"
