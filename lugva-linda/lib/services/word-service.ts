@@ -805,6 +805,11 @@ export const listCommunityMembers = async (): Promise<
   CommunityMemberSummary[]
 > => {
   const members = await prisma.user.findMany({
+    where: {
+      role: {
+        not: 'CONTRIBUTOR',
+      },
+    },
     select: {
       id: true,
       email: true,
