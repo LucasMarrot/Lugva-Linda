@@ -9,6 +9,7 @@ import { TagFilter } from './TagFilter';
 import { StateMessage } from '@/components/shared/';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
 import { EncyclopediaItem } from './EncyclopediaItem';
+import { frenchPluralize } from '@/lib/utils';
 
 export type VisualWord = Word & {
   visualId: string;
@@ -54,7 +55,6 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
 
   const visualWords: VisualWord[] = useMemo(() => {
     const flatArray = words.flatMap((word) => {
-      // 1. La carte visuelle principale
       const entries: VisualWord[] = [
         {
           ...word,
@@ -115,6 +115,14 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
 
   return (
     <div className="relative min-h-screen pb-[calc(var(--bottom-nav-height)+1rem)]">
+      {words.length > 0 && (
+        <div className="px-4 pb-3">
+          <h3 className="text-muted-foreground text-sm font-medium">
+            {`${words.length} ${frenchPluralize(words.length, 'mot')} au total`}
+          </h3>
+        </div>
+      )}
+
       {showTagFilter && (
         <TagFilter
           allTags={allTags}
