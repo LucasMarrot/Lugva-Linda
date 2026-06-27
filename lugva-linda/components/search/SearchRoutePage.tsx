@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 import { SearchView } from './SearchView';
@@ -39,28 +39,6 @@ export const SearchRoutePage = ({
       return '/';
     }
   };
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      const url = new URL(window.location.href);
-      const trimmedQuery = query.trim();
-
-      if (trimmedQuery.length > 0) {
-        url.searchParams.set('query', trimmedQuery);
-      } else {
-        url.searchParams.delete('query');
-      }
-
-      const nextPath = `${url.pathname}${url.search}`;
-      const currentPath = `${window.location.pathname}${window.location.search}`;
-
-      if (nextPath !== currentPath) {
-        window.history.replaceState(window.history.state, '', nextPath);
-      }
-    }, 220);
-
-    return () => window.clearTimeout(timeout);
-  }, [query]);
 
   const closeAndGoBack = () => {
     if (isClosing) return;

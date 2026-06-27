@@ -54,13 +54,11 @@ export default async function ContributePage() {
         <main className="pt-4">
           <EncyclopediaClient words={words} />
         </main>
+      </div>
 
-        <div className="pointer-events-none fixed right-0 bottom-0 left-0 h-24">
-          <div className="relative mx-auto h-full w-full max-w-md">
-            <div className="pointer-events-auto">
-              <BottomNavSearchLink href="/contribute/search" fullWidth={true} />
-            </div>
-          </div>
+      <div className="pointer-events-none fixed right-0 bottom-0 left-0 z-99 h-24">
+        <div className="pointer-events-auto">
+          <BottomNavSearchLink href="/contribute/search" fullWidth={true} />
         </div>
       </div>
     </ActiveLanguageProvider>

@@ -230,7 +230,7 @@ const toCommunityView = (
 const assertNoActiveDuplicate = async (
   ownerId: string,
   languageId: string,
-  termNormalized: string,
+  term: string,
   mandatoryTag: MandatoryTag,
   excludeWordId?: string,
 ) => {
@@ -238,7 +238,7 @@ const assertNoActiveDuplicate = async (
     where: {
       ownerId,
       languageId,
-      termNormalized,
+      term: { equals: term.trim(), mode: 'insensitive' },
       mandatoryTag,
       isDeleted: false,
       deleteToken: ACTIVE_DELETE_TOKEN,
@@ -259,13 +259,11 @@ export const checkWordTermNatureDuplicateForOwner = async (
   mandatoryTag: MandatoryTag,
   excludeWordId?: string,
 ) => {
-  const termNormalized = normalizeForLookup(term);
-
   const duplicate = await prisma.word.findFirst({
     where: {
       ownerId,
       languageId,
-      termNormalized,
+      term: { equals: term.trim(), mode: 'insensitive' },
       mandatoryTag,
       isDeleted: false,
       deleteToken: ACTIVE_DELETE_TOKEN,
@@ -434,7 +432,7 @@ export const createWordForUser = async (
   await assertNoActiveDuplicate(
     ownerId,
     languageId,
-    normalizedInput.termNormalized,
+    normalizedInput.term,
     normalizedInput.mandatoryTag,
   );
 
@@ -506,7 +504,9 @@ export const searchWordsInLanguage = async (
   options?: { excludeCommunity?: boolean },
 ) => {
   const normalizedQuery = normalizeText(query);
-  if (!normalizedQuery) return [];
+  const lookupQuery = normalizeForLookup(query);
+
+  if (!lookupQuery) return [];
 
   const words = await prisma.word.findMany({
     where: {
@@ -515,8 +515,12 @@ export const searchWordsInLanguage = async (
       deleteToken: ACTIVE_DELETE_TOKEN,
       ...(options?.excludeCommunity ? { ownerId: viewerId } : {}),
       OR: [
-        { term: { contains: normalizedQuery, mode: 'insensitive' } },
-        { translation: { contains: normalizedQuery, mode: 'insensitive' } },
+        { termNormalized: { contains: lookupQuery, mode: 'insensitive' } },
+        {
+          translationNormalized: { contains: lookupQuery, mode: 'insensitive' },
+        },
+        { term: { contains: query, mode: 'insensitive' } },
+        { translation: { contains: query, mode: 'insensitive' } },
       ],
     },
     include: {
@@ -731,7 +735,7 @@ export const listMemberWordsInLanguage = async (
   languageId: string,
   query?: string,
 ) => {
-  const normalizedQuery = normalizeText(query ?? '');
+  const lookupQuery = query ? normalizeForLookup(query) : '';
 
   const words = await prisma.word.findMany({
     where: {
@@ -739,16 +743,20 @@ export const listMemberWordsInLanguage = async (
       languageId,
       isDeleted: false,
       deleteToken: ACTIVE_DELETE_TOKEN,
-      ...(normalizedQuery
+      ...(lookupQuery
         ? {
             OR: [
-              { term: { contains: normalizedQuery, mode: 'insensitive' } },
               {
-                translation: {
-                  contains: normalizedQuery,
+                termNormalized: { contains: lookupQuery, mode: 'insensitive' },
+              },
+              {
+                translationNormalized: {
+                  contains: lookupQuery,
                   mode: 'insensitive',
                 },
               },
+              { term: { contains: query, mode: 'insensitive' } },
+              { translation: { contains: query, mode: 'insensitive' } },
             ],
           }
         : {}),
@@ -787,7 +795,7 @@ export const getCommunityWordImportPreview = async (
 
   if (sourceWord.ownerId === viewerId) {
     throw new ValidationError(
-      'Ce mot vous appartient deja.',
+      'Ce mot vous appartient déjà.',
       'OWN_WORD_IMPORT_FORBIDDEN',
     );
   }
@@ -909,7 +917,7 @@ export const importCommunityWordForUser = async (
 
   if (!mergeStrategy) {
     throw new ValidationError(
-      'Fusion requise: ce mot existe deja dans votre encyclopedie.',
+      'Fusion requise : ce mot existe déjà dans votre encyclopédie.',
       'MERGE_REQUIRED',
     );
   }
@@ -1227,7 +1235,7 @@ export const updateWordForOwner = async (
   await assertNoActiveDuplicate(
     ownerId,
     existingWord.languageId,
-    normalizedInput.termNormalized,
+    normalizedInput.term,
     normalizedInput.mandatoryTag,
     wordId,
   );
@@ -1332,7 +1340,7 @@ export const restoreWordForOwner = async (ownerId: string, wordId: string) => {
   await assertNoActiveDuplicate(
     ownerId,
     existingWord.languageId,
-    existingWord.termNormalized,
+    existingWord.term,
     resolveMandatoryTag(existingWord.tags),
     wordId,
   );

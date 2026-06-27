@@ -1,7 +1,10 @@
 export const normalizeText = (value: string) => value.normalize('NFC').trim();
 
 export const normalizeForLookup = (value: string) =>
-  normalizeText(value).toLowerCase();
+  normalizeText(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 
 export const normalizeStringArray = (values: string[]) => {
   const deduped = new Set<string>();

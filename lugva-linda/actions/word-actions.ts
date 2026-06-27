@@ -149,7 +149,7 @@ export async function checkWordTermNatureAvailabilityAction(input: {
 
     return {
       isDuplicate,
-      message: isDuplicate ? 'Ce mot existe deja avec cette nature.' : null,
+      message: isDuplicate ? 'Ce mot existe déjà avec cette nature.' : null,
     };
   } catch (error) {
     logActionError('checkWordTermNatureAvailabilityAction', userId, error);

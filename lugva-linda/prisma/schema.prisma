@@ -138,7 +138,7 @@ model Word {
   cards Card[]
 
   @@unique([id, ownerId, languageId])
-  @@unique([ownerId, languageId, termNormalized, mandatoryTag, deleteToken])
+  @@unique([ownerId, languageId, term, mandatoryTag, deleteToken])
   @@index([ownerId, languageId, isDeleted, createdAt])
   @@index([ownerId, languageId, isDeleted, termNormalized])
   @@index([ownerId, languageId, isDeleted, termNormalized, mandatoryTag])
