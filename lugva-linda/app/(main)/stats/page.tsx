@@ -4,7 +4,7 @@ export default function StatsPage() {
   return (
     <UnderConstructionPage
       title="Statistiques"
-      description="Le suivi detaille de votre progression est en cours de preparation."
+      description="Le suivi détaillé de votre progression est en cours de préparation."
     />
   );
 }
