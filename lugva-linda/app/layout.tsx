@@ -39,6 +39,7 @@ export default async function RootLayout({
     profile?.activeLanguageId || languages[0]?.id || null;
   const userColor = profile?.colorHex || '';
   const darkColor = userColor ? getThemeColor(userColor, 'dark') : '';
+  const isContributorMode = profile?.role === 'CONTRIBUTOR';
 
   return (
     <html
@@ -64,7 +65,7 @@ export default async function RootLayout({
             <UserProvider initialUser={profile}>
               <PresenceProvider>
                 <CommunityImportProvider>
-                  <WordModalProvider>
+                  <WordModalProvider isContributorMode={isContributorMode}>
                     <ActiveLanguageProvider
                       languages={languages}
                       activeLanguageId={activeLanguageId ?? ''}

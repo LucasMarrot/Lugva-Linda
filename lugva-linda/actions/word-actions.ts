@@ -419,6 +419,13 @@ export async function updateWordAction(wordId: string, formData: FormData) {
   try {
     const user = await requireAuthenticatedUser();
     userId = user.id;
+
+    let effectiveOwnerId = user.id;
+    const profile = await getCurrentUserProfile();
+
+    if (profile?.role === 'CONTRIBUTOR' && profile.targetOwnerId)
+      effectiveOwnerId = profile.targetOwnerId;
+
     await assertCsrfForAction({
       formData,
       subject: user.id,
@@ -431,7 +438,7 @@ export async function updateWordAction(wordId: string, formData: FormData) {
     const audioFile = formData.get('audioFile') as File | null;
     const removeAudio = formData.get('removeAudio') === 'true';
 
-    await updateWordForOwner(user.id, validatedWordId, input, {
+    await updateWordForOwner(effectiveOwnerId, validatedWordId, input, {
       audioFile,
       removeAudio,
       supabase,

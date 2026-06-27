@@ -56,7 +56,7 @@ export default async function ContributePage() {
         </main>
       </div>
 
-      <div className="pointer-events-none fixed right-0 bottom-0 left-0 z-99 h-24">
+      <div className="pointer-events-none fixed right-0 bottom-0 left-0 z-10 h-24">
         <div className="pointer-events-auto">
           <BottomNavSearchLink href="/contribute/search" fullWidth={true} />
         </div>

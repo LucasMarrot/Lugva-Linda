@@ -26,6 +26,7 @@ type WordDetailModalProps = {
   onDelete?: (wordId: string) => void;
   onAddExternalWord?: (word: EditableWordSnapshot) => Promise<void>;
   isAddingExternalWord?: boolean;
+  isContributorMode?: boolean;
 };
 
 export const WordDetailModal = ({
@@ -43,6 +44,7 @@ export const WordDetailModal = ({
   onDelete,
   onAddExternalWord,
   isAddingExternalWord = false,
+  isContributorMode = false,
 }: WordDetailModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -99,6 +101,7 @@ export const WordDetailModal = ({
                     }
                     onClose();
                   }}
+                  isContributorMode={isContributorMode}
                 />
               </div>
             )}

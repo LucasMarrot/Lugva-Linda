@@ -65,9 +65,10 @@ const WordModalContext = createContext<WordModalContextType | undefined>(
   undefined,
 );
 
-export const WordModalProvider: FC<{ children: ReactNode }> = ({
-  children,
-}) => {
+export const WordModalProvider: FC<{
+  children: ReactNode;
+  isContributorMode?: boolean;
+}> = ({ children, isContributorMode = false }) => {
   const [modalState, dispatch] = useReducer(
     wordModalReducer,
     initialWordModalState,
@@ -165,11 +166,12 @@ export const WordModalProvider: FC<{ children: ReactNode }> = ({
         onEditSuccess={handleEditSuccess}
         onRelatedWordSelect={handleRelatedWordSelect}
         canEdit={!!activeWord?.isOwnedByCurrentUser}
-        canDelete={!!activeWord?.isOwnedByCurrentUser}
+        canDelete={!!activeWord?.isOwnedByCurrentUser && !isContributorMode}
         canAdd={!!activeWord && !activeWord.isOwnedByCurrentUser}
         onDelete={handleDelete}
         onAddExternalWord={handleAddExternalWord}
         isAddingExternalWord={addingWordId === activeWord?.id}
+        isContributorMode={isContributorMode}
       />
     </WordModalContext.Provider>
   );
