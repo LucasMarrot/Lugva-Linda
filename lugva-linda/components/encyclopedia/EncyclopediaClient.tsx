@@ -115,10 +115,10 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
 
   return (
     <div className="relative min-h-screen pb-[calc(var(--bottom-nav-height)+1rem)]">
-      {words.length > 0 && (
+      {filteredWords.length > 0 && (
         <div className="px-4 pb-3">
           <h3 className="text-muted-foreground text-sm font-medium">
-            {`${words.length} ${frenchPluralize(words.length, 'mot')} au total`}
+            {`${filteredWords.length} ${frenchPluralize(filteredWords.length, 'mot')}`}
           </h3>
         </div>
       )}
