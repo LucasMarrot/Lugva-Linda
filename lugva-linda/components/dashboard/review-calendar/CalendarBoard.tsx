@@ -39,7 +39,8 @@ export const CalendarBoard = ({
           "bg-destructive/10 border border-destructive/30 overflow-visible relative after:absolute after:-top-[5px] after:-right-[5px] after:flex after:border-1 after:border-background after:items-center after:justify-center after:h-4.5 after:w-4.5 after:rounded-full after:bg-destructive after:text-white after:content-['✕'] after:text-sm after:shadow-sm after:text-sm after:font-bold",
       }}
       classNames={{
-        root: 'w-full aspect-square',
+        root: 'w-full',
+        month_grid: 'w-full',
         day: 'ml-0.5 mr-0.5 w-full aspect-square p-0 aria-selected:opacity-100 rounded-lg hover:bg-muted transition-colors duration-200',
       }}
     />
