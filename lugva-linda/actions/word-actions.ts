@@ -12,6 +12,7 @@ import {
   languageIdSchema,
   wordIdSchema,
   CommunityImportSelection,
+  mandatoryTagSchema,
 } from '@/lib/validation/schemas';
 import { revalidatePath } from 'next/cache';
 import {
@@ -30,6 +31,9 @@ import {
   searchWordsInLanguage,
   softDeleteWordForOwner,
   updateWordForOwner,
+  createIncompleteWordForUser,
+  completeWordForContributor,
+  countWordsToCompleteSinceDate,
 } from '@/lib/services/word-service';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 import { normalizeText } from '@/lib/words/normalization';
@@ -499,5 +503,127 @@ export async function hardDeleteWordAction(wordId: string) {
   } catch (error) {
     logActionError('hardDeleteWordAction', userId, error, startedAt);
     throw toActionError(error);
+  }
+}
+
+export async function createIncompleteWordAction(formData: FormData) {
+  let userId: string | null = null;
+  const startedAt = Date.now();
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    await assertCsrfForAction({
+      formData,
+      subject: user.id,
+    });
+    assertRateLimit(`create-incomplete-word:${user.id}`, 30, 60_000);
+
+    const profile = await getCurrentUserProfile();
+    if (!profile || profile.role === 'CONTRIBUTOR') {
+      throw new Error('Seul un utilisateur peut créer un mot incomplet.');
+    }
+
+    const translation = String(formData.get('translation') ?? formData.get('word') ?? '');
+    const rawMandatoryTag = String(formData.get('mandatoryTag') ?? '');
+    const rawLanguageId = normalizeText(
+      String(formData.get('languageId') ?? ''),
+    );
+
+    const mandatoryTag = mandatoryTagSchema.parse(rawMandatoryTag);
+    const languageId = rawLanguageId
+      ? languageIdSchema.parse(rawLanguageId)
+      : undefined;
+
+    await createIncompleteWordForUser(
+      user.id,
+      translation,
+      mandatoryTag,
+      languageId,
+      user.id,
+    );
+
+    revalidatePath('/');
+    revalidatePath('/words');
+    revalidatePath('/contribute');
+    logActionSuccess('createIncompleteWordAction', userId, startedAt);
+  } catch (error) {
+    logActionError('createIncompleteWordAction', userId, error, startedAt);
+    throw toActionError(error);
+  }
+}
+
+export async function completeWordAction(wordId: string, formData: FormData) {
+  let userId: string | null = null;
+  const startedAt = Date.now();
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+    await assertCsrfForAction({
+      formData,
+      subject: user.id,
+    });
+    assertRateLimit(`complete-word:${user.id}`, 40, 60_000);
+
+    const profile = await getCurrentUserProfile();
+    if (!profile || profile.role !== 'CONTRIBUTOR' || !profile.targetOwnerId) {
+      throw new Error('Seul un contributeur peut compléter un mot.');
+    }
+
+    const supabase = await createClient();
+    const validatedWordId = wordIdSchema.parse(normalizeText(wordId));
+    const term = String(formData.get('term') ?? '');
+    const audioFile = formData.get('audioFile') as File | null;
+
+    await completeWordForContributor(
+      profile.targetOwnerId,
+      validatedWordId,
+      term,
+      { audioFile, supabase },
+    );
+
+    revalidatePath('/');
+    revalidatePath('/words');
+    revalidatePath('/contribute');
+    logActionSuccess('completeWordAction', userId, startedAt);
+  } catch (error) {
+    logActionError('completeWordAction', userId, error, startedAt);
+    throw toActionError(error);
+  }
+}
+
+export async function getWordsToCompleteNotificationAction(
+  languageId: string,
+) {
+  let userId: string | null = null;
+
+  try {
+    const user = await requireAuthenticatedUser();
+    userId = user.id;
+
+    const profile = await getCurrentUserProfile();
+    if (!profile || profile.role !== 'CONTRIBUTOR' || !profile.targetOwnerId) {
+      return { count: 0 };
+    }
+
+    const validatedLanguageId = languageIdSchema.parse(
+      normalizeText(languageId),
+    );
+
+    const count = await countWordsToCompleteSinceDate(
+      profile.targetOwnerId,
+      validatedLanguageId,
+      profile.lastContributorVisitAt,
+    );
+
+    return { count };
+  } catch (error) {
+    logActionError(
+      'getWordsToCompleteNotificationAction',
+      userId,
+      error,
+    );
+    return { count: 0 };
   }
 }

@@ -35,6 +35,11 @@ enum ReviewGrade {
   EASY
 }
 
+enum WordStatus {
+  ACTIVE
+  TO_COMPLETE
+}
+
 // -----------------------------------------------------------------------------
 // Identity and access
 // -----------------------------------------------------------------------------
@@ -46,6 +51,7 @@ model User {
   colorHex  String   @default("#1B1B1B") @db.VarChar(7)
   activeLanguageId String?
   targetOwnerId    String?
+  lastContributorVisitAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -110,6 +116,7 @@ model Word {
   translation           String
   translationNormalized String
   mandatoryTag          String
+  status                WordStatus @default(ACTIVE)
   tags                  String[] @default([])
   synonyms              String[] @default([])
   relatedWords          String[] @default([])
@@ -146,6 +153,7 @@ model Word {
   @@index([languageId, isDeleted, translationNormalized])
   @@index([sourceWordId])
   @@index([isDeleted, purgeAfter])
+  @@index([ownerId, languageId, status, isDeleted])
 }
 
 // -----------------------------------------------------------------------------

@@ -56,5 +56,6 @@ export const toWordSnapshot = (
     sourceWordId: word.sourceWordId,
     customAudioUrl: word.customAudioUrl,
     relatedWords: word.relatedWords,
+    status: word.status,
   };
 };

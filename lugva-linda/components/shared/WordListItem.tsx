@@ -4,6 +4,7 @@ import { useMemo, useRef, type MouseEventHandler } from 'react';
 import type { Word } from '@prisma/client';
 import { BookOpen, Plus } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { cn } from '@/lib/utils';
 import { WordTags } from './WordTags';
 
 type WordListItemProps = {
@@ -42,19 +43,29 @@ export const WordListItem = ({
       role="button"
       tabIndex={0}
       ref={rootRef}
-      className="ui-motion-interactive ui-tap-feedback bg-card border-border/50 hover:bg-accent hover:border-border active:bg-accent/80 relative flex w-full cursor-pointer items-center justify-between gap-2 overflow-hidden rounded-xl border-2 p-3 text-left sm:gap-3 sm:p-4"
+      className={cn(
+        "ui-motion-interactive ui-tap-feedback bg-card hover:bg-accent active:bg-accent/80 relative flex w-full cursor-pointer items-center justify-between gap-2 overflow-hidden rounded-xl border-2 p-3 text-left sm:gap-3 sm:p-4",
+        word.status === 'TO_COMPLETE'
+          ? "border-amber-500 hover:border-amber-600"
+          : "border-border/50 hover:border-border"
+      )}
       style={customCardStyle}
     >
       <div ref={leftRef} className="flex min-w-0 flex-col gap-1.5">
         <span
-          className="truncate text-base font-semibold sm:text-lg"
-          style={primaryColor ? { color: primaryColor } : undefined}
+          className={cn(
+            "truncate text-base font-semibold sm:text-lg",
+            word.status === 'TO_COMPLETE' ? "text-amber-500" : ""
+          )}
+          style={word.status !== 'TO_COMPLETE' && primaryColor ? { color: primaryColor } : undefined}
         >
-          {word.term}
+          {word.status === 'TO_COMPLETE' ? word.translation : word.term}
         </span>
-        <span className="text-muted-foreground truncate text-xs sm:text-sm">
-          {word.translation}
-        </span>
+        {word.status !== 'TO_COMPLETE' && (
+          <span className="text-muted-foreground truncate text-xs sm:text-sm">
+            {word.translation || 'À compléter'}
+          </span>
+        )}
 
         {ownerName && (
           <span

@@ -1,5 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ExerciseCategory, ExerciseType, Prisma } from '@prisma/client';
+import {
+  ExerciseCategory,
+  ExerciseType,
+  Prisma,
+  WordStatus,
+} from '@prisma/client';
 
 import prisma from '@/lib/prisma';
 import { toNullableJsonInput } from '@/lib/prisma-json';
@@ -379,6 +384,7 @@ export const createWordForUser = async (
       ownerId,
       languageId,
       translationNormalized: normalizedInput.translationNormalized,
+      status: WordStatus.ACTIVE,
       isDeleted: false,
       deleteToken: ACTIVE_DELETE_TOKEN,
     },
@@ -511,6 +517,7 @@ export const searchWordsInLanguage = async (
   const words = await prisma.word.findMany({
     where: {
       languageId,
+      status: WordStatus.ACTIVE,
       isDeleted: false,
       deleteToken: ACTIVE_DELETE_TOKEN,
       ...(options?.excludeCommunity ? { ownerId: viewerId } : {}),
@@ -1436,4 +1443,140 @@ const synchronizeRelatedWordsConnections = async (
       }
     }
   }
+};
+
+export const createIncompleteWordForUser = async (
+  ownerId: string,
+  translation: string,
+  mandatoryTag: MandatoryTag,
+  languageId?: string,
+  createdById?: string,
+) => {
+  const resolvedLanguageId = await resolveLanguageId(ownerId, languageId);
+  const creatorId = createdById ?? ownerId;
+
+  const normalizedTranslation = normalizeText(translation);
+  const translationNormalized = normalizeForLookup(normalizedTranslation);
+
+  if (!normalizedTranslation) {
+    throw new ValidationError('La traduction est obligatoire.');
+  }
+
+  // Generate a unique temporary term to satisfy DB constraints and avoid duplicate checks
+  const tempTerm = `?-${crypto.randomUUID()}`;
+
+  return prisma.word.create({
+    data: {
+      ownerId,
+      createdById: creatorId,
+      languageId: resolvedLanguageId,
+      term: tempTerm,
+      termNormalized: tempTerm,
+      translation: normalizedTranslation,
+      translationNormalized,
+      mandatoryTag,
+      status: WordStatus.TO_COMPLETE,
+      tags: [mandatoryTag],
+      synonyms: [],
+      relatedWords: [],
+      notesBlocks: Prisma.JsonNull,
+      deleteToken: ACTIVE_DELETE_TOKEN,
+    },
+  });
+};
+
+export const completeWordForContributor = async (
+  ownerId: string,
+  wordId: string,
+  term: string,
+  options?: {
+    audioFile?: File | null;
+    supabase?: SupabaseClient;
+  },
+) => {
+  const existingWord = await prisma.word.findUnique({ where: { id: wordId } });
+
+  if (!existingWord || existingWord.ownerId !== ownerId) {
+    throw new NotFoundError('Mot introuvable.');
+  }
+
+  if (existingWord.status !== WordStatus.TO_COMPLETE) {
+    throw new ValidationError(
+      'Ce mot est déjà complété.',
+      'WORD_ALREADY_COMPLETED',
+    );
+  }
+
+  const normalizedTerm = normalizeText(term);
+  if (!normalizedTerm) {
+    throw new ValidationError('Le mot est obligatoire.');
+  }
+
+  let audioData:
+    | { customAudioPath: string; customAudioUrl: string }
+    | undefined;
+  if (options?.audioFile && options.supabase && options.audioFile.size > 0) {
+    audioData = await uploadAudio(
+      options.supabase,
+      ownerId,
+      options.audioFile,
+    );
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const word = await tx.word.update({
+      where: { id: wordId },
+      data: {
+        term: normalizedTerm,
+        termNormalized: normalizeForLookup(normalizedTerm),
+        status: WordStatus.ACTIVE,
+        ...(audioData ?? {}),
+      },
+    });
+
+    await tx.card.createMany({
+      data: [
+        {
+          wordId: word.id,
+          ownerId,
+          languageId: word.languageId,
+          category: ExerciseCategory.READING,
+          type: ExerciseType.RECOGNITION,
+        },
+        {
+          wordId: word.id,
+          ownerId,
+          languageId: word.languageId,
+          category: ExerciseCategory.WRITING,
+          type: ExerciseType.REVERSE,
+        },
+        {
+          wordId: word.id,
+          ownerId,
+          languageId: word.languageId,
+          category: ExerciseCategory.WRITING,
+          type: ExerciseType.SPELLING,
+        },
+      ],
+    });
+
+    return word;
+  });
+};
+
+export const countWordsToCompleteSinceDate = async (
+  ownerId: string,
+  languageId: string,
+  sinceDate: Date | null,
+) => {
+  return prisma.word.count({
+    where: {
+      ownerId,
+      languageId,
+      status: WordStatus.TO_COMPLETE,
+      isDeleted: false,
+      deleteToken: ACTIVE_DELETE_TOKEN,
+      ...(sinceDate ? { createdAt: { gt: sinceDate } } : {}),
+    },
+  });
 };

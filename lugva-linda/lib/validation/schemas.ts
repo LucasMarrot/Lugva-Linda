@@ -141,6 +141,13 @@ export const createWordFormSchema = z.object({
   mandatoryTag: mandatoryTagSchema,
 });
 
+export const createIncompleteWordFormSchema = z.object({
+  translation: nonEmptyTextSchema
+    .max(128, 'La traduction ne doit pas depasser 128 caracteres.')
+    .transform(formalizeText),
+  mandatoryTag: mandatoryTagSchema,
+});
+
 export const checkWordTermNatureSchema = z.object({
   word: nonEmptyTextSchema
     .max(128, 'Le mot ne doit pas depasser 128 caracteres.')

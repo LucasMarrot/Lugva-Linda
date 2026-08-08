@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import prisma from '@/lib/prisma';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
 import { SearchRoutePage } from '@/components/search/SearchRoutePage';
@@ -31,6 +32,15 @@ const SearchPage = async (props: SearchPageProps) => {
     searchParams.lang,
   );
 
+  const contributors = await prisma.user.findMany({
+    where: {
+      targetOwnerId: user.id,
+      role: 'CONTRIBUTOR',
+      activeLanguageId: activeLanguageId,
+    },
+    select: { id: true, username: true, email: true },
+  });
+
   if (languages.length === 0 || !activeLanguageId) redirect('/setup');
 
   if (searchParams.lang || searchParams.from)
@@ -47,6 +57,10 @@ const SearchPage = async (props: SearchPageProps) => {
       <SearchRoutePage
         initialQuery={searchParams.query ?? ''}
         currentLangId={activeLanguageId}
+        contributors={contributors.map(c => ({
+          id: c.id,
+          name: c.username || c.email.split('@')[0],
+        }))}
       />
     </ActiveLanguageProvider>
   );

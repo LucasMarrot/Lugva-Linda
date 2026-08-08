@@ -16,6 +16,7 @@ export type EditableWordSnapshot = {
   sourceWordId?: string | null;
   customAudioUrl: string | null;
   relatedWords: string[];
+  status?: 'ACTIVE' | 'TO_COMPLETE';
 };
 
 export type WordOwnerSummary = {

@@ -7,6 +7,8 @@ import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguagePro
 import { ContributorConfigError } from '@/components/contributor/ContributorConfigError';
 import { ContributorHeader } from '@/components/contributor/ContributorHeader';
 import { BottomNavSearchLink } from '@/components/layout/bottom-nav/BottomNavSearchLink';
+import { ContributorNotificationToast } from '@/components/contributor/ContributorNotificationToast';
+import { countWordsToCompleteSinceDate } from '@/lib/services/word-service';
 
 export default async function ContributePage() {
   const profile = await getCurrentUserProfile();
@@ -27,14 +29,27 @@ export default async function ContributePage() {
 
   if (!language || !targetOwner) return <ContributorConfigError />;
 
-  const words = await prisma.word.findMany({
-    where: {
-      ownerId: profile.targetOwnerId,
-      languageId: profile.activeLanguageId,
-      isDeleted: false,
-      deleteToken: BigInt(0),
-    },
-    orderBy: { term: 'asc' },
+  const [words, newToCompleteCount] = await Promise.all([
+    prisma.word.findMany({
+      where: {
+        ownerId: profile.targetOwnerId,
+        languageId: profile.activeLanguageId,
+        isDeleted: false,
+        deleteToken: BigInt(0),
+      },
+      orderBy: { term: 'asc' },
+    }),
+    countWordsToCompleteSinceDate(
+      profile.targetOwnerId,
+      profile.activeLanguageId,
+      profile.lastContributorVisitAt,
+    ),
+  ]);
+
+  // Update last visit timestamp for future notification baseline
+  await prisma.user.update({
+    where: { id: profile.id },
+    data: { lastContributorVisitAt: new Date() },
   });
 
   const displayOwnerName =
@@ -52,7 +67,7 @@ export default async function ContributePage() {
         />
 
         <main className="pt-4">
-          <EncyclopediaClient words={words} />
+          <EncyclopediaClient words={words} isContributorMode />
         </main>
       </div>
 
@@ -61,6 +76,13 @@ export default async function ContributePage() {
           <BottomNavSearchLink href="/contribute/search" fullWidth={true} />
         </div>
       </div>
+
+      {newToCompleteCount > 0 && (
+        <ContributorNotificationToast
+          count={newToCompleteCount}
+          ownerName={displayOwnerName}
+        />
+      )}
     </ActiveLanguageProvider>
   );
 }

@@ -2,7 +2,7 @@
 
 import type { SubmitEventHandler } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Input, Button } from '@/components/ui';
 import { searchWords } from '@/actions/word-actions';
@@ -17,6 +17,8 @@ type SearchViewProps = {
   setQuery: (q: string) => void;
   currentLangId: string;
   onCreateClick: () => void;
+  onRequestCompletionClick?: () => void;
+  hasContributor?: boolean;
   isContributorMode?: boolean;
 };
 
@@ -25,6 +27,8 @@ export const SearchView = ({
   setQuery,
   currentLangId,
   onCreateClick,
+  onRequestCompletionClick,
+  hasContributor = false,
   isContributorMode = false,
 }: SearchViewProps) => {
   const router = useRouter();
@@ -135,6 +139,24 @@ export const SearchView = ({
               </span>
             </div>
           </Button>
+
+          {hasContributor && !isContributorMode && onRequestCompletionClick && (
+            <Button
+              variant="outline"
+              onClick={onRequestCompletionClick}
+              className="ui-motion-interactive ui-tap-feedback hover:bg-primary/5 hover:border-primary/50 hover:text-primary h-16 w-full justify-start border-2 border-dashed text-left font-normal"
+            >
+              <Send className="text-primary mr-3 h-6 w-6" />
+              <div className="flex flex-col">
+                <span className="text-muted-foreground text-sm leading-tight">
+                  Demander la traduction
+                </span>
+                <span className="max-w-62.5 truncate text-base font-semibold">
+                  {query}
+                </span>
+              </div>
+            </Button>
+          )}
 
           {exactMatchExists && (
             <StateMessage

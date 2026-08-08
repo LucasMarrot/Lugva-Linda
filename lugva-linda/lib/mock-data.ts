@@ -19,6 +19,7 @@ export const generateMockCards = (count: number = 10): ReviewCard[] => {
       translation: `Traduction simulée ${index + 1}`,
       translationNormalized: `traduction simulée ${index + 1}`,
       mandatoryTag: isEven ? 'Verbe' : 'Nom',
+      status: 'ACTIVE',
       synonyms: isEven ? ['Synonyme A', 'Synonyme B'] : [],
       tags: ['Mock', isEven ? 'Verbe' : 'Nom'],
       relatedWords: isEven ? ['Mot lié A'] : [],

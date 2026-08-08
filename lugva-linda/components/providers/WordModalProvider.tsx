@@ -3,6 +3,7 @@
 import type { FC, ReactNode } from 'react';
 import { createContext, useContext, useReducer } from 'react';
 import { WordDetailModal } from '@/components/shared/';
+import { WordCompleteModal } from '@/components/shared/word-modal/WordCompleteModal';
 import { useToast } from '@/components/providers/ToastProvider';
 import { deleteWordAction, getWordByTextAction } from '@/actions/word-actions';
 import { type EditableWordSnapshot } from '@/lib/words/community';
@@ -15,7 +16,7 @@ type WordModalContextType = {
 
 type WordModalState =
   | { mode: 'closed'; word: null }
-  | { mode: 'detail' | 'edit'; word: EditableWordSnapshot };
+  | { mode: 'detail' | 'edit' | 'complete'; word: EditableWordSnapshot };
 
 type WordModalAction =
   | { type: 'OPEN_WORD'; payload: EditableWordSnapshot }
@@ -35,6 +36,9 @@ const wordModalReducer = (
 ): WordModalState => {
   switch (action.type) {
     case 'OPEN_WORD':
+      if (action.payload.status === 'TO_COMPLETE') {
+        return { mode: 'complete', word: action.payload };
+      }
       return { mode: 'detail', word: action.payload };
     case 'CLOSE_MODAL':
       return initialWordModalState;
@@ -77,8 +81,9 @@ export const WordModalProvider: FC<{
   const toast = useToast();
 
   const activeWord = modalState.word;
-  const isModalOpen = modalState.mode !== 'closed';
+  const isModalOpen = modalState.mode !== 'closed' && modalState.mode !== 'complete';
   const isEditing = modalState.mode === 'edit';
+  const isCompleting = modalState.mode === 'complete';
 
   const openWord = (word: EditableWordSnapshot) => {
     dispatch({ type: 'OPEN_WORD', payload: word });
@@ -172,6 +177,11 @@ export const WordModalProvider: FC<{
         onAddExternalWord={handleAddExternalWord}
         isAddingExternalWord={addingWordId === activeWord?.id}
         isContributorMode={isContributorMode}
+      />
+      <WordCompleteModal
+        isOpen={isCompleting}
+        word={activeWord}
+        onClose={closeWord}
       />
     </WordModalContext.Provider>
   );

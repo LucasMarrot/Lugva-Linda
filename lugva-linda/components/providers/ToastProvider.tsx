@@ -10,13 +10,14 @@ import {
 import { toast as sonnerToast } from 'sonner';
 import { SonnerToaster } from '@/components/ui';
 
-type ToastVariant = 'error' | 'success' | 'info';
+type ToastVariant = 'error' | 'success' | 'info' | 'warning';
 
 type ToastApi = {
   show: (message: string, variant?: ToastVariant) => void;
   error: (message: string) => void;
   success: (message: string) => void;
   info: (message: string) => void;
+  warning: (message: string) => void;
   challenge: (
     message: ReactNode,
     onAccept: () => void,
@@ -43,6 +44,14 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
 
       if (variant === 'success') {
         sonnerToast.success(message, {
+          id: uniqueToastId,
+          duration: TOAST_DURATION_MS,
+        });
+        return;
+      }
+
+      if (variant === 'warning') {
+        sonnerToast.warning(message, {
           id: uniqueToastId,
           duration: TOAST_DURATION_MS,
         });
@@ -81,6 +90,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
       error: (message) => show(message, 'error'),
       success: (message) => show(message, 'success'),
       info: (message) => show(message, 'info'),
+      warning: (message) => show(message, 'warning'),
       challenge,
     }),
     [show, challenge],

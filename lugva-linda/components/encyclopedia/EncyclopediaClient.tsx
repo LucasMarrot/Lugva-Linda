@@ -2,7 +2,7 @@
 
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
-import type { Word } from '@prisma/client';
+import type { Word, WordStatus } from '@prisma/client';
 import { useWordModal } from '../providers/WordModalProvider';
 import { AlphabetNav } from './AlphabetNav';
 import { TagFilter } from './TagFilter';
@@ -24,6 +24,7 @@ type EncyclopediaClientProps = {
   showTagFilter?: boolean;
   showAlphabetNav?: boolean;
   emptyMessage?: string;
+  isContributorMode?: boolean;
 };
 
 export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
@@ -32,10 +33,23 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
   showTagFilter = true,
   showAlphabetNav = true,
   emptyMessage = 'Votre encyclopedie est vide.',
+  isContributorMode = false,
 }: EncyclopediaClientProps) => {
   const { openWord } = useWordModal();
   const { addingWordId, importWord } = useCommunityImport();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const toCompleteCount = useMemo(
+    () =>
+      words.filter(
+        (w) => (w.status as WordStatus) === 'TO_COMPLETE',
+      ).length,
+    [words],
+  );
+
+  const [statusFilter, setStatusFilter] = useState<'all' | 'to_complete'>(
+    isContributorMode && toCompleteCount > 0 ? 'to_complete' : 'all',
+  );
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -89,11 +103,23 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
   }, [words]);
 
   const filteredWords = useMemo(() => {
-    if (selectedTags.length === 0) return visualWords;
-    return visualWords.filter((vw) =>
-      vw.tags?.some((tag) => selectedTags.includes(tag)),
-    );
-  }, [visualWords, selectedTags]);
+    let result = visualWords;
+
+    if (statusFilter === 'to_complete') {
+      result = result.filter(
+        (vw) =>
+          (vw.originalWord.status as WordStatus) === 'TO_COMPLETE',
+      );
+    }
+
+    if (selectedTags.length > 0) {
+      result = result.filter((vw) =>
+        vw.tags?.some((tag) => selectedTags.includes(tag)),
+      );
+    }
+
+    return result;
+  }, [visualWords, selectedTags, statusFilter]);
 
   const groupedWords = useMemo(() => {
     return filteredWords.reduce(
@@ -129,6 +155,11 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
           selectedTags={selectedTags}
           onToggleTag={toggleTag}
           onClearTags={() => setSelectedTags([])}
+          statusFilter={isContributorMode ? statusFilter : undefined}
+          onStatusFilterChange={
+            isContributorMode ? setStatusFilter : undefined
+          }
+          toCompleteCount={toCompleteCount}
         />
       )}
 
