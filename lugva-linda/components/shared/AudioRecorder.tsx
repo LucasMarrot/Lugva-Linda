@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Trash2, Undo2 } from 'lucide-react';
+import { Undo2, Trash2 } from 'lucide-react';
 import { AudioPlayer } from '@/components/shared/AudioPlayer';
 import { Button } from '@/components/ui';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/components/providers/ToastProvider';
+import { useUser } from '@/components/providers/UserProvider';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { Recorder } from './word-modal/word-form/word-form-sections/pronunciation-section/Recorder';
 import { AddFile } from './word-modal/word-form/word-form-sections/pronunciation-section/AddFile';
@@ -47,6 +49,8 @@ export const AudioRecorder = ({
   } = useAudioRecorder(handleRecordedAudioReady);
 
   const toast = useToast();
+  const { user } = useUser();
+  const isContributor = user?.role === 'CONTRIBUTOR';
 
   const hasUploadedAudio = Boolean(uploadedAudioUrl);
   const activeAudioUrl = uploadedAudioUrl ?? recordedAudioUrl;
@@ -140,19 +144,21 @@ export const AudioRecorder = ({
       )}
 
       {!activeAudioUrl ? (
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className={cn("grid gap-2", !isContributor && "sm:grid-cols-2")}>
           <Recorder
             isRecording={isRecording}
             onStartRecording={handleStartRecording}
             onStopRecording={stopRecording}
             errorMessage={errorMessage}
           />
-          <AddFile
-            isDisabled={isRecording}
-            onFileReady={handleFileReady}
-            errorMessage={errorMessage}
-            onValidationError={onValidationError}
-          />
+          {!isContributor && (
+            <AddFile
+              isDisabled={isRecording}
+              onFileReady={handleFileReady}
+              errorMessage={errorMessage}
+              onValidationError={onValidationError}
+            />
+          )}
         </div>
       ) : (
         <AudioPlayer

@@ -53,10 +53,11 @@ export const AudioPlayer = ({
       )}
 
       <audio
+        key={audioUrl}
         controls
         src={audioUrl}
         playsInline
-        preload="metadata"
+        preload="auto"
         className="w-full"
       >
         Le navigateur ne supporte pas la lecture de ce format audio. Veuillez

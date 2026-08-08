@@ -14,6 +14,7 @@ export type UserProfile = {
   username: string | null;
   colorHex: string;
   activeLanguageId: string | null;
+  role?: string;
   learningLanguages: {
     language: {
       name: string;
