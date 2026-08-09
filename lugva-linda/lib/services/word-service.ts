@@ -1512,6 +1512,14 @@ export const completeWordForContributor = async (
     throw new ValidationError('Le mot est obligatoire.');
   }
 
+  await assertNoActiveDuplicate(
+    ownerId,
+    existingWord.languageId,
+    normalizedTerm,
+    existingWord.mandatoryTag as MandatoryTag,
+    wordId
+  );
+
   let audioData:
     | { customAudioPath: string; customAudioUrl: string }
     | undefined;

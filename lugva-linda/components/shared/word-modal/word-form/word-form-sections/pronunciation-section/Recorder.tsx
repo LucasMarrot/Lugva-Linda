@@ -33,22 +33,32 @@ export const Recorder = ({
       const timer = setTimeout(() => setCountdown((c) => (c !== null ? c - 1 : null)), 1000);
       return () => clearTimeout(timer);
     } else if (countdown === 0) {
-      setCountdown(null);
-      onStartRef.current();
+      const timer = setTimeout(() => {
+        setCountdown(null);
+        onStartRef.current();
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [countdown]);
 
   useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    let initTimer: ReturnType<typeof setTimeout>;
+
     if (isRecording) {
       const start = Date.now();
-      setElapsed(0);
-      const interval = setInterval(() => {
+      initTimer = setTimeout(() => setElapsed(0), 0);
+      interval = setInterval(() => {
         setElapsed(Math.floor((Date.now() - start) / 1000));
       }, 250); // update frequently enough to not miss seconds
-      return () => clearInterval(interval);
     } else {
-      setElapsed(0);
+      initTimer = setTimeout(() => setElapsed(0), 0);
     }
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (initTimer) clearTimeout(initTimer);
+    };
   }, [isRecording]);
 
   const handlePress = () => {

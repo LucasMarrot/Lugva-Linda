@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tag, Check } from 'lucide-react';
 import {
   Dialog,
@@ -35,6 +35,14 @@ export const WordCompleteModal = ({
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setTermValue('');
+      setAudioFile(null);
+      setAudioError(null);
+    }
+  }, [isOpen]);
 
   const termValidation = nonEmptyTextSchema.safeParse(termValue);
   const isValid = termValidation.success;

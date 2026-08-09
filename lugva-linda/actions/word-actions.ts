@@ -566,9 +566,11 @@ export async function completeWordAction(wordId: string, formData: FormData) {
     });
     assertRateLimit(`complete-word:${user.id}`, 40, 60_000);
 
+    let effectiveOwnerId = user.id;
     const profile = await getCurrentUserProfile();
-    if (!profile || profile.role !== 'CONTRIBUTOR' || !profile.targetOwnerId) {
-      throw new Error('Seul un contributeur peut compléter un mot.');
+
+    if (profile?.role === 'CONTRIBUTOR' && profile.targetOwnerId) {
+      effectiveOwnerId = profile.targetOwnerId;
     }
 
     const supabase = await createClient();
@@ -577,7 +579,7 @@ export async function completeWordAction(wordId: string, formData: FormData) {
     const audioFile = formData.get('audioFile') as File | null;
 
     await completeWordForContributor(
-      profile.targetOwnerId,
+      effectiveOwnerId,
       validatedWordId,
       term,
       { audioFile, supabase },
