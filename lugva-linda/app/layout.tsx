@@ -13,6 +13,7 @@ import {
 import { getCurrentUserProfile } from '@/lib/auth/server';
 import { getThemeColor } from '@/lib/users/colors';
 import { GlobalPageTransition } from '@/components/layout/GlobalPageTransition';
+import { AppSplashScreen } from '@/components/layout/AppSplashScreen';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -71,9 +72,11 @@ export default async function RootLayout({
                       languages={languages}
                       activeLanguageId={activeLanguageId ?? ''}
                     >
-                      <GlobalPageTransition>
-                        {children}
-                      </GlobalPageTransition>
+                      <AppSplashScreen>
+                        <GlobalPageTransition>
+                          {children}
+                        </GlobalPageTransition>
+                      </AppSplashScreen>
                     </ActiveLanguageProvider>
                   </WordModalProvider>
                 </CommunityImportProvider>

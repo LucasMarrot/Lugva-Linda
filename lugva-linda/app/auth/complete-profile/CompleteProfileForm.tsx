@@ -193,7 +193,7 @@ export const CompleteProfileForm = ({
               disabled={!validation.success}
               isLoading={isLoading}
             >
-              Terminer l'inscription
+              Terminer l&apos;inscription
             </Button>
           </CardFooter>
         </form>

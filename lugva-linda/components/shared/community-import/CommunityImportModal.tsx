@@ -116,7 +116,7 @@ export const CommunityImportModal = ({
               disabled={!preview || isLoadingPreview}
               isLoading={isSubmitting}
             >
-              Confirmer l'import
+              Confirmer l&apos;import
             </Button>
           </div>
         </div>
