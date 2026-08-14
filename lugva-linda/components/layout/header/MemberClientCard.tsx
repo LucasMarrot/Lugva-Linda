@@ -1,3 +1,5 @@
+'use client';
+
 import { CommunityMemberSummary } from '@/lib/words/community';
 import { usePresence } from '@/components/providers/PresenceProvider';
 import { toTint } from '@/lib/utils';

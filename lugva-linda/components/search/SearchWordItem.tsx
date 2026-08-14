@@ -1,3 +1,5 @@
+'use client';
+
 import { getWordVisualMeta, toWordSnapshot } from '@/hooks/useWordSnapshot';
 import { WordListItem } from '../shared';
 import { useUserColor } from '@/hooks/useUserColor';
