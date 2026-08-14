@@ -6,7 +6,6 @@ import { parseActionErrorMessage } from '@/lib/actions/parse-action-error';
 import { useToast } from '@/components/providers/ToastProvider';
 import {
   PageHeader,
-  PageLoadingState,
   StateMessage,
 } from '@/components/shared';
 import {
@@ -19,6 +18,7 @@ import {
 import { CommunityImportPanels } from '@/components/shared/community-import/CommunityImportPanels';
 import { useCommunityImportPreview } from '@/components/shared/community-import/useCommunityImportPreview';
 import { useCommunityImportSelection } from '@/components/shared/community-import/useCommunityImportSelection';
+import { Spinner } from '@/components/ui/spinner';
 
 type CommunityImportModalProps = {
   sourceWordId: string | null;
@@ -69,7 +69,7 @@ export const CommunityImportModal = ({
       onImportingChange?.(sourceWordId);
 
       await importWordFromCommunitySelectionAction(sourceWordId, payload);
-      toast.success('Mot ajoute à votre encyclopedie.');
+      toast.success('Mot ajouté à votre encyclopédie.');
       window.location.reload();
 
       onImportingChange?.(null);
@@ -97,7 +97,7 @@ export const CommunityImportModal = ({
 
           <div className="min-h-0 flex-1 overflow-hidden">
             {isLoadingPreview && (
-              <PageLoadingState title="Chargement de la comparaison" />
+              <Spinner size='xl' className='m-auto h-full text-foreground' />
             )}
 
             {!isLoadingPreview && previewError && (
@@ -113,9 +113,10 @@ export const CommunityImportModal = ({
             <Button
               className="w-full"
               onClick={handleConfirmImport}
-              disabled={!preview || isLoadingPreview || isSubmitting}
+              disabled={!preview || isLoadingPreview}
+              isLoading={isSubmitting}
             >
-              {isSubmitting ? 'Import en cours...' : "Confirmer l'import"}
+              Confirmer l'import
             </Button>
           </div>
         </div>

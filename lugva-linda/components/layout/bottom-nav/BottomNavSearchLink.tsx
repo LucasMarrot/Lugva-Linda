@@ -56,6 +56,7 @@ export const BottomNavSearchLink = ({
     <Link
       href={href}
       scroll={false}
+      prefetch={true}
       onClick={handleClick}
       aria-label="Rechercher ou ajouter un mot"
       className={cn(

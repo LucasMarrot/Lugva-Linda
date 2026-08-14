@@ -9,11 +9,13 @@ type ValidGrade = Exclude<Rating, Rating.Manual>;
 interface RatingButtonGroupProps {
   onRate: (grade: ValidGrade) => void;
   disabled?: boolean;
+  isLoading?: boolean;
 }
 
 export const RatingButtonGroup = ({
   onRate,
   disabled = false,
+  isLoading = false,
 }: RatingButtonGroupProps) => {
   const [activeGrade, setActiveGrade] = useState<ValidGrade | null>(null);
 
@@ -40,6 +42,7 @@ export const RatingButtonGroup = ({
         onConfirmingChange={(val) => handleConfirmingChange(Rating.Easy, val)}
         onConfirm={() => handleConfirm(Rating.Easy)}
         disabled={disabled}
+        isLoading={isLoading}
       />
       <ConfirmButton
         idleText="Bon"
@@ -49,6 +52,7 @@ export const RatingButtonGroup = ({
         onConfirmingChange={(val) => handleConfirmingChange(Rating.Good, val)}
         onConfirm={() => handleConfirm(Rating.Good)}
         disabled={disabled}
+        isLoading={isLoading}
       />
       <ConfirmButton
         idleText="Difficile"
@@ -58,6 +62,7 @@ export const RatingButtonGroup = ({
         onConfirmingChange={(val) => handleConfirmingChange(Rating.Hard, val)}
         onConfirm={() => handleConfirm(Rating.Hard)}
         disabled={disabled}
+        isLoading={isLoading}
       />
       <ConfirmButton
         idleText="Oubli"
@@ -67,6 +72,7 @@ export const RatingButtonGroup = ({
         onConfirmingChange={(val) => handleConfirmingChange(Rating.Again, val)}
         onConfirm={() => handleConfirm(Rating.Again)}
         disabled={disabled}
+        isLoading={isLoading}
       />
     </div>
   );

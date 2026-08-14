@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { listCommunityMembersAction } from '@/actions/word-actions';
 import { usePresence } from '@/components/providers/PresenceProvider';
 import { useMaybeActiveLanguage } from '@/components/providers/ActiveLanguageProvider';
@@ -11,7 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui';
-
+import { Spinner } from '@/components/ui/spinner';
 import { type CommunityMemberSummary } from '@/lib/words/community';
 import MemberClientCard from './MemberClientCard';
 
@@ -54,16 +55,16 @@ export const MembersPopoverButton = () => {
         <Button
           variant="ghost"
           size="icon"
-          className={`cursor-pointer ${
-            isOpen && 'bg-primary/10 text-primary hover:bg-primary/15'
-          }`}
+          className={cn(
+            'cursor-pointer',
+            isOpen && 'bg-primary/10 text-primary hover:bg-primary/15',
+          )}
         >
           <Users
-            className={`h-5 w-5 transition-colors ${
-              isOpen
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className={cn(
+              'h-5 w-5 transition-colors',
+              isOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+            )}
           />
         </Button>
       </PopoverTrigger>
@@ -74,25 +75,22 @@ export const MembersPopoverButton = () => {
       >
         <div className="space-y-1.5">
           {isLoading ? (
-            <p className="text-muted-foreground px-2 py-3 text-xs">
-              Chargement...
-            </p>
+            <div className="flex justify-center p-4">
+              <Spinner className="text-muted-foreground" />
+            </div>
           ) : visibleMembers.length === 0 ? (
             <p className="text-muted-foreground px-2 py-3 text-xs">
               Aucun autre membre.
             </p>
           ) : (
-            visibleMembers.map((member) => {
-              return (
-                <MemberClientCard
-                  key={member.id}
-                  member={member}
-                  langParam={langParam}
-                  setIsOpen={setIsOpen}
-                  activeLanguageId={langParam}
-                />
-              );
-            })
+            visibleMembers.map((member) => (
+              <MemberClientCard
+                key={member.id}
+                member={member}
+                setIsOpen={setIsOpen}
+                activeLanguageId={langParam}
+              />
+            ))
           )}
         </div>
       </PopoverContent>

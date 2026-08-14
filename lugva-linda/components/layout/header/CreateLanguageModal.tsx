@@ -85,7 +85,7 @@ const CreateLanguageModal = ({
       onOpenChange(false);
       router.refresh();
     } catch (error) {
-      const fallbackMessage = 'Impossible de creer la langue.';
+      const fallbackMessage = 'Impossible de créer la langue.';
       setCreateLanguageError(
         error instanceof Error ? error.message : fallbackMessage,
       );
@@ -148,9 +148,10 @@ const CreateLanguageModal = ({
               <Button
                 type="submit"
                 className="w-full"
-                disabled={!isLanguageValid || isSubmitting}
+                disabled={!isLanguageValid}
+                isLoading={isSubmitting}
               >
-                {isSubmitting ? 'Création...' : 'Créer'}
+                Créer
               </Button>
             </DialogFooter>
           </form>

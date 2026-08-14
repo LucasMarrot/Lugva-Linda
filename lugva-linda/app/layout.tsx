@@ -12,6 +12,7 @@ import {
 } from '@/components/providers';
 import { getCurrentUserProfile } from '@/lib/auth/server';
 import { getThemeColor } from '@/lib/users/colors';
+import { GlobalPageTransition } from '@/components/layout/GlobalPageTransition';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -70,7 +71,9 @@ export default async function RootLayout({
                       languages={languages}
                       activeLanguageId={activeLanguageId ?? ''}
                     >
-                      {children}
+                      <GlobalPageTransition>
+                        {children}
+                      </GlobalPageTransition>
                     </ActiveLanguageProvider>
                   </WordModalProvider>
                 </CommunityImportProvider>

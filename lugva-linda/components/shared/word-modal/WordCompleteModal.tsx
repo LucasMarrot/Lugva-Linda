@@ -66,7 +66,6 @@ export const WordCompleteModal = ({
       setAudioError(null);
       onClose();
     } catch (error) {
-      console.error('Erreur lors de la complétion:', error);
       const message =
         error instanceof Error
           ? error.message
@@ -157,11 +156,12 @@ export const WordCompleteModal = ({
               <Button
                 size="lg"
                 className="h-14 w-full text-base shadow-md"
-                disabled={!isValid || isSubmitting}
+                disabled={!isValid}
+                isLoading={isSubmitting}
                 onClick={handleSubmit}
               >
                 <Check className="mr-2 h-5 w-5" />
-                {isSubmitting ? 'Validation...' : 'Valider'}
+                Valider
               </Button>
             </div>
           </div>
