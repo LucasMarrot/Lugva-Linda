@@ -78,7 +78,8 @@ type WordFormProps = {
   initialQuery?: string;
   currentLangId?: string;
   initialData?: EditableWordSnapshot;
-  onCancel: () => void;
+  /** @deprecated Not used internally — kept for callsite compatibility */
+  onCancel?: () => void;
   onSuccess: () => void;
   isContributorMode?: boolean;
 };
@@ -210,7 +211,6 @@ export const WordForm = ({
 
       onSuccess();
     } catch (error) {
-      console.error('Erreur lors de la validation du mot:', error);
       const rawMessage = error instanceof Error ? error.message : '';
       const { code, message } = parseActionError(rawMessage);
       const lowerRawMessage = rawMessage.toLowerCase();
@@ -305,16 +305,14 @@ export const WordForm = ({
           disabled={
             !formValidation.success ||
             hasNotesError ||
-            isSubmitting ||
             isCheckingDuplicate ||
             Boolean(duplicateError)
           }
+          isLoading={isSubmitting}
         >
-          {isSubmitting
-            ? 'Enregistrement...'
-            : isEditing
-              ? 'Enregistrer les modifications'
-              : 'Enregistrer la fiche'}
+          {isEditing
+            ? 'Enregistrer les modifications'
+            : 'Enregistrer la fiche'}
         </Button>
       </form>
     </div>

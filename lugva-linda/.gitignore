@@ -39,5 +39,10 @@ next-env.d.ts
 
 /lib/generated/prisma
 
-# project docs
-/docs/
+# project design
+/Design/
+
+# PWA generated workbox files (sw.js est committé manuellement)
+/public/workbox-*.js
+/public/workbox-*.js.map
+/public/sw.js.map

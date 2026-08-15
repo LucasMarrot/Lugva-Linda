@@ -9,9 +9,10 @@ import {
   PopoverTrigger,
   Separator,
 } from '@/components/ui';
-import Link from 'next/link';
-import { useUser } from '../../providers/UserProvider';
+import { Link } from 'next-transition-router';
+import { useUser } from '@/components/providers/UserProvider';
 import { toDisplayName } from '@/lib/words/community';
+import { cn } from '@/lib/utils';
 import { DarkModeToggle } from './DarkModeToggle';
 
 type SettingsButtonProps = {
@@ -36,16 +37,16 @@ const SettingsButton = ({ hideProfileEdit }: SettingsButtonProps) => {
         <Button
           variant="ghost"
           size="icon"
-          className={`cursor-pointer ${
-            isOpen && 'bg-primary/10 text-primary hover:bg-primary/15'
-          }`}
+          className={cn(
+            'cursor-pointer',
+            isOpen && 'bg-primary/10 text-primary hover:bg-primary/15',
+          )}
         >
           <Settings
-            className={`h-5 w-5 transition-colors ${
-              isOpen
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className={cn(
+              'h-5 w-5 transition-colors',
+              isOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+            )}
           />
         </Button>
       </PopoverTrigger>

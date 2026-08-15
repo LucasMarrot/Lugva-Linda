@@ -42,7 +42,7 @@ export const SpellingActions = ({
 
       <RatingRevealMotion isVisible={hasBeenRevealed}>
         <div className="w-full">
-          <NextButton onClick={onNextAction} disabled={isSubmitting} />
+          <NextButton onClick={onNextAction} isLoading={isSubmitting} />
         </div>
       </RatingRevealMotion>
     </div>

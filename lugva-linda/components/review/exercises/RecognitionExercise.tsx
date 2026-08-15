@@ -39,7 +39,7 @@ export const RecognitionExercise = ({
         ) : (
           <RatingButtonGroup
             onRate={onRate}
-            disabled={cardState.isSubmitting}
+            isLoading={cardState.isSubmitting}
           />
         )}
       </RatingRevealMotion>

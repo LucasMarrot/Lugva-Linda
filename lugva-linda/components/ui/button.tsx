@@ -1,6 +1,10 @@
+'use client';
+
 import * as React from 'react';
+import { useFormStatus } from 'react-dom';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Slot } from 'radix-ui';
+import { Spinner } from '@/components/ui/spinner';
 
 import { cn } from '@/lib/utils';
 
@@ -56,15 +60,23 @@ const buttonVariants = cva(
 export interface ButtonProps
   extends React.ComponentProps<'button'>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  isLoading?: boolean;
 }
+
 
 function Button({
   className,
   variant = 'default',
   size = 'default',
   asChild = false,
+  isLoading: _isLoading = false,
+  children,
+  disabled,
   ...props
 }: ButtonProps) {
+  const { pending } = useFormStatus();
+  const isLoading = _isLoading || (props.type === 'submit' && pending);
+  
   const Comp = asChild ? Slot.Root : 'button';
 
   return (
@@ -73,8 +85,12 @@ function Button({
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={isLoading || disabled}
+      aria-busy={isLoading}
       {...props}
-    />
+    >
+      {isLoading ? <Spinner size="icon" /> : children}
+    </Comp>
   );
 }
 

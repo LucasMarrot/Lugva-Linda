@@ -1,4 +1,5 @@
-import SettingsButton from '../layout/header/SettingsButton';
+import SettingsButton from '@/components/layout/header/SettingsButton';
+import { TypoLogo } from '@/components/shared';
 
 type ContributorHeaderProps = {
   languageName: string;
@@ -13,7 +14,7 @@ export const ContributorHeader = ({
     <header className="border-border bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-49 flex h-[calc(4rem+var(--safe-area-top))] w-full items-center justify-between border-b px-4 pt-(--safe-area-top) backdrop-blur">
       <div className="flex flex-col">
         <div className="z-10 flex items-center gap-2">
-          <p className="text-xl font-bold tracking-tight">Lugva Linda</p>
+          <TypoLogo className="h-6 w-auto text-foreground" />
         </div>
         <span className="text-muted-foreground text-xs font-medium">
           {languageName} • {targetOwnerName}

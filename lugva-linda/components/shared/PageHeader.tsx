@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from '../ui';
 import { ArrowLeft, X } from 'lucide-react';
 

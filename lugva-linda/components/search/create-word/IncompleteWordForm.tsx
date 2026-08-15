@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Send } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
 import { createIncompleteWordAction } from '@/actions/word-actions';
 import { useToast } from '@/components/providers/ToastProvider';
 import {
@@ -11,7 +11,6 @@ import {
 } from '@/lib/validation/schemas';
 import { MANDATORY_TAGS } from '@/lib/words/tags';
 import { NatureSection } from '../../shared/word-modal/word-form/word-form-sections/nature-section/NatureSection';
-import { Input } from '@/components/ui';
 import { SectionHeader } from '@/components/shared';
 import { cn } from '@/lib/utils';
 import { useWordDuplicateCheck } from '../../shared/word-modal/word-form/useWordDuplicateCheck';
@@ -22,7 +21,8 @@ type IncompleteWordFormProps = {
   initialQuery?: string;
   currentLangId: string;
   contributors?: ContributorInfo[];
-  onCancel: () => void;
+  /** @deprecated Not used internally — kept for callsite compatibility */
+  onCancel?: () => void;
   onSuccess: () => void;
 };
 
@@ -162,15 +162,13 @@ export const IncompleteWordForm = ({
           className="mt-2 h-14 w-full text-base shadow-md"
           disabled={
             !formValidation.success ||
-            isSubmitting ||
             isCheckingDuplicate ||
             Boolean(duplicateError)
           }
+          isLoading={isSubmitting}
         >
           <Send className="mr-2 h-5 w-5" />
-          {isSubmitting
-            ? 'Envoi en cours...'
-            : 'Envoyer au contributeur'}
+          Envoyer au contributeur
         </Button>
       </form>
     </div>

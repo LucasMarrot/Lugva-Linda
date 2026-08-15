@@ -18,7 +18,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui';
-import { ColorSelection } from '@/components/shared/ColorSelection';
+import { ColorSelection, TypoLogo } from '@/components/shared';
 import { completeUserProfileAction } from '@/actions/user-actions';
 import {
   usernameSchema,
@@ -105,8 +105,8 @@ export const CompleteProfileForm = ({
     <div className="bg-background flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm shadow-xl">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight">
-            Lugva Linda
+          <CardTitle className="text-2xl font-bold tracking-tight flex justify-center py-2">
+            <TypoLogo className="h-8 w-auto text-foreground" />
           </CardTitle>
           <CardDescription>
             Finalisez la création de votre compte privé.
@@ -190,9 +190,10 @@ export const CompleteProfileForm = ({
             <Button
               type="submit"
               className="mt-4 h-12 w-full text-base font-bold"
-              disabled={!validation.success || isLoading}
+              disabled={!validation.success}
+              isLoading={isLoading}
             >
-              {isLoading ? 'Configuration...' : "Terminer l'inscription"}
+              Terminer l&apos;inscription
             </Button>
           </CardFooter>
         </form>

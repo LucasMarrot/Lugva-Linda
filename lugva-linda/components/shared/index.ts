@@ -1,6 +1,5 @@
 export * from './AudioPlayer';
 export * from './ConfirmButton';
-export * from './PageLoadingState';
 export * from './RouteErrorState';
 export * from './SectionHeader';
 export * from './StateMessage';
@@ -12,3 +11,5 @@ export * from './ColorSelection';
 export * from './word-modal/WordDetailModal';
 export * from './rich-text-editor/RichTextEditor';
 export * from './rich-text-editor/RichTextViewer';
+export * from './PictoLogo';
+export * from './TypoLogo';

@@ -1,7 +1,9 @@
+'use client';
+
 import { CommunityMemberSummary } from '@/lib/words/community';
-import { usePresence } from '../../providers/PresenceProvider';
+import { usePresence } from '@/components/providers/PresenceProvider';
 import { toTint } from '@/lib/utils';
-import Link from 'next/link';
+import { Link } from 'next-transition-router';
 import { Circle, Swords } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useUserColor } from '@/hooks/useUserColor';
@@ -10,7 +12,6 @@ type MemberClientCardProps = {
   member: CommunityMemberSummary;
   activeLanguageId: string;
   setIsOpen: (open: boolean) => void;
-  langParam: string;
 };
 
 const MemberClientCard = ({

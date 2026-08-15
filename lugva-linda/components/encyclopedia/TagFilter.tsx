@@ -1,3 +1,5 @@
+'use client';
+
 import { Separator } from '../ui';
 import { Badge } from '../ui/badge';
 
