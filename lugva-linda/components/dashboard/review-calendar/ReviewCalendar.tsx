@@ -7,7 +7,7 @@ import {
   ReviewCalendarData,
 } from '@/actions/review-actions';
 import { SectionHeader } from '@/components/shared';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent, Spinner } from '@/components/ui';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { CalendarBoard } from './CalendarBoard';
 import { CalendarSkeleton } from './CalendarSkeleton';
@@ -76,7 +76,7 @@ export const ReviewCalendar = ({
         {isPending && (
           <div className="bg-background/50 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm">
             <span className="text-muted-foreground animate-pulse text-sm font-medium">
-              Chargement...
+              <Spinner size="xl" />
             </span>
           </div>
         )}
