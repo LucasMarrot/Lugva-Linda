@@ -1,5 +1,5 @@
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import {
   ToastProvider,
@@ -14,6 +14,7 @@ import { getCurrentUserProfile } from '@/lib/auth/server';
 import { getThemeColor } from '@/lib/users/colors';
 import { GlobalPageTransition } from '@/components/layout/GlobalPageTransition';
 import { AppSplashScreen } from '@/components/layout/AppSplashScreen';
+import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -25,9 +26,26 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+export const viewport: Viewport = {
+  themeColor: '#0a0a0a',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: 'Lugva Linda',
   description: 'Apprendre le vocabulaire',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Lugva Linda',
+  },
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+  },
 };
 
 export default async function RootLayout({
@@ -57,6 +75,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <ServiceWorkerRegistration />
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="system"
