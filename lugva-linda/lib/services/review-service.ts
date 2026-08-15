@@ -5,7 +5,8 @@ import prisma from '@/lib/prisma';
 import { ForbiddenError, NotFoundError, ValidationError } from '@/lib/errors';
 import { fsrsEngine, mapDbCardToFsrsCard, validateFsrsCard } from '@/lib/fsrs';
 import { assertUserLanguageAccess } from '@/lib/services/language-service';
-import { endOfDay } from 'date-fns';
+import { ensureDailySnapshots } from '@/lib/services/daily-snapshot';
+import { endOfDay, format } from 'date-fns';
 import { ReviewMode } from '../validation/schemas';
 
 const mapRatingToReviewGrade = (rating: Rating) => {
@@ -181,6 +182,8 @@ export const processReviewForCard = async (
 
   await assertUserLanguageAccess(userId, card.languageId);
 
+  await ensureDailySnapshots(userId, card.languageId);
+
   const fsrsCard = mapDbCardToFsrsCard(card as Card);
   const schedulingCards = fsrsEngine.repeat(fsrsCard, new Date());
 
@@ -189,6 +192,21 @@ export const processReviewForCard = async (
   const nextFsrsCard = validateFsrsCard(recordLog.card);
   const reviewLog = recordLog.log;
   const reviewDate = new Date();
+
+  const todayStr = format(reviewDate, 'yyyy-MM-dd');
+
+  let readInc = 0,
+    writeInc = 0,
+    pronInc = 0;
+  if (card.type === 'RECOGNITION' || card.type === 'REVERSE') readInc = 1;
+  else if (card.type === 'SPEAKING') pronInc = 1;
+  else writeInc = 1;
+
+  const duration = durationMs ?? 0;
+  const isAgain = grade === ReviewGrade.AGAIN ? 1 : 0;
+  const isHard = grade === ReviewGrade.HARD ? 1 : 0;
+  const isGood = grade === ReviewGrade.GOOD ? 1 : 0;
+  const isEasy = grade === ReviewGrade.EASY ? 1 : 0;
 
   await prisma.$transaction([
     prisma.card.update({
@@ -210,6 +228,44 @@ export const processReviewForCard = async (
         elapsedDays: reviewLog.elapsed_days,
         lastElapsedDays: reviewLog.last_elapsed_days,
         scheduledDays: reviewLog.scheduled_days,
+      },
+    }),
+
+    // Mise à jour de la journée d'aujourd'hui (Statistiques + hadDueCards)
+    prisma.dailyStat.upsert({
+      where: {
+        ownerId_languageId_date: {
+          ownerId: userId,
+          languageId: card.languageId,
+          date: todayStr,
+        },
+      },
+      create: {
+        ownerId: userId,
+        languageId: card.languageId,
+        date: todayStr,
+        hadDueCards: true,
+        completedCards: 1,
+        readingCompleted: readInc,
+        writingCompleted: writeInc,
+        pronunciationCompleted: pronInc,
+        totalDurationMs: duration,
+        againCount: isAgain,
+        hardCount: isHard,
+        goodCount: isGood,
+        easyCount: isEasy,
+      },
+      update: {
+        hadDueCards: true,
+        completedCards: { increment: 1 },
+        readingCompleted: { increment: readInc },
+        writingCompleted: { increment: writeInc },
+        pronunciationCompleted: { increment: pronInc },
+        totalDurationMs: { increment: duration },
+        againCount: { increment: isAgain },
+        hardCount: { increment: isHard },
+        goodCount: { increment: isGood },
+        easyCount: { increment: isEasy },
       },
     }),
   ]);

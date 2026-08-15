@@ -64,6 +64,7 @@ model User {
   createdLanguages  Language[]
   targetOwner  User?  @relation("ContributorTarget", fields: [targetOwnerId], references: [id], onDelete: SetNull)
   contributors User[] @relation("ContributorTarget")
+  dailyStats   DailyStat[] @relation("DailyStatOwner")
 }
 
 // -----------------------------------------------------------------------------
@@ -84,6 +85,7 @@ model Language {
   words         Word[]
   cards         Card[]
   reviewLogs    ReviewLog[]
+  dailyStats    DailyStat[]
 
   @@index([createdBy])
 }
@@ -126,11 +128,9 @@ model Word {
   customAudioUrl  String?
 
   sourceWordId String?
-
   isDeleted  Boolean  @default(false)
   deletedAt  DateTime?
   purgeAfter DateTime?
-
   deleteToken BigInt @default(0)
 
   createdAt DateTime @default(now())
@@ -219,4 +219,37 @@ model ReviewLog {
   @@index([cardId, reviewDate])
   @@index([ownerId, reviewDate])
   @@index([ownerId, languageId, reviewDate])
+}
+
+// -----------------------------------------------------------------------------
+// Daily Activity Stats (Journal d'activité, Statistiques & Calendrier)
+// -----------------------------------------------------------------------------
+model DailyStat {
+  id         String   @id @default(uuid())
+  ownerId    String
+  languageId String
+  date       String   @db.VarChar(10) // Format "YYYY-MM-DD"
+
+  hadDueCards Boolean @default(false)
+  completedCards Int  @default(0)
+
+  // Ventilation par type d'exercice
+  readingCompleted       Int @default(0)
+  writingCompleted       Int @default(0)
+  pronunciationCompleted Int @default(0)
+
+  // Suivi du Temps (En millisecondes)
+  totalDurationMs        Int @default(0)
+
+  // Distribution des notes (Pour la page Statistiques)
+  againCount             Int @default(0)
+  hardCount              Int @default(0)
+  goodCount              Int @default(0)
+  easyCount              Int @default(0)
+
+  owner    User     @relation("DailyStatOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, languageId, date])
+  @@index([ownerId, languageId, date])
 }

@@ -9,6 +9,8 @@ type CalendarBoardProps = {
   plannedDates: Date[];
   missedDates: Date[];
   completedDates: Date[];
+  displayMonth: Date;
+  setDisplayMonth: (month: Date) => void;
 };
 
 export const CalendarBoard = ({
@@ -17,12 +19,16 @@ export const CalendarBoard = ({
   plannedDates,
   missedDates,
   completedDates,
+  displayMonth,
+  setDisplayMonth,
 }: CalendarBoardProps) => {
   return (
     <Calendar
       mode="single"
       selected={date}
       onSelect={setDate}
+      month={displayMonth}
+      onMonthChange={setDisplayMonth}
       locale={fr}
       modifiers={{
         planned: plannedDates,
@@ -36,7 +42,7 @@ export const CalendarBoard = ({
         completed:
           "bg-emerald-700/10 border border-emerald-700/30 overflow-visible relative after:absolute after:-top-[5px] after:-right-[5px] after:flex after:border-1 after:border-background after:items-center after:justify-center after:h-4.5 after:w-4.5 after:rounded-full after:bg-emerald-700 after:text-white after:content-['✓'] after:text-sm after:font-bold after:shadow-sm",
         missed:
-          "bg-destructive/10 border border-destructive/30 overflow-visible relative after:absolute after:-top-[5px] after:-right-[5px] after:flex after:border-1 after:border-background after:items-center after:justify-center after:h-4.5 after:w-4.5 after:rounded-full after:bg-destructive after:text-white after:content-['✕'] after:text-sm after:shadow-sm after:text-sm after:font-bold",
+          "bg-destructive/10 border border-destructive/30 overflow-visible relative after:absolute after:-top-[5px] after:-right-[5px] after:flex after:border-1 after:border-background after:items-center after:justify-center after:h-4.5 after:w-4.5 after:rounded-full after:bg-destructive after:text-white after:content-['✕'] after:text-sm after:font-bold after:shadow-sm",
       }}
       classNames={{
         root: 'w-full',

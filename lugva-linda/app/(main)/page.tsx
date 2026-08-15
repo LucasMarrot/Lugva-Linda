@@ -27,10 +27,14 @@ export default async function HomePage() {
   let calendarData;
   let isDbDown = false;
 
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+
   try {
     [dashboardData, calendarData] = await Promise.all([
       getDashboardData({ id: user.id, email: user.email }, activeLanguageId),
-      getReviewCalendarData(activeLanguageId, 35),
+      getReviewCalendarData(activeLanguageId, currentYear, currentMonth),
     ]);
   } catch (error) {
     if (!isDatabaseUnavailableError(error)) {
@@ -74,7 +78,7 @@ export default async function HomePage() {
         <div className="flex flex-col items-start gap-10 md:flex-row">
           <div className="w-full max-w-4xl">
             <ReviewCalendar
-              data={calendarData!}
+              initialData={calendarData!}
               activeLanguageId={activeLanguageId}
             />
           </div>

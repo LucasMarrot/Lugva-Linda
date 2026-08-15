@@ -26,13 +26,15 @@ import { assertRateLimit } from '@/lib/security/rate-limit';
 import { assertCsrfForAction } from '@/lib/security/csrf';
 import {
   addDays,
-  eachDayOfInterval,
+  endOfMonth,
   format,
-  isBefore,
   startOfDay,
+  startOfMonth,
   subDays,
 } from 'date-fns';
 import { revalidatePath } from 'next/cache';
+import { ensureDailySnapshots } from '@/lib/services/daily-snapshot';
+import { FEATURE_EPOCH } from '@/lib/constants';
 
 // --- UTILITAIRES ---
 
@@ -130,35 +132,110 @@ export type ReviewCalendarData = {
   missedDates: string[];
 };
 
+
 export const getReviewCalendarData = async (
   languageId: string,
-  daysLimit = 35,
+  displayYear: number,
+  displayMonth: number,
+  selectedDateStr?: string,
 ): Promise<ReviewCalendarData> => {
   const user = await requireAuthenticatedUser();
   await verifyLanguageOwnership(languageId, user.id);
 
+  // ── Variables temporelles & délimitation du mois affiché ──────────
   const today = startOfDay(new Date());
-  const limitDate = addDays(today, daysLimit);
   const todayStr = format(today, 'yyyy-MM-dd');
 
-  const cards = await prisma.card.findMany({
-    where: { ownerId: user.id, languageId, word: { isDeleted: false } },
-    select: { due: true, state: true, type: true },
+  const targetDate = new Date(displayYear, displayMonth - 1, 1);
+  const displayStart = subDays(startOfMonth(targetDate), 10);
+  const displayEnd = addDays(endOfMonth(targetDate), 10);
+
+  const displayStartStr = format(displayStart, 'yyyy-MM-dd');
+  const displayEndStr = format(displayEnd, 'yyyy-MM-dd');
+
+  // ── Epoch dynamique + Lazy Snapshot (une seule requête userLanguage) ──
+  const userLanguage = await prisma.userLanguage.findUnique({
+    where: { userId_languageId: { userId: user.id, languageId } },
+    select: { createdAt: true },
   });
 
+  let epochStr = userLanguage
+    ? format(userLanguage.createdAt, 'yyyy-MM-dd')
+    : todayStr;
+  if (epochStr < FEATURE_EPOCH) epochStr = FEATURE_EPOCH;
+
+  await ensureDailySnapshots(user.id, languageId);
+
+  // ── Requête 1 : DailyStat pour le mois affiché ────────────────
+  // Source de vérité pour les jours passés (Vert + Rouge)
+  const stats = await prisma.dailyStat.findMany({
+    where: {
+      ownerId: user.id,
+      languageId,
+      date: { gte: displayStartStr, lte: displayEndStr },
+    },
+  });
+
+  // ── Requête 2 : Cartes dues pour le futur (Bleu) ──────────────
+  // On récupère toutes les cartes dues entre aujourd'hui et la fin de
+  // la grille affichée pour calculer les pastilles "Prévu"
+  const futureEnd = displayEnd > addDays(today, 60) ? displayEnd : addDays(today, 60);
+
+  const dueCards = await prisma.card.findMany({
+    where: {
+      ownerId: user.id,
+      languageId,
+      due: { lte: futureEnd },
+      word: { isDeleted: false },
+    },
+    select: { due: true, type: true },
+  });
+
+  // ── Construction des résultats ─────────────────────────────────
   const planned: Record<string, DailyStats> = {};
-  let earliestOverdue: Date | null = null;
+  const completed: Record<string, DailyStats> = {};
+  const missedDates: string[] = [];
 
-  cards.forEach((card) => {
-    const cardDueDay = startOfDay(card.due);
-
-    if (cardDueDay.getTime() > limitDate.getTime()) {
-      return;
+  // A. Jours passés via DailyStat
+  for (const stat of stats) {
+    // Vert : l'utilisateur a révisé ce jour-là
+    if (stat.completedCards > 0) {
+      completed[stat.date] = {
+        READING: stat.readingCompleted,
+        WRITING: stat.writingCompleted,
+        PRONUNCIATION: stat.pronunciationCompleted,
+        total: stat.completedCards,
+      };
     }
 
-    const dateStr = format(cardDueDay, 'yyyy-MM-dd');
-    const isOverdue = isBefore(cardDueDay, today);
-    const targetDateStr = isOverdue ? todayStr : dateStr;
+    // Rouge : jour passé, avec obligation, sans révision, après l'epoch
+    if (
+      stat.hadDueCards &&
+      stat.completedCards === 0 &&
+      stat.date < todayStr &&
+      stat.date >= epochStr
+    ) {
+      missedDates.push(stat.date);
+    }
+  }
+
+  // B. Jours futurs/aujourd'hui : cartes dues
+  for (const card of dueCards) {
+    const cardDueDay = startOfDay(card.due);
+    // Cartes en retard → regroupées sur aujourd'hui
+    const isOverdue = cardDueDay < today;
+    const targetDateStr = isOverdue
+      ? todayStr
+      : format(cardDueDay, 'yyyy-MM-dd');
+
+    // Ne montrer les "planned" que pour aujourd'hui ou le futur
+    if (targetDateStr < todayStr) continue;
+
+    // Vérifie que la date est dans la grille affichée
+    if (targetDateStr < displayStartStr || targetDateStr > displayEndStr) {
+      // Exception : permettre la date sélectionnée
+      if (!selectedDateStr || targetDateStr !== selectedDateStr) continue;
+    }
 
     if (!planned[targetDateStr]) {
       planned[targetDateStr] = {
@@ -169,76 +246,14 @@ export const getReviewCalendarData = async (
       };
     }
 
-    if (card.type === 'RECOGNITION' || card.type === 'REVERSE') {
+    if (card.type === 'RECOGNITION' || card.type === 'REVERSE')
       planned[targetDateStr].READING++;
-    } else if (card.type === 'SPEAKING') {
-      planned[targetDateStr].PRONUNCIATION++;
-    } else {
-      planned[targetDateStr].WRITING++;
-    }
+    else if (card.type === 'SPEAKING') planned[targetDateStr].PRONUNCIATION++;
+    else planned[targetDateStr].WRITING++;
 
     planned[targetDateStr].total++;
-
-    if (
-      isOverdue &&
-      (!earliestOverdue || isBefore(cardDueDay, earliestOverdue))
-    ) {
-      earliestOverdue = cardDueDay;
-    }
-  });
-
-  const logs = await prisma.reviewLog.findMany({
-    where: { ownerId: user.id, languageId },
-    include: { card: true },
-  });
-
-  const completed: Record<string, DailyStats> = {};
-
-  logs.forEach((log) => {
-    const logDateStr = format(log.reviewDate, 'yyyy-MM-dd');
-
-    if (!completed[logDateStr]) {
-      completed[logDateStr] = {
-        READING: 0,
-        WRITING: 0,
-        PRONUNCIATION: 0,
-        total: 0,
-      };
-    }
-
-    if (log.card.type === 'RECOGNITION' || log.card.type === 'REVERSE') {
-      completed[logDateStr].READING++;
-    } else if (log.card.type === 'SPEAKING') {
-      completed[logDateStr].PRONUNCIATION++;
-    } else {
-      completed[logDateStr].WRITING++;
-    }
-
-    completed[logDateStr].total++;
-  });
-
-  const missedDatesSet = new Set<string>();
-
-  if (earliestOverdue) {
-    const oldestAllowedMissedDate = subDays(today, 60);
-    const yesterday = subDays(today, 1);
-
-    const startMissed = isBefore(earliestOverdue, oldestAllowedMissedDate)
-      ? oldestAllowedMissedDate
-      : earliestOverdue;
-
-    if (startMissed.getTime() <= yesterday.getTime()) {
-      const interval = eachDayOfInterval({
-        start: startMissed,
-        end: yesterday,
-      });
-      interval.forEach((day) => {
-        missedDatesSet.add(format(day, 'yyyy-MM-dd'));
-      });
-    }
   }
-
-  const missedDates = Array.from(missedDatesSet);
 
   return { planned, completed, missedDates };
 };
+
