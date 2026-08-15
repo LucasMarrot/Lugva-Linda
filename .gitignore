@@ -51,6 +51,7 @@ logs/
 
 # Documentation
 lugva-linda/docs/
+Design/
 *.log
 npm-debug.log*
 pnpm-debug.log*
