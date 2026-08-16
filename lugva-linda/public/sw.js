@@ -112,13 +112,13 @@ self.addEventListener('push', (event) => {
       break;
 
     case 'WORD_COMPLETED':
-      title = 'Mot complété ✅';
+      title = 'Mot complété !';
       body = `${payload.contributorName} a complété : ${payload.wordTerm}`;
       data = { type: 'WORD_COMPLETED', wordId: payload.wordId };
       break;
 
     case 'WORD_ASSIGNED':
-      title = 'Nouveau mot à compléter 🖊️';
+      title = 'Nouveau mot à compléter !';
       body = `${payload.learnerName} vous demande de compléter : ${payload.wordTranslation}`;
       data = { type: 'WORD_ASSIGNED', wordId: payload.wordId };
       break;

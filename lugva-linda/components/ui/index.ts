@@ -10,3 +10,4 @@ export * from './sonner';
 export * from './separator';
 export * from './calendar';
 export * from './spinner';
+export * from './switch';
