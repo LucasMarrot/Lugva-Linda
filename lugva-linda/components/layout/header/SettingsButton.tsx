@@ -1,21 +1,19 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
-import { Bell, LogOut, Settings, UserCog } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { LogOut, Settings, UserCog } from 'lucide-react';
 import {
   Button,
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Separator,
-  Switch,
 } from '@/components/ui';
 import { Link } from 'next-transition-router';
 import { useUser } from '@/components/providers/UserProvider';
 import { toDisplayName } from '@/lib/words/community';
 import { cn } from '@/lib/utils';
 import { DarkModeToggle } from './DarkModeToggle';
-import { updateNotificationPrefsAction } from '@/actions/push-actions';
+import { ContributorNotificationToggle } from './ContributorNotificationToggle';
 
 type SettingsButtonProps = {
   hideProfileEdit?: boolean;
@@ -29,21 +27,6 @@ const SettingsButton = ({ hideProfileEdit, initialWordAssignedEnabled = true }: 
   const { user } = useUser();
 
   const isContributor = user?.role === 'CONTRIBUTOR';
-
-  const [wordAssignedEnabled, setWordAssignedEnabled] = useState(initialWordAssignedEnabled);
-  const [, startSaving] = useTransition();
-
-  function toggleWordAssigned() {
-    const newVal = !wordAssignedEnabled;
-    setWordAssignedEnabled(newVal);
-    startSaving(async () => {
-      try {
-        await updateNotificationPrefsAction({ wordAssignedEnabled: newVal });
-      } catch {
-        setWordAssignedEnabled(!newVal);
-      }
-    });
-  }
 
   if (!user) return null;
 
@@ -89,25 +72,12 @@ const SettingsButton = ({ hideProfileEdit, initialWordAssignedEnabled = true }: 
             <DarkModeToggle />
           </div>
 
-          {/* Toggle de notification pour les contributeurs */}
-          {isContributor && (
-            <>
-              <div className="flex items-center justify-between px-2 py-1">
-                <div className="flex items-center gap-2">
-                  <Bell className="text-muted-foreground h-4 w-4 shrink-0" />
-                  <span className="text-sm">Mots à compléter</span>
-                </div>
-                <Switch
-                  checked={wordAssignedEnabled}
-                  onCheckedChange={toggleWordAssigned}
-                />
-              </div>
-              <Separator />
-            </>
-          )}
+          {isContributor && 
+            <ContributorNotificationToggle initialWordAssignedEnabled={initialWordAssignedEnabled} />
+          }
 
           <div className="flex flex-col space-y-1">
-            {(!hideProfileEdit || isContributor) && (
+            {!hideProfileEdit && !isContributor && (
               <Button
                 variant="ghost"
                 className="w-full cursor-pointer justify-start"
