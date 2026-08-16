@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/header/Header';
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
 import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
 import { SettingsClient } from '@/components/settings/SettingsClient';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/types/notifications';
 
 type SettingsPageProps = {
   searchParams: Promise<{ lang?: string }>;
@@ -35,19 +36,37 @@ export default async function SettingsPage(props: SettingsPageProps) {
     redirect(`/settings?lang=${activeLanguageId}`);
   }
 
-  const profile = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: {
-      id: true,
-      email: true,
-      username: true,
-      colorHex: true,
-    },
-  });
+  const [profile, notifPreference, subCount] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        colorHex: true,
+        role: true,
+      },
+    }),
+    prisma.notificationPreference.findUnique({
+      where: { userId: user.id },
+    }),
+    prisma.pushSubscription.count({
+      where: { userId: user.id },
+    }),
+  ]);
 
   if (!profile) {
     redirect('/auth/login');
   }
+
+  const notifPrefs = notifPreference
+    ? {
+        sessionReminderEnabled: notifPreference.sessionReminderEnabled,
+        sessionReminderLanguages: notifPreference.sessionReminderLanguages,
+        wordCompletedEnabled: notifPreference.wordCompletedEnabled,
+        wordAssignedEnabled: notifPreference.wordAssignedEnabled,
+      }
+    : { ...DEFAULT_NOTIFICATION_PREFERENCES };
 
   return (
     <ActiveLanguageProvider
@@ -61,7 +80,12 @@ export default async function SettingsPage(props: SettingsPageProps) {
         <Header />
 
         <main className="space-y-6 px-4 pt-4 pb-6">
-          <SettingsClient profile={profile} />
+          <SettingsClient
+            profile={profile}
+            languages={languages.map((l) => ({ id: l.id, name: l.name }))}
+            notifPrefs={notifPrefs}
+            initiallySubscribed={subCount > 0}
+          />
         </main>
 
         <BottomNav />

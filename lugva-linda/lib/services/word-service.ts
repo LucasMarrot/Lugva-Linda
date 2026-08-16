@@ -45,6 +45,10 @@ import {
   scoreSearchResult,
 } from '@/lib/services/community-merge';
 import { MANDATORY_TAGS_SET, type MandatoryTag } from '@/lib/words/tags';
+import {
+  sendWordAssignedNotification,
+  sendWordCompletedNotification,
+} from '@/lib/push/push-service';
 
 const AUDIO_BUCKET = 'audio-files';
 const AUDIO_MAX_BYTES = 10 * 1024 * 1024;
@@ -1465,7 +1469,7 @@ export const createIncompleteWordForUser = async (
   // Generate a unique temporary term to satisfy DB constraints and avoid duplicate checks
   const tempTerm = `?-${crypto.randomUUID()}`;
 
-  return prisma.word.create({
+  const word = await prisma.word.create({
     data: {
       ownerId,
       createdById: creatorId,
@@ -1483,7 +1487,14 @@ export const createIncompleteWordForUser = async (
       deleteToken: ACTIVE_DELETE_TOKEN,
     },
   });
+
+  void sendWordAssignedNotification(word.id, ownerId).catch((err) =>
+    console.error('[Push] sendWordAssignedNotification échoué :', err),
+  );
+
+  return word;
 };
+
 
 export const completeWordForContributor = async (
   ownerId: string,
@@ -1492,6 +1503,7 @@ export const completeWordForContributor = async (
   options?: {
     audioFile?: File | null;
     supabase?: SupabaseClient;
+    contributorId?: string;
   },
 ) => {
   const existingWord = await prisma.word.findUnique({ where: { id: wordId } });
@@ -1531,7 +1543,7 @@ export const completeWordForContributor = async (
     );
   }
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const word = await tx.word.update({
       where: { id: wordId },
       data: {
@@ -1570,6 +1582,14 @@ export const completeWordForContributor = async (
 
     return word;
   });
+
+  if (options?.contributorId) {
+    void sendWordCompletedNotification(wordId, options.contributorId).catch((err) =>
+      console.error('[Push] sendWordCompletedNotification échoué :', err),
+    );
+  }
+
+  return result;
 };
 
 export const countWordsToCompleteSinceDate = async (

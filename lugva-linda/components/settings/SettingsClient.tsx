@@ -12,19 +12,33 @@ import { ColorSection } from './settings-client/ColorSection';
 import { PasswordSection } from './settings-client/PasswordSection';
 import { ProfileSection } from './settings-client/ProfileSection';
 import { DangerZoneSection } from './settings-client/DangerZoneSection';
+import { NotificationsSection } from './settings-client/NotificationsSection';
+import type { Role } from '@prisma/client';
+import type { NotificationPreferences } from '@/types/notifications';
 
 export type UserProfile = {
   id: string;
   email: string;
   username: string | null;
   colorHex: string;
+  role: Role;
 };
+
+type Language = { id: string; name: string };
 
 type SettingsClientProps = {
   profile: UserProfile;
+  languages: Language[];
+  notifPrefs: NotificationPreferences;
+  initiallySubscribed: boolean;
 };
 
-export const SettingsClient = ({ profile }: SettingsClientProps) => {
+export const SettingsClient = ({
+  profile,
+  languages,
+  notifPrefs,
+  initiallySubscribed,
+}: SettingsClientProps) => {
   const initialDisplayName = toDisplayName(
     profile.email,
     profile.id,
@@ -61,7 +75,15 @@ export const SettingsClient = ({ profile }: SettingsClientProps) => {
 
       <PasswordSection />
 
+      <NotificationsSection
+        role={profile.role}
+        languages={languages}
+        initialPrefs={notifPrefs}
+        initiallySubscribed={initiallySubscribed}
+      />
+
       <DangerZoneSection />
     </div>
   );
 };
+

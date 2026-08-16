@@ -78,3 +78,109 @@ self.addEventListener('fetch', (event) => {
       }),
   );
 });
+
+
+/**
+ * Gestionnaire d'événement `push`.
+ *
+ * Parse le payload JSON et affiche une notification système adaptée
+ * au type de message (SESSION_REMINDER, WORD_COMPLETED, WORD_ASSIGNED).
+ */
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    console.error('[SW Push] Payload JSON invalide.');
+    return;
+  }
+
+  const icon = '/icons/icon-192x192.png';
+  const badge = '/icons/icon-maskable-192x192.png';
+
+  let title = 'Lugva Linda';
+  let body = '';
+  let data = {};
+
+  switch (payload.type) {
+    case 'SESSION_REMINDER':
+      title = 'Rappel de séance 📚';
+      body = `Vous avez ${payload.exerciseCount} exercice${payload.exerciseCount > 1 ? 's' : ''} à faire aujourd'hui en ${payload.languageName}.`;
+      data = { type: 'SESSION_REMINDER', languageId: payload.languageId };
+      break;
+
+    case 'WORD_COMPLETED':
+      title = 'Mot complété ✅';
+      body = `${payload.contributorName} a complété : ${payload.wordTerm}`;
+      data = { type: 'WORD_COMPLETED', wordId: payload.wordId };
+      break;
+
+    case 'WORD_ASSIGNED':
+      title = 'Nouveau mot à compléter 🖊️';
+      body = `${payload.learnerName} vous demande de compléter : ${payload.wordTranslation}`;
+      data = { type: 'WORD_ASSIGNED', wordId: payload.wordId };
+      break;
+
+    default:
+      console.warn('[SW Push] Type de payload inconnu :', payload.type);
+      return;
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon,
+      badge,
+      data,
+      // Évite d'empiler plusieurs notifications du même type
+      tag: payload.type === 'SESSION_REMINDER'
+        ? `session-${payload.languageId}`
+        : `word-${payload.wordId ?? payload.type}`,
+      renotify: true,
+    }),
+  );
+});
+
+/**
+ * Gestionnaire d'événement `notificationclick`.
+ *
+ * Ferme la notification et route l'utilisateur vers la vue appropriée.
+ * Si un onglet est déjà ouvert sur l'app, le focus (évite les doublons).
+ */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const { type, languageId, wordId } = event.notification.data ?? {};
+
+  let targetPath = '/';
+
+  switch (type) {
+    case 'SESSION_REMINDER':
+      targetPath = languageId ? `/review?lang=${languageId}` : '/review';
+      break;
+    case 'WORD_COMPLETED':
+      targetPath = wordId ? `/words/${wordId}` : '/words';
+      break;
+    case 'WORD_ASSIGNED':
+      targetPath = '/contribute';
+      break;
+  }
+
+  const targetUrl = new URL(targetPath, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+            client.navigate(targetUrl);
+            return client.focus();
+          }
+        }
+        return self.clients.openWindow(targetUrl);
+      }),
+  );
+});

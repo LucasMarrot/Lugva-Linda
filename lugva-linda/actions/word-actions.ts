@@ -582,7 +582,7 @@ export async function completeWordAction(wordId: string, formData: FormData) {
       effectiveOwnerId,
       validatedWordId,
       term,
-      { audioFile, supabase },
+      { audioFile, supabase, contributorId: user.id },
     );
 
     revalidatePath('/');

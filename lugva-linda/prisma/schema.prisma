@@ -65,6 +65,10 @@ model User {
   targetOwner  User?  @relation("ContributorTarget", fields: [targetOwnerId], references: [id], onDelete: SetNull)
   contributors User[] @relation("ContributorTarget")
   dailyStats   DailyStat[] @relation("DailyStatOwner")
+
+  // Notifications push
+  pushSubscriptions      PushSubscription[]
+  notificationPreference NotificationPreference?
 }
 
 // -----------------------------------------------------------------------------
@@ -252,4 +256,44 @@ model DailyStat {
 
   @@unique([ownerId, languageId, date])
   @@index([ownerId, languageId, date])
+}
+
+// -----------------------------------------------------------------------------
+// Web Push Notifications
+// -----------------------------------------------------------------------------
+
+/// Souscription push d'un appareil (une entrée par appareil/navigateur par utilisateur).
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?  @db.VarChar(512)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Préférences de notifications d'un utilisateur (une ligne par utilisateur).
+model NotificationPreference {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  // Apprenants (role = USER)
+  sessionReminderEnabled   Boolean  @default(true)
+  /// IDs des langues pour lesquelles le rappel est activé.
+  /// Tableau vide = toutes les langues actives de l'utilisateur sont incluses.
+  sessionReminderLanguages String[] @default([])
+  wordCompletedEnabled     Boolean  @default(true)
+
+  // Contributeurs (role = CONTRIBUTOR)
+  wordAssignedEnabled      Boolean  @default(true)
+
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
