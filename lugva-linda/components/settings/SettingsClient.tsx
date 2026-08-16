@@ -30,14 +30,12 @@ type SettingsClientProps = {
   profile: UserProfile;
   languages: Language[];
   notifPrefs: NotificationPreferences;
-  initiallySubscribed: boolean;
 };
 
 export const SettingsClient = ({
   profile,
   languages,
   notifPrefs,
-  initiallySubscribed,
 }: SettingsClientProps) => {
   const initialDisplayName = toDisplayName(
     profile.email,
@@ -52,7 +50,7 @@ export const SettingsClient = ({
         <CardHeader>
           <CardTitle>Profil</CardTitle>
           <CardDescription>
-            Mettez a jour votre identite et vos informations de connexion.
+            Mettez à jour votre identité et vos informations de connexion.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -79,7 +77,6 @@ export const SettingsClient = ({
         role={profile.role}
         languages={languages}
         initialPrefs={notifPrefs}
-        initiallySubscribed={initiallySubscribed}
       />
 
       <DangerZoneSection />

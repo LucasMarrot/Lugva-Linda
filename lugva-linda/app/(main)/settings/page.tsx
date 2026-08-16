@@ -36,7 +36,7 @@ export default async function SettingsPage(props: SettingsPageProps) {
     redirect(`/settings?lang=${activeLanguageId}`);
   }
 
-  const [profile, notifPreference, subCount] = await Promise.all([
+  const [profile, notifPreference] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
       select: {
@@ -48,9 +48,6 @@ export default async function SettingsPage(props: SettingsPageProps) {
       },
     }),
     prisma.notificationPreference.findUnique({
-      where: { userId: user.id },
-    }),
-    prisma.pushSubscription.count({
       where: { userId: user.id },
     }),
   ]);
@@ -84,7 +81,6 @@ export default async function SettingsPage(props: SettingsPageProps) {
             profile={profile}
             languages={languages.map((l) => ({ id: l.id, name: l.name }))}
             notifPrefs={notifPrefs}
-            initiallySubscribed={subCount > 0}
           />
         </main>
 

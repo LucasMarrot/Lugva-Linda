@@ -14,7 +14,6 @@ import { updateNotificationPrefsAction } from '@/actions/push-actions';
 import type { NotificationPreferences } from '@/types/notifications';
 import type { Role } from '@prisma/client';
 import type { Language } from './notifications/types';
-import { PushSubscriptionBanner } from './notifications/PushSubscriptionBanner';
 import { LearnerPreferences } from './notifications/LearnerPreferences';
 import { ContributorPreferences } from './notifications/ContributorPreferences';
 
@@ -22,19 +21,15 @@ type NotificationsSectionProps = {
   role: Role;
   languages: Language[];
   initialPrefs: NotificationPreferences;
-  initiallySubscribed: boolean;
 };
 
 export function NotificationsSection({
   role,
   languages,
   initialPrefs,
-  initiallySubscribed,
 }: NotificationsSectionProps) {
-  const { isSupported, isSubscribed, isPending, subscribe, unsubscribe, error, permission } =
+  const { isSubscribed, isPending, subscribe, unsubscribe, error } =
     usePushNotifications();
-
-  const effectivelySubscribed = initiallySubscribed || isSubscribed;
 
   const [isSaving, startSaving] = useTransition();
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
@@ -46,10 +41,21 @@ export function NotificationsSection({
     value: NotificationPreferences[K],
   ) {
     const newPrefs = { ...prefs, [key]: value };
+
+    const willBeAnyEnabled = role === 'USER'
+      ? (newPrefs.sessionReminderEnabled || newPrefs.wordCompletedEnabled)
+      : newPrefs.wordAssignedEnabled;
+
     setPrefs(newPrefs);
 
     startSaving(async () => {
       try {
+        if (willBeAnyEnabled && !isSubscribed) {
+          await subscribe();
+        } else if (!willBeAnyEnabled && isSubscribed) {
+          await unsubscribe();
+        }
+
         await updateNotificationPrefsAction(newPrefs);
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2500);
@@ -99,52 +105,46 @@ export function NotificationsSection({
       </CardHeader>
 
       <CardContent className="space-y-5">
-        <PushSubscriptionBanner
-          isSupported={isSupported}
-          effectivelySubscribed={effectivelySubscribed}
-          isPending={isPending}
-          permission={permission}
-          error={error}
-          subscribe={subscribe}
-          unsubscribe={unsubscribe}
-        />
-
-        {effectivelySubscribed && (
-          <div className="space-y-4">
-            {/* Indicateur de sauvegarde */}
-            {saveStatus === 'saved' && (
-              <p className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                Préférences enregistrées
-              </p>
-            )}
-            {saveStatus === 'error' && (
-              <p className="text-destructive flex items-center gap-1.5 text-xs">
-                <AlertCircle className="h-3.5 w-3.5" />
-                Erreur lors de la sauvegarde
-              </p>
-            )}
-
-            {role === 'USER' && (
-              <LearnerPreferences
-                prefs={prefs}
-                languages={languages}
-                isSaving={isSaving}
-                updatePref={updatePref}
-                toggleLanguageReminder={toggleLanguageReminder}
-                isLanguageEnabled={isLanguageEnabled}
-              />
-            )}
-
-            {role === 'CONTRIBUTOR' && (
-              <ContributorPreferences
-                prefs={prefs}
-                isSaving={isSaving}
-                updatePref={updatePref}
-              />
-            )}
+        {error && (
+          <div className="border-destructive/50 bg-destructive/10 text-destructive flex items-center gap-2 rounded-md border p-3 text-sm">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <p>{error}</p>
           </div>
         )}
+
+        <div className="space-y-4">
+          {saveStatus === 'saved' && (
+            <p className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Préférences enregistrées
+            </p>
+          )}
+          {saveStatus === 'error' && (
+            <p className="text-destructive flex items-center gap-1.5 text-xs">
+              <AlertCircle className="h-3.5 w-3.5" />
+              Erreur lors de la sauvegarde
+            </p>
+          )}
+
+          {role === 'USER' && (
+            <LearnerPreferences
+              prefs={prefs}
+              languages={languages}
+              isSaving={isSaving || isPending}
+              updatePref={updatePref}
+              toggleLanguageReminder={toggleLanguageReminder}
+              isLanguageEnabled={isLanguageEnabled}
+            />
+          )}
+
+          {role === 'CONTRIBUTOR' && (
+            <ContributorPreferences
+              prefs={prefs}
+              isSaving={isSaving || isPending}
+              updatePref={updatePref}
+            />
+          )}
+        </div>
       </CardContent>
     </Card>
   );
