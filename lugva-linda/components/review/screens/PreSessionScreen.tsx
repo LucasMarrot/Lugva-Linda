@@ -51,7 +51,7 @@ export const PreSessionScreen = ({
           )}
         >
           {isEarlyMode
-            ? "Apprentissage prématuré : réviser vos mots avant l'échéance prévue n'est pas optimal pour la mémorisation à long terme."
+            ? "Apprentissage prématuré : faire vos exercices avant l'échéance prévue n'est pas optimal pour la mémorisation à long terme."
             : 'Votre cerveau est sur le point de consolider de nouvelles connexions.'}
         </p>
 
@@ -61,7 +61,7 @@ export const PreSessionScreen = ({
               {wordCount}
             </span>
             <span className="text-muted-foreground text-sm">
-              Mots à réviser
+              Exercices à faire
             </span>
           </div>
 

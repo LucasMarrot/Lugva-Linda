@@ -51,7 +51,7 @@ export const DueTodayReviewButton = ({
           <Brain className="h-5 w-5" /> Réviser la séance du jour
         </span>
         <span className="text-xs font-normal opacity-80">
-          {`${formattedDate} — ${todayWordCount} ${frenchPluralize(todayWordCount, 'mot')}`}
+          {`${formattedDate} — ${todayWordCount} ${frenchPluralize(todayWordCount, 'exercice')}`}
         </span>
       </Button>
     );
@@ -70,7 +70,7 @@ export const DueTodayReviewButton = ({
             <FastForward className="h-5 w-5" /> S&apos;avancer sur les révisions
           </span>
           <span className="text-xs font-normal opacity-80">
-            {`${formattedDate} — ${nextSessionWordCount} ${frenchPluralize(nextSessionWordCount, 'mot')}`}
+            {`${formattedDate} — ${nextSessionWordCount} ${frenchPluralize(nextSessionWordCount, 'exercice')}`}
           </span>
         </Link>
       </Button>

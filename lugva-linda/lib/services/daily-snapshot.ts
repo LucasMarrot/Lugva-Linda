@@ -9,7 +9,7 @@ import {
 } from 'date-fns';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Daily Snapshot Service — Version Définitive
+// Daily Snapshot Service
 // ─────────────────────────────────────────────────────────────────────────────
 // Garantit que chaque jour passé entre l'epoch et hier a un `hadDueCards`
 // correct dans DailyStat.
@@ -90,16 +90,6 @@ export async function ensureDailySnapshots(
     return;
   }
 
-  // ── Stratégie unique : État actuel des cartes ─────────────────────
-  //
-  // On récupère TOUTES les cartes dues (due <= hier, state ≠ 0).
-  // Chaque carte a un `due` qui indique depuis quand elle est en attente.
-  // Pour un jour D non couvert : si une carte a `due <= D` → hadDueCards.
-  //
-  // Pourquoi c'est fiable :
-  // - Ce code tourne AVANT toute révision aujourd'hui
-  // - Les cartes n'ont pas été modifiées depuis hier soir
-  // - Leur `due` reflète exactement l'état réel
 
   const overdueCards = await prisma.card.findMany({
     where: {
@@ -107,7 +97,7 @@ export async function ensureDailySnapshots(
       languageId,
       due: { lte: endOfDay(yesterday) },
       state: { not: 0 }, // Exclure les cartes neuves (state=0) jamais vues
-      word: { isDeleted: false },
+      isWordDeleted: false,
     },
     select: { due: true },
   });

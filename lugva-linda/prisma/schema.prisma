@@ -180,11 +180,11 @@ model Card {
   lapses        Int      @default(0)
   state         Int      @default(0)
   lastReview    DateTime?
+  isWordDeleted Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Composite FK guarantees card scope matches word scope.
   word     Word     @relation(fields: [wordId, ownerId, languageId], references: [id, ownerId, languageId], onDelete: Cascade)
   owner    User     @relation("CardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   language Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
@@ -192,7 +192,7 @@ model Card {
   reviewLogs ReviewLog[]
 
   @@unique([wordId, type])
-  @@index([ownerId, languageId, due, state])
+  @@index([ownerId, languageId, due, state, isWordDeleted])
   @@index([ownerId, due, state])
   @@index([languageId, due])
 }

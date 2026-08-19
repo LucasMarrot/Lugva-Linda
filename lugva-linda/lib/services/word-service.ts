@@ -1328,17 +1328,23 @@ export const softDeleteWordForOwner = async (
     await deleteAudioFromStorage(supabase, existingWord.customAudioPath);
   }
 
-  await prisma.word.update({
-    where: { id: wordId },
-    data: {
-      isDeleted: true,
-      deletedAt: now,
-      purgeAfter,
-      deleteToken,
-      customAudioPath: null,
-      customAudioUrl: null,
-    },
-  });
+  await prisma.$transaction([
+    prisma.word.update({
+      where: { id: wordId },
+      data: {
+        isDeleted: true,
+        deletedAt: now,
+        purgeAfter,
+        deleteToken,
+        customAudioPath: null,
+        customAudioUrl: null,
+      },
+    }),
+    prisma.card.updateMany({
+      where: { wordId },
+      data: { isWordDeleted: true },
+    }),
+  ]);
 };
 
 export const restoreWordForOwner = async (ownerId: string, wordId: string) => {
@@ -1356,15 +1362,22 @@ export const restoreWordForOwner = async (ownerId: string, wordId: string) => {
     wordId,
   );
 
-  await prisma.word.update({
-    where: { id: wordId },
-    data: {
-      isDeleted: false,
-      deletedAt: null,
-      purgeAfter: null,
-      deleteToken: ACTIVE_DELETE_TOKEN,
-    },
-  });
+  await prisma.$transaction([
+    prisma.word.update({
+      where: { id: wordId },
+      data: {
+        isDeleted: false,
+        deletedAt: null,
+        purgeAfter: null,
+        deleteToken: ACTIVE_DELETE_TOKEN,
+      },
+    }),
+    // Dénormalisation : restaurer isWordDeleted sur toutes les cartes du mot
+    prisma.card.updateMany({
+      where: { wordId },
+      data: { isWordDeleted: false },
+    }),
+  ]);
 };
 
 export const hardDeleteWordForOwner = async (

@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Script de génération des clés VAPID pour Web Push.
  *
