@@ -51,6 +51,7 @@ export const generateMockCards = (count: number = 10): ReviewCard[] => {
       lapses: 0,
       state: 0,
       lastReview: null,
+      isWordDeleted: false,
       createdAt: new Date(),
       updatedAt: new Date(),
       word: mockWord,

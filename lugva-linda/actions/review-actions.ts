@@ -153,43 +153,40 @@ export const getReviewCalendarData = async (
   const displayStartStr = format(displayStart, 'yyyy-MM-dd');
   const displayEndStr = format(displayEnd, 'yyyy-MM-dd');
 
-  // ── Epoch dynamique + Lazy Snapshot (une seule requête userLanguage) ──
-  const userLanguage = await prisma.userLanguage.findUnique({
-    where: { userId_languageId: { userId: user.id, languageId } },
-    select: { createdAt: true },
-  });
+  const futureEnd = displayEnd > addDays(today, 60) ? displayEnd : addDays(today, 60);
 
+  ensureDailySnapshots(user.id, languageId).catch((err) =>
+    console.error('[daily-snapshot] background error:', err),
+  );
+
+  const [userLanguage, stats, dueCards] = await Promise.all([
+    prisma.userLanguage.findUnique({
+      where: { userId_languageId: { userId: user.id, languageId } },
+      select: { createdAt: true },
+    }),
+    prisma.dailyStat.findMany({
+      where: {
+        ownerId: user.id,
+        languageId,
+        date: { gte: displayStartStr, lte: displayEndStr },
+      },
+    }),
+    prisma.card.findMany({
+      where: {
+        ownerId: user.id,
+        languageId,
+        due: { lte: futureEnd },
+        isWordDeleted: false,
+      },
+      select: { due: true, type: true },
+    }),
+  ]);
+
+  // ── Epoch dynamique ────────────────────────────────────────────────
   let epochStr = userLanguage
     ? format(userLanguage.createdAt, 'yyyy-MM-dd')
     : todayStr;
   if (epochStr < FEATURE_EPOCH) epochStr = FEATURE_EPOCH;
-
-  await ensureDailySnapshots(user.id, languageId);
-
-  // ── Requête 1 : DailyStat pour le mois affiché ────────────────
-  // Source de vérité pour les jours passés (Vert + Rouge)
-  const stats = await prisma.dailyStat.findMany({
-    where: {
-      ownerId: user.id,
-      languageId,
-      date: { gte: displayStartStr, lte: displayEndStr },
-    },
-  });
-
-  // ── Requête 2 : Cartes dues pour le futur (Bleu) ──────────────
-  // On récupère toutes les cartes dues entre aujourd'hui et la fin de
-  // la grille affichée pour calculer les pastilles "Prévu"
-  const futureEnd = displayEnd > addDays(today, 60) ? displayEnd : addDays(today, 60);
-
-  const dueCards = await prisma.card.findMany({
-    where: {
-      ownerId: user.id,
-      languageId,
-      due: { lte: futureEnd },
-      word: { isDeleted: false },
-    },
-    select: { due: true, type: true },
-  });
 
   // ── Construction des résultats ─────────────────────────────────
   const planned: Record<string, DailyStats> = {};

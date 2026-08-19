@@ -26,7 +26,7 @@ export const StatCard = ({
           : 'bg-card text-card-foreground shadow-sm',
       )}
     >
-      <CardContent className="flex flex-col items-center justify-center p-5">
+      <CardContent className="flex flex-col items-center justify-center p-2 gap-1">
         <Icon className="text-primary mb-1 h-7 w-7 opacity-90" />
         <span className="text-3xl font-bold tracking-tight">{value}</span>
         <span

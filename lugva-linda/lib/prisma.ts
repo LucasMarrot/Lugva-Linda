@@ -3,14 +3,20 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { env } from '@/lib/env';
 
-// 1. On configure le pool de connexion avec ton lien Supabase
+// Pool de connexion Supabase — limité à 5 connexions simultanées pour éviter
+// les erreurs "too many connections" sur les plans Supabase (max 60 global).
+// Les timeouts permettent de libérer rapidement les connexions inactives.
 const connectionString = env.DATABASE_URL;
-const pool = new Pool({ connectionString });
+const pool = new Pool({
+  connectionString,
+  max: 5,                      // Max connexions simultanées par instance
+  idleTimeoutMillis: 10_000,   // Fermer les connexions inactives après 10s
+  connectionTimeoutMillis: 5_000, // Timeout si toutes les connexions sont occupées
+});
 
-// 2. On crée l'adaptateur Prisma
+// Adaptateur Prisma 7 (obligatoire avec @prisma/adapter-pg)
 const adapter = new PrismaPg(pool);
 
-// 3. On injecte l'adaptateur dans le client (c'est la règle stricte de Prisma 7)
 const prismaClientSingleton = () => {
   return new PrismaClient({ adapter });
 };
