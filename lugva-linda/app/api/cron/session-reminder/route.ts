@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/lib/env';
 import prisma from '@/lib/prisma';
 import { sendSessionReminder } from '@/lib/push/push-service';
+import { endOfDay } from 'date-fns';
 
 /**
  * Route API Cron — Rappels de séance quotidiens.
@@ -13,7 +14,7 @@ import { sendSessionReminder } from '@/lib/push/push-service';
  * 1. Récupère tous les USER ayant des notifications de séance activées
  *    et au moins une souscription push active.
  * 2. Pour chaque utilisateur et chaque langue éligible :
- *    - Compte les cartes dues pour aujourd'hui (Card.due <= now).
+ *    - Compte les cartes dues pour aujourd'hui (Card.due <= endOfDay(now)).
  *    - Si count > 0 → envoie la notification de rappel.
  */
 export async function GET(request: NextRequest) {
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest) {
   }
 
   const now = new Date();
+  const limitDate = endOfDay(now);
   const results = { sent: 0, skipped: 0, errors: 0 };
 
   try {
@@ -74,7 +76,8 @@ export async function GET(request: NextRequest) {
                 where: {
                   ownerId: user.id,
                   languageId,
-                  due: { lte: now },
+                  due: { lte: limitDate },
+                  word: { isDeleted: false, deleteToken: BigInt(0) },
                   // state 0 = New, 1 = Learning, 2 = Review, 3 = Relearning
                   // Toutes les cartes arrivées à échéance sont concernées
                 },
