@@ -15,7 +15,7 @@ export const DashboardStats = ({
     <section className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <StatCard
-          title="À réviser aujourd'hui"
+          title="Exercices à faire aujourd'hui"
           value={cardsToReview}
           icon={Brain}
           variant="primary"

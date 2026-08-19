@@ -43,12 +43,12 @@ export const DayDetailsPanel = ({
                   <div className="flex flex-wrap justify-end gap-1">
                     {statsPlanned && !isMissed && statsPlanned.total > 0 && (
                       <Badge variant="primaryOutline">
-                        {`${statsPlanned.total} ${frenchPluralize(statsPlanned.total, 'mot')} à réviser`}
+                        {`${statsPlanned.total} ${frenchPluralize(statsPlanned.total, 'exercice')} à faire`}
                       </Badge>
                     )}
                     {statsCompleted && (
                       <Badge variant="validOutline">
-                        {`${statsCompleted.total} ${frenchPluralize(statsCompleted.total, 'mot')} ${frenchPluralize(statsCompleted.total, 'révisé')}`}
+                        {`${statsCompleted.total} ${frenchPluralize(statsCompleted.total, 'exercice')} ${frenchPluralize(statsCompleted.total, 'réalisé')}`}
                       </Badge>
                     )}
                   </div>

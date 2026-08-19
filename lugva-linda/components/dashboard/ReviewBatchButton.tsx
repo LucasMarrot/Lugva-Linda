@@ -15,9 +15,9 @@ export const ReviewBatchButton = ({
   return (
     <Button asChild className="flex w-full items-center gap-2 shadow-sm">
       <Link href={reviewHref}>
-        <span className="text-sm opacity-90">Révisez</span>
+        <span className="text-sm opacity-90">Faire</span>
         <span className="text-lg font-bold">{count}</span>
-        <span className="text-sm opacity-90">Mots</span>
+        <span className="text-sm opacity-90">{count > 1 ? 'Exercices' : 'Exercice'}</span>
       </Link>
     </Button>
   );
