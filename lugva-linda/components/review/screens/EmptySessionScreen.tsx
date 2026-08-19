@@ -16,8 +16,8 @@ export const EmptySessionScreen = ({ onQuit }: EmptySessionScreenProps) => {
         <div className="mb-6 w-full max-w-md">
           <StateMessage
             tone="success"
-            title="Aucun mot a reviser"
-            message="Vous etes a jour. Revenez plus tard ou ajoutez de nouveaux mots."
+            title="Aucun mot à réviser"
+            message="Vous êtes à jour. Revenez plus tard ou ajoutez de nouveaux mots."
           />
         </div>
         <Button
