@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { sendSessionReminder } from '@/lib/push/push-service';
 import { endOfDay } from 'date-fns';
 
+export const dynamic = 'force-dynamic';
 /**
  * Route API Cron — Rappels de séance quotidiens.
  *
