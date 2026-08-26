@@ -29,20 +29,23 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // On récupère l'utilisateur actuel
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // PROTECTION DES ROUTES
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth'); // On englobe tout le dossier auth
+  const pathname = request.nextUrl.pathname;
+  const isAuthPage = pathname.startsWith('/auth');
 
-  // 1. Si pas d'user et pas sur une page auth -> Direction /auth/login
+  // Les routes Cron internes ne sont jamais soumises
+  // à l'authentification Supabase. Leur sécurité est assurée par le header
+  // `Authorization: Bearer CRON_SECRET` vérifié dans chaque handler.
+  const isCronRoute = pathname.startsWith('/api/cron/');
+  if (isCronRoute) return NextResponse.next();
+
   if (!user && !isAuthPage) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
-  // 2. Si user et sur /auth/login -> Direction Accueil
   if (user && request.nextUrl.pathname.startsWith('/auth/login')) {
     return NextResponse.redirect(new URL('/', request.url));
   }
@@ -58,7 +61,8 @@ export const config = {
      * - _next/image (images optimisées)
      * - favicon.ico (icône)
      * - les fichiers dans public/ (images, robots.txt, etc.)
+     * - api/cron/* (routes Cron internes, protégées par CRON_SECRET)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/cron/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
