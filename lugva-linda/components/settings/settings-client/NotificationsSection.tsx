@@ -32,7 +32,9 @@ export function NotificationsSection({
     usePushNotifications();
 
   const [isSaving, startSaving] = useTransition();
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>(
+    'idle',
+  );
 
   const [prefs, setPrefs] = useState<NotificationPreferences>(initialPrefs);
 
@@ -42,9 +44,10 @@ export function NotificationsSection({
   ) {
     const newPrefs = { ...prefs, [key]: value };
 
-    const willBeAnyEnabled = role === 'USER'
-      ? (newPrefs.sessionReminderEnabled || newPrefs.wordCompletedEnabled)
-      : newPrefs.wordAssignedEnabled;
+    const willBeAnyEnabled =
+      role === 'USER'
+        ? newPrefs.sessionReminderEnabled || newPrefs.wordCompletedEnabled
+        : newPrefs.wordAssignedEnabled;
 
     setPrefs(newPrefs);
 
@@ -71,16 +74,13 @@ export function NotificationsSection({
     const current = prefs.sessionReminderLanguages;
 
     const expanded =
-      current.length === 0
-        ? languages.map((l) => l.id)
-        : current;
+      current.length === 0 ? languages.map((l) => l.id) : current;
 
     const updated = expanded.includes(languageId)
       ? expanded.filter((id) => id !== languageId)
       : [...expanded, languageId];
 
-    const normalized =
-      updated.length === languages.length ? [] : updated;
+    const normalized = updated.length === languages.length ? [] : updated;
 
     updatePref('sessionReminderLanguages', normalized);
   }

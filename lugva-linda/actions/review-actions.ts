@@ -132,7 +132,6 @@ export type ReviewCalendarData = {
   missedDates: string[];
 };
 
-
 export const getReviewCalendarData = async (
   languageId: string,
   displayYear: number,
@@ -153,7 +152,8 @@ export const getReviewCalendarData = async (
   const displayStartStr = format(displayStart, 'yyyy-MM-dd');
   const displayEndStr = format(displayEnd, 'yyyy-MM-dd');
 
-  const futureEnd = displayEnd > addDays(today, 60) ? displayEnd : addDays(today, 60);
+  const futureEnd =
+    displayEnd > addDays(today, 60) ? displayEnd : addDays(today, 60);
 
   ensureDailySnapshots(user.id, languageId).catch((err) =>
     console.error('[daily-snapshot] background error:', err),
@@ -253,4 +253,3 @@ export const getReviewCalendarData = async (
 
   return { planned, completed, missedDates };
 };
-

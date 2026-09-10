@@ -310,9 +310,7 @@ export const WordForm = ({
           }
           isLoading={isSubmitting}
         >
-          {isEditing
-            ? 'Enregistrer les modifications'
-            : 'Enregistrer la fiche'}
+          {isEditing ? 'Enregistrer les modifications' : 'Enregistrer la fiche'}
         </Button>
       </form>
     </div>

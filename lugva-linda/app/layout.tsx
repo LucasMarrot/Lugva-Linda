@@ -100,9 +100,7 @@ export default async function RootLayout({
                       activeLanguageId={activeLanguageId ?? ''}
                     >
                       <AppSplashScreen>
-                        <GlobalPageTransition>
-                          {children}
-                        </GlobalPageTransition>
+                        <GlobalPageTransition>{children}</GlobalPageTransition>
                       </AppSplashScreen>
                     </ActiveLanguageProvider>
                   </WordModalProvider>

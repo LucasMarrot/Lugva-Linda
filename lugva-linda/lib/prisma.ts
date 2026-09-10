@@ -9,8 +9,8 @@ import { env } from '@/lib/env';
 const connectionString = env.DATABASE_URL;
 const pool = new Pool({
   connectionString,
-  max: 5,                      // Max connexions simultanées par instance
-  idleTimeoutMillis: 10_000,   // Fermer les connexions inactives après 10s
+  max: 5, // Max connexions simultanées par instance
+  idleTimeoutMillis: 10_000, // Fermer les connexions inactives après 10s
   connectionTimeoutMillis: 5_000, // Timeout si toutes les connexions sont occupées
 });
 

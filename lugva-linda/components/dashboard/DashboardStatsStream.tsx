@@ -6,7 +6,9 @@ type DashboardStatsStreamProps = {
   promise: ReturnType<typeof getDashboardData>;
 };
 
-export const DashboardStatsStream = ({ promise }: DashboardStatsStreamProps) => {
+export const DashboardStatsStream = ({
+  promise,
+}: DashboardStatsStreamProps) => {
   const data = use(promise);
 
   return (

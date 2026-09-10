@@ -81,7 +81,8 @@ export const WordModalProvider: FC<{
   const toast = useToast();
 
   const activeWord = modalState.word;
-  const isModalOpen = modalState.mode !== 'closed' && modalState.mode !== 'complete';
+  const isModalOpen =
+    modalState.mode !== 'closed' && modalState.mode !== 'complete';
   const isEditing = modalState.mode === 'edit';
   const isCompleting = modalState.mode === 'complete';
 

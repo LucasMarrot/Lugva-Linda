@@ -13,7 +13,11 @@ import {
   unsubscribePushAction,
 } from '@/actions/push-actions';
 
-export type PushPermissionState = 'default' | 'granted' | 'denied' | 'unsupported';
+export type PushPermissionState =
+  | 'default'
+  | 'granted'
+  | 'denied'
+  | 'unsupported';
 
 export type UsePushNotificationsReturn = {
   /** L'appareil supporte-t-il les push notifications ? */
@@ -42,19 +46,16 @@ export type UsePushNotificationsReturn = {
  */
 export function usePushNotifications(): UsePushNotificationsReturn {
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [permission, setPermission] =
-    useState<PushPermissionState>('default');
+  const isSupported = isPushSupported();
+  const [permission, setPermission] = useState<PushPermissionState>(() => {
+    if (!isSupported) return 'unsupported';
+    return Notification.permission as PushPermissionState;
+  });
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const isSupported = isPushSupported();
   useEffect(() => {
-    if (!isSupported) {
-      setPermission('unsupported');
-      return;
-    }
-
-    setPermission(Notification.permission as PushPermissionState);
+    if (!isSupported) return;
 
     getCurrentPushSubscription().then((sub) => {
       setIsSubscribed(sub !== null);
@@ -63,7 +64,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   const subscribe = useCallback(async () => {
     if (!isSupported) {
       setError(
-        "Les notifications push ne sont pas supportées sur cet appareil. " +
+        'Les notifications push ne sont pas supportées sur cet appareil. ' +
           "Sur iOS, installez l'application sur votre écran d'accueil.",
       );
       return;

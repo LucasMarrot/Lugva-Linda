@@ -63,7 +63,6 @@ export interface ButtonProps
   isLoading?: boolean;
 }
 
-
 function Button({
   className,
   variant = 'default',
@@ -76,7 +75,7 @@ function Button({
 }: ButtonProps) {
   const { pending } = useFormStatus();
   const isLoading = _isLoading || (props.type === 'submit' && pending);
-  
+
   const Comp = asChild ? Slot.Root : 'button';
 
   return (

@@ -9,7 +9,10 @@ type LearnerPreferencesProps = {
   prefs: NotificationPreferences;
   languages: Language[];
   isSaving: boolean;
-  updatePref: <K extends keyof NotificationPreferences>(key: K, value: NotificationPreferences[K]) => void;
+  updatePref: <K extends keyof NotificationPreferences>(
+    key: K,
+    value: NotificationPreferences[K],
+  ) => void;
   toggleLanguageReminder: (languageId: string) => void;
   isLanguageEnabled: (languageId: string) => boolean;
 };

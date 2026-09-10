@@ -524,7 +524,9 @@ export async function createIncompleteWordAction(formData: FormData) {
       throw new Error('Seul un utilisateur peut créer un mot incomplet.');
     }
 
-    const translation = String(formData.get('translation') ?? formData.get('word') ?? '');
+    const translation = String(
+      formData.get('translation') ?? formData.get('word') ?? '',
+    );
     const rawMandatoryTag = String(formData.get('mandatoryTag') ?? '');
     const rawLanguageId = normalizeText(
       String(formData.get('languageId') ?? ''),
@@ -578,12 +580,11 @@ export async function completeWordAction(wordId: string, formData: FormData) {
     const term = String(formData.get('term') ?? '');
     const audioFile = formData.get('audioFile') as File | null;
 
-    await completeWordForContributor(
-      effectiveOwnerId,
-      validatedWordId,
-      term,
-      { audioFile, supabase, contributorId: user.id },
-    );
+    await completeWordForContributor(effectiveOwnerId, validatedWordId, term, {
+      audioFile,
+      supabase,
+      contributorId: user.id,
+    });
 
     revalidatePath('/');
     revalidatePath('/words');
@@ -595,9 +596,7 @@ export async function completeWordAction(wordId: string, formData: FormData) {
   }
 }
 
-export async function getWordsToCompleteNotificationAction(
-  languageId: string,
-) {
+export async function getWordsToCompleteNotificationAction(languageId: string) {
   let userId: string | null = null;
 
   try {
@@ -621,11 +620,7 @@ export async function getWordsToCompleteNotificationAction(
 
     return { count };
   } catch (error) {
-    logActionError(
-      'getWordsToCompleteNotificationAction',
-      userId,
-      error,
-    );
+    logActionError('getWordsToCompleteNotificationAction', userId, error);
     return { count: 0 };
   }
 }

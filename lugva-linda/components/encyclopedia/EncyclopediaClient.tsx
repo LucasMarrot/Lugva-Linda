@@ -41,9 +41,7 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
 
   const toCompleteCount = useMemo(
     () =>
-      words.filter(
-        (w) => (w.status as WordStatus) === 'TO_COMPLETE',
-      ).length,
+      words.filter((w) => (w.status as WordStatus) === 'TO_COMPLETE').length,
     [words],
   );
 
@@ -107,8 +105,7 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
 
     if (statusFilter === 'to_complete') {
       result = result.filter(
-        (vw) =>
-          (vw.originalWord.status as WordStatus) === 'TO_COMPLETE',
+        (vw) => (vw.originalWord.status as WordStatus) === 'TO_COMPLETE',
       );
     }
 
@@ -156,9 +153,7 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
           onToggleTag={toggleTag}
           onClearTags={() => setSelectedTags([])}
           statusFilter={isContributorMode ? statusFilter : undefined}
-          onStatusFilterChange={
-            isContributorMode ? setStatusFilter : undefined
-          }
+          onStatusFilterChange={isContributorMode ? setStatusFilter : undefined}
           toCompleteCount={toCompleteCount}
         />
       )}

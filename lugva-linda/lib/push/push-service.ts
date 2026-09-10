@@ -229,7 +229,11 @@ export async function sendWordAssignedNotification(
 
   if (contributors.length === 0) return;
 
-  const learnerName = toDisplayName(learner.email, learner.id, learner.username);
+  const learnerName = toDisplayName(
+    learner.email,
+    learner.id,
+    learner.username,
+  );
 
   await Promise.allSettled(
     contributors

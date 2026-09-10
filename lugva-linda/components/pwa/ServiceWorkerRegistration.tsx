@@ -8,10 +8,16 @@ export function ServiceWorkerRegistration() {
       navigator.serviceWorker
         .register('/sw.js', { scope: '/' })
         .then((registration) => {
-          console.log('[PWA] Service Worker enregistré avec succès:', registration.scope);
+          console.log(
+            '[PWA] Service Worker enregistré avec succès:',
+            registration.scope,
+          );
         })
         .catch((error) => {
-          console.error('[PWA] Erreur lors de l\'enregistrement du Service Worker:', error);
+          console.error(
+            "[PWA] Erreur lors de l'enregistrement du Service Worker:",
+            error,
+          );
         });
     }
   }, []);

@@ -4,10 +4,7 @@ import { useState } from 'react';
 import { importWordFromCommunitySelectionAction } from '@/actions/word-actions';
 import { parseActionErrorMessage } from '@/lib/actions/parse-action-error';
 import { useToast } from '@/components/providers/ToastProvider';
-import {
-  PageHeader,
-  StateMessage,
-} from '@/components/shared';
+import { PageHeader, StateMessage } from '@/components/shared';
 import {
   Button,
   Dialog,
@@ -97,7 +94,7 @@ export const CommunityImportModal = ({
 
           <div className="min-h-0 flex-1 overflow-hidden">
             {isLoadingPreview && (
-              <Spinner size='xl' className='m-auto h-full text-foreground' />
+              <Spinner size="xl" className="text-foreground m-auto h-full" />
             )}
 
             {!isLoadingPreview && previewError && (

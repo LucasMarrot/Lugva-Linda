@@ -14,9 +14,6 @@ export const ReviewCalendarStream = ({
   const data = use(promise);
 
   return (
-    <ReviewCalendar
-      initialData={data}
-      activeLanguageId={activeLanguageId}
-    />
+    <ReviewCalendar initialData={data} activeLanguageId={activeLanguageId} />
   );
 };

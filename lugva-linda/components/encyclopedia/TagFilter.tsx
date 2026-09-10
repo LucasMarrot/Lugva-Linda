@@ -70,8 +70,6 @@ export const TagFilter = ({
         </Badge>
       )}
 
-
-
       {allTags.map((tag) => {
         const isSelected = selectedTags.includes(tag);
         return (

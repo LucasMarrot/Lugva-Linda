@@ -105,8 +105,8 @@ export const CompleteProfileForm = ({
     <div className="bg-background flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm shadow-xl">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight flex justify-center py-2">
-            <TypoLogo className="h-8 w-auto text-foreground" />
+          <CardTitle className="flex justify-center py-2 text-2xl font-bold tracking-tight">
+            <TypoLogo className="text-foreground h-8 w-auto" />
           </CardTitle>
           <CardDescription>
             Finalisez la création de votre compte privé.

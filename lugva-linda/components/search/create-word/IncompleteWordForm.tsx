@@ -93,7 +93,11 @@ export const IncompleteWordForm = ({
       <form action={handleSubmit} className="space-y-6">
         <input type="hidden" name="languageId" value={currentLangId} />
         {selectedMandatoryTag && (
-          <input type="hidden" name="mandatoryTag" value={selectedMandatoryTag} />
+          <input
+            type="hidden"
+            name="mandatoryTag"
+            value={selectedMandatoryTag}
+          />
         )}
 
         <div className="bg-muted/30 border-border/50 space-y-4 rounded-xl border p-4">
@@ -105,7 +109,7 @@ export const IncompleteWordForm = ({
               onChange={(e) => setSelectedContributorId(e.target.value)}
               disabled={contributors.length === 1}
               className={cn(
-                'flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+                'border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-11 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
               )}
               required
             >
@@ -121,7 +125,11 @@ export const IncompleteWordForm = ({
               ))}
             </select>
             {contributors.length === 1 && (
-              <input type="hidden" name="contributorId" value={contributors[0].id} />
+              <input
+                type="hidden"
+                name="contributorId"
+                value={contributors[0].id}
+              />
             )}
           </div>
 

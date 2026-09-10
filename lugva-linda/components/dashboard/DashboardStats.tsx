@@ -8,7 +8,7 @@ type DashboardStatsProps = {
   cardsToReview: number;
 };
 
-export const  DashboardStats = ({
+export const DashboardStats = ({
   totalWords,
   cardsToReview,
 }: DashboardStatsProps) => {

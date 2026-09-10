@@ -41,8 +41,8 @@ export const LoginForm = ({ hasError, action }: LoginFormProps) => {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold tracking-tight flex justify-center py-2">
-          <TypoLogo className="h-8 w-auto text-foreground" />
+        <CardTitle className="flex justify-center py-2 text-2xl font-bold tracking-tight">
+          <TypoLogo className="text-foreground h-8 w-auto" />
         </CardTitle>
         <CardDescription>
           Connectez-vous pour accéder à votre encyclopédie.

@@ -90,7 +90,6 @@ export async function ensureDailySnapshots(
     return;
   }
 
-
   const overdueCards = await prisma.card.findMany({
     where: {
       ownerId: userId,

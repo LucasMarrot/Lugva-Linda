@@ -63,7 +63,9 @@ export const MembersPopoverButton = () => {
           <Users
             className={cn(
               'h-5 w-5 transition-colors',
-              isOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+              isOpen
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           />
         </Button>

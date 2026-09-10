@@ -18,7 +18,7 @@ export function LanguageRow({
     <div className="flex items-center justify-between py-2">
       <label
         htmlFor={`lang-reminder-${language.id}`}
-        className="text-sm font-medium cursor-pointer select-none"
+        className="cursor-pointer text-sm font-medium select-none"
       >
         {language.name}
       </label>

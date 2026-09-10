@@ -57,7 +57,7 @@ const SearchPage = async (props: SearchPageProps) => {
       <SearchRoutePage
         initialQuery={searchParams.query ?? ''}
         currentLangId={activeLanguageId}
-        contributors={contributors.map(c => ({
+        contributors={contributors.map((c) => ({
           id: c.id,
           name: c.username || c.email.split('@')[0],
         }))}

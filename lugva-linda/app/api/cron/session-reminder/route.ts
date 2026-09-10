@@ -75,7 +75,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log(`[Cron] ${eligibleUsers.length} utilisateur(s) éligible(s) trouvé(s)`);
+    console.log(
+      `[Cron] ${eligibleUsers.length} utilisateur(s) éligible(s) trouvé(s)`,
+    );
 
     const batchResults = await Promise.allSettled(
       eligibleUsers.map(async (user) => {
@@ -115,7 +117,9 @@ export async function GET(request: NextRequest) {
               });
 
               if (!language) {
-                console.warn(`[Cron] Langue inconnue : ${languageId} (user=${user.id})`);
+                console.warn(
+                  `[Cron] Langue inconnue : ${languageId} (user=${user.id})`,
+                );
                 return { status: 'skipped' as const };
               }
 
@@ -133,7 +137,10 @@ export async function GET(request: NextRequest) {
                 user.pushSubscriptions.map(async (sub) => {
                   try {
                     await webpush.sendNotification(
-                      { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                      {
+                        endpoint: sub.endpoint,
+                        keys: { p256dh: sub.p256dh, auth: sub.auth },
+                      },
                       serializedPayload,
                       { TTL: 86400 },
                     );
@@ -200,16 +207,16 @@ export async function GET(request: NextRequest) {
         totals.errors += r.value.errors;
       } else {
         totals.errors++;
-        console.error('[Cron] Erreur inattendue dans le batch utilisateur :', r.reason);
+        console.error(
+          '[Cron] Erreur inattendue dans le batch utilisateur :',
+          r.reason,
+        );
       }
     }
 
     const durationMs = Date.now() - startedAt;
 
-    console.log(
-      `[Cron] session-reminder terminé en ${durationMs}ms :`,
-      totals,
-    );
+    console.log(`[Cron] session-reminder terminé en ${durationMs}ms :`, totals);
 
     return NextResponse.json({
       ok: true,

@@ -144,7 +144,7 @@ export const AudioRecorder = ({
       )}
 
       {!activeAudioUrl ? (
-        <div className={cn("grid gap-2", !isContributor && "sm:grid-cols-2")}>
+        <div className={cn('grid gap-2', !isContributor && 'sm:grid-cols-2')}>
           <Recorder
             isRecording={isRecording}
             onStartRecording={handleStartRecording}

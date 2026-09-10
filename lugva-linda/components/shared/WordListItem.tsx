@@ -44,20 +44,24 @@ export const WordListItem = ({
       tabIndex={0}
       ref={rootRef}
       className={cn(
-        "ui-motion-interactive ui-tap-feedback bg-card hover:bg-accent active:bg-accent/80 relative flex w-full cursor-pointer items-center justify-between gap-2 overflow-hidden rounded-xl border-2 p-3 text-left sm:gap-3 sm:p-4",
+        'ui-motion-interactive ui-tap-feedback bg-card hover:bg-accent active:bg-accent/80 relative flex w-full cursor-pointer items-center justify-between gap-2 overflow-hidden rounded-xl border-2 p-3 text-left sm:gap-3 sm:p-4',
         word.status === 'TO_COMPLETE'
-          ? "border-amber-500 hover:border-amber-600"
-          : "border-border/50 hover:border-border"
+          ? 'border-amber-500 hover:border-amber-600'
+          : 'border-border/50 hover:border-border',
       )}
       style={customCardStyle}
     >
       <div ref={leftRef} className="flex min-w-0 flex-col gap-1.5">
         <span
           className={cn(
-            "truncate text-base font-semibold sm:text-lg",
-            word.status === 'TO_COMPLETE' ? "text-amber-500" : ""
+            'truncate text-base font-semibold sm:text-lg',
+            word.status === 'TO_COMPLETE' ? 'text-amber-500' : '',
           )}
-          style={word.status !== 'TO_COMPLETE' && primaryColor ? { color: primaryColor } : undefined}
+          style={
+            word.status !== 'TO_COMPLETE' && primaryColor
+              ? { color: primaryColor }
+              : undefined
+          }
         >
           {word.status === 'TO_COMPLETE' ? word.translation : word.term}
         </span>

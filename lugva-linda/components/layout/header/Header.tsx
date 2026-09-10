@@ -20,13 +20,15 @@ export const Header = async () => {
   return (
     <header className="border-border bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-49 flex h-[calc(4rem+var(--safe-area-top))] w-full items-center justify-between border-b px-4 pt-(--safe-area-top) backdrop-blur">
       <div className="z-10 flex items-center gap-2">
-        <TypoLogo className="h-5 w-auto text-foreground" />
+        <TypoLogo className="text-foreground h-5 w-auto" />
       </div>
 
       <div className="z-10 flex items-center gap-2">
         <LanguageSelector />
         <MembersPopoverButton />
-        <SettingsButton initialWordAssignedEnabled={initialWordAssignedEnabled} />
+        <SettingsButton
+          initialWordAssignedEnabled={initialWordAssignedEnabled}
+        />
       </div>
     </header>
   );

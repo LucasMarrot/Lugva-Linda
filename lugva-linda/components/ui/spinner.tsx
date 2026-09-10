@@ -6,7 +6,11 @@ export interface SpinnerProps extends React.SVGProps<SVGSVGElement> {
   size?: 'default' | 'sm' | 'lg' | 'xl' | 'icon';
 }
 
-export function Spinner({ className, size = 'default', ...props }: SpinnerProps) {
+export function Spinner({
+  className,
+  size = 'default',
+  ...props
+}: SpinnerProps) {
   return (
     <Loader2
       className={cn(
@@ -17,7 +21,7 @@ export function Spinner({ className, size = 'default', ...props }: SpinnerProps)
           'size-6': size === 'lg',
           'size-10': size === 'xl',
         },
-        className
+        className,
       )}
       aria-hidden="true"
       {...props}

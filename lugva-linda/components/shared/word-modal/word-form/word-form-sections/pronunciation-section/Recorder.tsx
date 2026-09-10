@@ -28,9 +28,12 @@ export const Recorder = ({
 
   useEffect(() => {
     if (countdown === null) return;
-    
+
     if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown((c) => (c !== null ? c - 1 : null)), 1000);
+      const timer = setTimeout(
+        () => setCountdown((c) => (c !== null ? c - 1 : null)),
+        1000,
+      );
       return () => clearTimeout(timer);
     } else if (countdown === 0) {
       const timer = setTimeout(() => {
@@ -74,7 +77,9 @@ export const Recorder = ({
   };
 
   const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const m = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
@@ -84,7 +89,9 @@ export const Recorder = ({
   return (
     <Button
       type="button"
-      variant={isRecording ? 'destructive' : isCountingDown ? 'secondary' : 'outline'}
+      variant={
+        isRecording ? 'destructive' : isCountingDown ? 'secondary' : 'outline'
+      }
       className={cn(
         'h-12 w-full gap-2 border-dashed transition-colors',
         errorMessage &&
@@ -100,7 +107,10 @@ export const Recorder = ({
     >
       {isCountingDown ? (
         <>
-          <span className="font-semibold tabular-nums flex items-center gap-2">Lancement dans <span className="font-bold text-2xl">{countdown}</span></span>
+          <span className="flex items-center gap-2 font-semibold tabular-nums">
+            Lancement dans{' '}
+            <span className="text-2xl font-bold">{countdown}</span>
+          </span>
         </>
       ) : isRecording ? (
         <>

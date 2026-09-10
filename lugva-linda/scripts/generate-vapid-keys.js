@@ -11,8 +11,8 @@
  * ⚠️  NE JAMAIS committer les clés privées dans le dépôt.
  */
 
-const { webcrypto } = require('crypto');
-const { subtle } = webcrypto;
+// globalThis.crypto.subtle est disponible nativement en Node.js >= 19
+const { subtle } = globalThis.crypto;
 
 async function generateVapidKeys() {
   const keyPair = await subtle.generateKey(
@@ -25,13 +25,17 @@ async function generateVapidKeys() {
   const privateKeyJwk = await subtle.exportKey('jwk', keyPair.privateKey);
 
   const publicKeyBase64 = Buffer.from(publicKeyRaw).toString('base64url');
-  const privateKeyBase64 = Buffer.from(privateKeyJwk.d, 'base64url').toString('base64url');
+  const privateKeyBase64 = Buffer.from(privateKeyJwk.d, 'base64url').toString(
+    'base64url',
+  );
 
   console.log('\n✅  Clés VAPID générées avec succès !\n');
   console.log('Ajoutez ces lignes dans votre .env :\n');
   console.log(`NEXT_PUBLIC_VAPID_PUBLIC_KEY=${publicKeyBase64}`);
   console.log(`VAPID_PRIVATE_KEY=${privateKeyBase64}`);
-  console.log('\n⚠️  Ne commitez JAMAIS VAPID_PRIVATE_KEY dans votre dépôt Git.\n');
+  console.log(
+    '\n⚠️  Ne commitez JAMAIS VAPID_PRIVATE_KEY dans votre dépôt Git.\n',
+  );
 }
 
 generateVapidKeys().catch((err) => {

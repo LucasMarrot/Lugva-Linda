@@ -1508,7 +1508,6 @@ export const createIncompleteWordForUser = async (
   return word;
 };
 
-
 export const completeWordForContributor = async (
   ownerId: string,
   wordId: string,
@@ -1542,18 +1541,14 @@ export const completeWordForContributor = async (
     existingWord.languageId,
     normalizedTerm,
     existingWord.mandatoryTag as MandatoryTag,
-    wordId
+    wordId,
   );
 
   let audioData:
     | { customAudioPath: string; customAudioUrl: string }
     | undefined;
   if (options?.audioFile && options.supabase && options.audioFile.size > 0) {
-    audioData = await uploadAudio(
-      options.supabase,
-      ownerId,
-      options.audioFile,
-    );
+    audioData = await uploadAudio(options.supabase, ownerId, options.audioFile);
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -1597,8 +1592,9 @@ export const completeWordForContributor = async (
   });
 
   if (options?.contributorId) {
-    void sendWordCompletedNotification(wordId, options.contributorId).catch((err) =>
-      console.error('[Push] sendWordCompletedNotification échoué :', err),
+    void sendWordCompletedNotification(wordId, options.contributorId).catch(
+      (err) =>
+        console.error('[Push] sendWordCompletedNotification échoué :', err),
     );
   }
 

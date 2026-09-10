@@ -67,9 +67,7 @@ export const WordCompleteModal = ({
       onClose();
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : 'Une erreur est survenue.';
+        error instanceof Error ? error.message : 'Une erreur est survenue.';
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -110,9 +108,7 @@ export const WordCompleteModal = ({
                     {word.tags.map((tag, index) => (
                       <Badge
                         key={tag + String(index)}
-                        variant={
-                          index === 0 ? 'secondaryOutline' : 'outline'
-                        }
+                        variant={index === 0 ? 'secondaryOutline' : 'outline'}
                         className="p-2 px-4 text-sm"
                       >
                         <span className="flex items-center justify-center gap-2">
@@ -135,9 +131,7 @@ export const WordCompleteModal = ({
                     placeholder="Entrez le mot..."
                     className={cn(
                       'bg-background h-11',
-                      !isValid &&
-                        termValue.length > 0 &&
-                        'border-destructive',
+                      !isValid && termValue.length > 0 && 'border-destructive',
                     )}
                     autoFocus
                     required

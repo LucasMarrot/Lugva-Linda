@@ -8,14 +8,11 @@ type WordMutationContextValue = {
   notifyWordMutation: () => void;
 };
 
-const WordMutationContext =
-  createContext<WordMutationContextValue | null>(null);
+const WordMutationContext = createContext<WordMutationContextValue | null>(
+  null,
+);
 
-export const WordMutationProvider = ({
-  children,
-}: {
-  children: ReactNode;
-}) => {
+export const WordMutationProvider = ({ children }: { children: ReactNode }) => {
   const [mutationVersion, setMutationVersion] = useState(0);
 
   const notifyWordMutation = () => {

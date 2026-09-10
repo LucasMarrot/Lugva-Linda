@@ -13,7 +13,9 @@ type ContributorNotificationToggleProps = {
 export const ContributorNotificationToggle = ({
   initialWordAssignedEnabled,
 }: ContributorNotificationToggleProps) => {
-  const [wordAssignedEnabled, setWordAssignedEnabled] = useState(initialWordAssignedEnabled);
+  const [wordAssignedEnabled, setWordAssignedEnabled] = useState(
+    initialWordAssignedEnabled,
+  );
   const [, startSaving] = useTransition();
 
   const { isSubscribed, subscribe, isPending, error } = usePushNotifications();

@@ -17,7 +17,9 @@ export const ReviewBatchButton = ({
       <Link href={reviewHref}>
         <span className="text-sm opacity-90">Faire</span>
         <span className="text-lg font-bold">{count}</span>
-        <span className="text-sm opacity-90">{count > 1 ? 'Exercices' : 'Exercice'}</span>
+        <span className="text-sm opacity-90">
+          {count > 1 ? 'Exercices' : 'Exercice'}
+        </span>
       </Link>
     </Button>
   );

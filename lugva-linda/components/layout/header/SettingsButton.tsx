@@ -20,7 +20,10 @@ type SettingsButtonProps = {
   initialWordAssignedEnabled?: boolean;
 };
 
-const SettingsButton = ({ hideProfileEdit, initialWordAssignedEnabled = true }: SettingsButtonProps) => {
+const SettingsButton = ({
+  hideProfileEdit,
+  initialWordAssignedEnabled = true,
+}: SettingsButtonProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const signOutRef = useRef<HTMLFormElement | null>(null);
 
@@ -47,7 +50,9 @@ const SettingsButton = ({ hideProfileEdit, initialWordAssignedEnabled = true }: 
           <Settings
             className={cn(
               'h-5 w-5 transition-colors',
-              isOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+              isOpen
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           />
         </Button>
@@ -72,9 +77,11 @@ const SettingsButton = ({ hideProfileEdit, initialWordAssignedEnabled = true }: 
             <DarkModeToggle />
           </div>
 
-          {isContributor && 
-            <ContributorNotificationToggle initialWordAssignedEnabled={initialWordAssignedEnabled} />
-          }
+          {isContributor && (
+            <ContributorNotificationToggle
+              initialWordAssignedEnabled={initialWordAssignedEnabled}
+            />
+          )}
 
           <div className="flex flex-col space-y-1">
             {!hideProfileEdit && !isContributor && (
