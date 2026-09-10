@@ -1,5 +1,4 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -8,6 +7,7 @@ const TARGET_DIRS = ['actions', 'lib', 'data'];
 const FORBIDDEN_PATTERNS = ['language.userId', 'word.userId'];
 
 const listFiles = (dir: string): string[] => {
+  if (!fs.existsSync(dir)) return [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   const files: string[] = [];
 
@@ -26,17 +26,15 @@ const listFiles = (dir: string): string[] => {
   return files;
 };
 
-test('no backend ownership checks use legacy userId fields', () => {
-  const files = TARGET_DIRS.flatMap((dir) => listFiles(path.join(ROOT, dir)));
+describe('legacy regression checks', () => {
+  it('no backend ownership checks use legacy userId fields', () => {
+    const files = TARGET_DIRS.flatMap((dir) => listFiles(path.join(ROOT, dir)));
 
-  for (const file of files) {
-    const content = fs.readFileSync(file, 'utf8');
-    for (const pattern of FORBIDDEN_PATTERNS) {
-      assert.equal(
-        content.includes(pattern),
-        false,
-        `Forbidden legacy pattern ${pattern} found in ${file}`,
-      );
+    for (const file of files) {
+      const content = fs.readFileSync(file, 'utf8');
+      for (const pattern of FORBIDDEN_PATTERNS) {
+        expect(content.includes(pattern)).toBe(false);
+      }
     }
-  }
+  });
 });
