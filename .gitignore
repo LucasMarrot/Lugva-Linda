@@ -23,7 +23,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
+# package-lock.json doit être versionné — Vercel en a besoin pour des installs déterministes
 yarn.lock
 pnpm-lock.yaml
 .pnpm-store/
