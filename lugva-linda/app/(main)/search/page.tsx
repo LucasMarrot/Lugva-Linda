@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUserProfile } from '@/lib/auth/server';
 import prisma from '@/lib/prisma';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
@@ -20,28 +20,37 @@ const buildCanonicalSearchHref = (query?: string): string => {
 const SearchPage = async (props: SearchPageProps) => {
   const searchParams = await props.searchParams;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const profile = await getCurrentUserProfile();
+  if (!profile) redirect('/auth/login');
 
-  if (!user) redirect('/auth/login');
+  const languages = profile.learningLanguages.map((ll) => ll.language);
+  if (languages.length === 0) redirect('/setup');
 
-  const { languages, activeLanguageId } = await resolveActiveLanguageForUser(
-    { id: user.id, email: user.email },
-    searchParams.lang,
-  );
+  let activeLanguageId: string | null =
+    searchParams.lang && languages.some((l) => l.id === searchParams.lang)
+      ? searchParams.lang
+      : profile.activeLanguageId || languages[0]?.id || null;
+
+  if (!activeLanguageId) {
+    const resolved = await resolveActiveLanguageForUser(
+      { id: profile.id, email: profile.email },
+      searchParams.lang,
+    );
+    activeLanguageId = resolved.activeLanguageId;
+  }
+
+  if (!activeLanguageId) redirect('/setup');
+
+  const validLanguageId = activeLanguageId as string;
 
   const contributors = await prisma.user.findMany({
     where: {
-      targetOwnerId: user.id,
+      targetOwnerId: profile.id,
       role: 'CONTRIBUTOR',
-      activeLanguageId: activeLanguageId,
+      activeLanguageId: validLanguageId,
     },
     select: { id: true, username: true, email: true },
   });
-
-  if (languages.length === 0 || !activeLanguageId) redirect('/setup');
 
   if (searchParams.lang || searchParams.from)
     redirect(buildCanonicalSearchHref(searchParams.query));
@@ -52,11 +61,11 @@ const SearchPage = async (props: SearchPageProps) => {
         id: language.id,
         name: language.name,
       }))}
-      activeLanguageId={activeLanguageId}
+      activeLanguageId={validLanguageId}
     >
       <SearchRoutePage
         initialQuery={searchParams.query ?? ''}
-        currentLangId={activeLanguageId}
+        currentLangId={validLanguageId}
         contributors={contributors.map((c) => ({
           id: c.id,
           name: c.username || c.email.split('@')[0],

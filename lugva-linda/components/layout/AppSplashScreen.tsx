@@ -321,9 +321,22 @@ export function AppSplashScreen({ children }: AppSplashScreenProps) {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-    }, 1550);
+    let hasSeen = false;
+    try {
+      hasSeen = Boolean(sessionStorage.getItem('lugva_splash_seen'));
+      if (!hasSeen) {
+        sessionStorage.setItem('lugva_splash_seen', '1');
+      }
+    } catch {
+      // sessionStorage indisponible (ex: iframe restreinte)
+    }
+
+    const timer = setTimeout(
+      () => {
+        setIsVisible(false);
+      },
+      hasSeen ? 0 : 1550,
+    );
 
     return () => clearTimeout(timer);
   }, []);
@@ -338,8 +351,8 @@ export function AppSplashScreen({ children }: AppSplashScreenProps) {
             exit={{
               opacity: 0,
               scale: 1.02,
-              filter: 'blur(8px)',
-              transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
+              filter: 'blur(6px)',
+              transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] },
             }}
             className="bg-background fixed inset-0 z-[100000] flex flex-col items-center justify-center overflow-hidden select-none"
             aria-label="Chargement de Lugva Linda"

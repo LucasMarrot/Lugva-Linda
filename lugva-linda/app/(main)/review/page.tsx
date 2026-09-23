@@ -3,10 +3,9 @@ import { redirect } from 'next/navigation';
 import { getDueCards } from '@/actions/review-actions';
 import { ReviewSessionContainer } from '@/components/review/ReviewSessionContainer';
 import { SimulationModeBanner } from '@/components/review/SimulationModeBanner';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUserProfile } from '@/lib/auth/server';
 import { ReviewMode, reviewPageSearchSchema } from '@/lib/validation/schemas';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
-import prisma from '@/lib/prisma';
 import { generateMockCards } from '@/lib/mock-data';
 
 export const metadata = {
@@ -35,26 +34,39 @@ const buildReviewHref = (state: ReviewSearchParams) => {
   return query.length > 0 ? `/review?${query}` : '/review';
 };
 
-const resolveLanguageId = async (requestedLanguageId?: string) => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+const resolveLanguageData = async (requestedLanguageId?: string) => {
+  const profile = await getCurrentUserProfile();
+  if (!profile) {
     redirect('/auth/login');
   }
 
-  const { activeLanguageId } = await resolveActiveLanguageForUser(
-    { id: user.id, email: user.email },
-    requestedLanguageId,
-  );
+  const languages = profile.learningLanguages.map((ll) => ll.language);
+  if (languages.length === 0) {
+    redirect('/setup');
+  }
+
+  let activeLanguageId: string | null =
+    requestedLanguageId && languages.some((l) => l.id === requestedLanguageId)
+      ? requestedLanguageId
+      : profile.activeLanguageId || languages[0]?.id || null;
+
+  if (!activeLanguageId) {
+    const resolved = await resolveActiveLanguageForUser(
+      { id: profile.id, email: profile.email },
+      requestedLanguageId,
+    );
+    activeLanguageId = resolved.activeLanguageId;
+  }
 
   if (!activeLanguageId) {
     redirect('/setup');
   }
 
-  return activeLanguageId;
+  const validLanguageId = activeLanguageId as string;
+  const matchedLanguage = languages.find((l) => l.id === validLanguageId);
+  const activeLanguageName = matchedLanguage?.name || 'Langue inconnue';
+
+  return { activeLanguageId: validLanguageId, activeLanguageName };
 };
 
 export default async function ReviewPage({ searchParams }: ReviewPageProps) {
@@ -63,11 +75,8 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
     .catch({})
     .parse(rawSearchParams);
 
-  const languageId = await resolveLanguageId(parsedSearchParams.lang);
-  const language = await prisma.language.findUnique({
-    where: { id: languageId },
-  });
-  const activeLanguageName = language?.name || 'Langue inconnue';
+  const { activeLanguageId: languageId, activeLanguageName } =
+    await resolveLanguageData(parsedSearchParams.lang);
 
   const isDevelopment = process.env.NODE_ENV === 'development';
   const isSimulationEnabled = isDevelopment && parsedSearchParams.sim !== 'off';

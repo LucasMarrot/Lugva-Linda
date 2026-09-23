@@ -2,13 +2,28 @@
 
 import type { FC, ReactNode } from 'react';
 import { createContext, useContext, useReducer } from 'react';
-import { WordDetailModal } from '@/components/shared/';
-import { WordCompleteModal } from '@/components/shared/word-modal/WordCompleteModal';
+import dynamic from 'next/dynamic';
 import { useToast } from '@/components/providers/ToastProvider';
 import { deleteWordAction, getWordByTextAction } from '@/actions/word-actions';
 import { type EditableWordSnapshot } from '@/lib/words/community';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
 import { toWordSnapshot } from '@/hooks/useWordSnapshot';
+
+const WordDetailModal = dynamic(
+  () =>
+    import('@/components/shared/word-modal/WordDetailModal').then(
+      (m) => m.WordDetailModal,
+    ),
+  { ssr: false },
+);
+
+const WordCompleteModal = dynamic(
+  () =>
+    import('@/components/shared/word-modal/WordCompleteModal').then(
+      (m) => m.WordCompleteModal,
+    ),
+  { ssr: false },
+);
 
 type WordModalContextType = {
   openWord: (word: EditableWordSnapshot) => void;
@@ -162,28 +177,32 @@ export const WordModalProvider: FC<{
   return (
     <WordModalContext.Provider value={{ openWord }}>
       {children}
-      <WordDetailModal
-        isOpen={isModalOpen}
-        word={activeWord}
-        onClose={closeWord}
-        isEditing={isEditing}
-        onStartEdit={startEditing}
-        onCancelEdit={cancelEditing}
-        onEditSuccess={handleEditSuccess}
-        onRelatedWordSelect={handleRelatedWordSelect}
-        canEdit={!!activeWord?.isOwnedByCurrentUser}
-        canDelete={!!activeWord?.isOwnedByCurrentUser && !isContributorMode}
-        canAdd={!!activeWord && !activeWord.isOwnedByCurrentUser}
-        onDelete={handleDelete}
-        onAddExternalWord={handleAddExternalWord}
-        isAddingExternalWord={addingWordId === activeWord?.id}
-        isContributorMode={isContributorMode}
-      />
-      <WordCompleteModal
-        isOpen={isCompleting}
-        word={activeWord}
-        onClose={closeWord}
-      />
+      {isModalOpen && activeWord && (
+        <WordDetailModal
+          isOpen={isModalOpen}
+          word={activeWord}
+          onClose={closeWord}
+          isEditing={isEditing}
+          onStartEdit={startEditing}
+          onCancelEdit={cancelEditing}
+          onEditSuccess={handleEditSuccess}
+          onRelatedWordSelect={handleRelatedWordSelect}
+          canEdit={!!activeWord?.isOwnedByCurrentUser}
+          canDelete={!!activeWord?.isOwnedByCurrentUser && !isContributorMode}
+          canAdd={!!activeWord && !activeWord.isOwnedByCurrentUser}
+          onDelete={handleDelete}
+          onAddExternalWord={handleAddExternalWord}
+          isAddingExternalWord={addingWordId === activeWord?.id}
+          isContributorMode={isContributorMode}
+        />
+      )}
+      {isCompleting && activeWord && (
+        <WordCompleteModal
+          isOpen={isCompleting}
+          word={activeWord}
+          onClose={closeWord}
+        />
+      )}
     </WordModalContext.Provider>
   );
 };

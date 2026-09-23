@@ -16,16 +16,19 @@ const toUserRecord = (userOrId: string | UserRecordInput): UserRecordInput =>
   typeof userOrId === 'string' ? { id: userOrId } : userOrId;
 
 export const ensureUserRecord = async (user: UserRecordInput) => {
-  await prisma.user.upsert({
+  const existing = await prisma.user.findUnique({
     where: { id: user.id },
-    update: {
-      ...(user.email ? { email: user.email } : {}),
-    },
-    create: {
-      id: user.id,
-      email: user.email ?? `user-${user.id}@example.invalid`,
-    },
+    select: { id: true },
   });
+
+  if (!existing) {
+    await prisma.user.create({
+      data: {
+        id: user.id,
+        email: user.email ?? `user-${user.id}@example.invalid`,
+      },
+    });
+  }
 };
 
 export const syncGlobalLanguagesForUser = async (user: UserRecordInput) => {
@@ -163,20 +166,43 @@ export const resolveActiveLanguageForUser = async (
 ): Promise<ResolveActiveLanguageResult> => {
   const user = toUserRecord(userOrId);
 
-  await syncGlobalLanguagesForUser(user);
-
-  const links = await prisma.userLanguage.findMany({
-    where: { userId: user.id },
-    include: { language: true },
-    orderBy: [{ language: { createdAt: 'asc' } }, { createdAt: 'asc' }],
+  // Requête unique pour récupérer les langues liées et la langue active
+  let userRecord = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      activeLanguageId: true,
+      learningLanguages: {
+        include: { language: true },
+        orderBy: [{ language: { createdAt: 'asc' } }, { createdAt: 'asc' }],
+      },
+    },
   });
 
-  const languages = links.map((link) => link.language);
-  if (languages.length === 0) {
-    await prisma.user.update({
+  // Si l'utilisateur n'existe pas ou n'a aucune langue liée, synchronisation globale complète
+  if (!userRecord || userRecord.learningLanguages.length === 0) {
+    await syncGlobalLanguagesForUser(user);
+    userRecord = await prisma.user.findUnique({
       where: { id: user.id },
-      data: { activeLanguageId: null },
+      select: {
+        activeLanguageId: true,
+        learningLanguages: {
+          include: { language: true },
+          orderBy: [{ language: { createdAt: 'asc' } }, { createdAt: 'asc' }],
+        },
+      },
     });
+  }
+
+  const links = userRecord?.learningLanguages ?? [];
+  const languages = links.map((link) => link.language);
+
+  if (languages.length === 0) {
+    if (userRecord?.activeLanguageId) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { activeLanguageId: null },
+      });
+    }
 
     return {
       languages,
@@ -189,11 +215,6 @@ export const resolveActiveLanguageForUser = async (
 
   let activeLanguageId =
     requested.length > 0 && languageIds.has(requested) ? requested : null;
-
-  const userRecord = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { activeLanguageId: true },
-  });
 
   if (!activeLanguageId && userRecord?.activeLanguageId) {
     if (languageIds.has(userRecord.activeLanguageId)) {

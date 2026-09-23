@@ -12,7 +12,7 @@ import {
 } from '@/lib/services/language-service';
 import { cache } from 'react';
 
-export const requireAuthenticatedUser = async () => {
+export const getSupabaseUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -20,6 +20,16 @@ export const requireAuthenticatedUser = async () => {
   } = await supabase.auth.getUser();
 
   if (error || !user) {
+    return null;
+  }
+
+  return user;
+});
+
+export const requireAuthenticatedUser = async () => {
+  const user = await getSupabaseUser();
+
+  if (!user) {
     throw new UnauthorizedError();
   }
 
@@ -62,22 +72,13 @@ export const verifyWordOwnership = async (wordId: string, userId: string) => {
 };
 
 export const getCurrentUserProfile = cache(async () => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const user = await getSupabaseUser();
 
-  if (error || !user) return null;
+  if (!user) return null;
 
   try {
-    const profile = await prisma.user.upsert({
+    let profile = await prisma.user.findUnique({
       where: { id: user.id },
-      update: {},
-      create: {
-        id: user.id,
-        email: user.email ?? `user-${user.id}@example.invalid`,
-      },
       select: {
         id: true,
         email: true,
@@ -95,6 +96,30 @@ export const getCurrentUserProfile = cache(async () => {
       },
     });
 
+    if (!profile) {
+      profile = await prisma.user.create({
+        data: {
+          id: user.id,
+          email: user.email ?? `user-${user.id}@example.invalid`,
+        },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          colorHex: true,
+          activeLanguageId: true,
+          role: true,
+          targetOwnerId: true,
+          lastContributorVisitAt: true,
+          learningLanguages: {
+            include: {
+              language: true,
+            },
+          },
+        },
+      });
+    }
+
     return profile;
   } catch (dbError) {
     if (isDatabaseUnavailableError(dbError)) {
@@ -108,7 +133,7 @@ export const getCurrentUserProfile = cache(async () => {
         colorHex: '#3B82F6',
         activeLanguageId: null,
         learningLanguages: [],
-        role: 'USER',
+        role: 'USER' as const,
         targetOwnerId: null,
         lastContributorVisitAt: null,
       };

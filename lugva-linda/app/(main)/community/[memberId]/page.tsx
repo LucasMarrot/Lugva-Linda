@@ -3,7 +3,7 @@ import { Header } from '@/components/layout/header/Header';
 import { BottomNav } from '@/components/layout/bottom-nav/BottomNav';
 import { ActiveLanguageProvider } from '@/components/providers/ActiveLanguageProvider';
 import { EncyclopediaClient } from '@/components/encyclopedia/EncyclopediaClient';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUserProfile } from '@/lib/auth/server';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 import { listMemberWordsInLanguage } from '@/lib/services/word-service';
 import prisma from '@/lib/prisma';
@@ -19,27 +19,34 @@ export default async function MemberPage(props: MemberPageProps) {
   const params = await props.params;
   const searchParams = await props.searchParams;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const profile = await getCurrentUserProfile();
+  if (!profile) {
     redirect('/auth/login');
   }
 
-  const { languages, activeLanguageId } = await resolveActiveLanguageForUser(
-    { id: user.id, email: user.email },
-    searchParams.lang,
-  );
-
-  if (languages.length === 0 || !activeLanguageId) {
+  const languages = profile.learningLanguages.map((ll) => ll.language);
+  if (languages.length === 0) {
     redirect('/setup');
   }
 
-  if (searchParams.lang !== activeLanguageId) {
-    redirect(`/community/${params.memberId}?lang=${activeLanguageId}`);
+  let activeLanguageId: string | null =
+    searchParams.lang && languages.some((l) => l.id === searchParams.lang)
+      ? searchParams.lang
+      : profile.activeLanguageId || languages[0]?.id || null;
+
+  if (!activeLanguageId) {
+    const resolved = await resolveActiveLanguageForUser(
+      { id: profile.id, email: profile.email },
+      searchParams.lang,
+    );
+    activeLanguageId = resolved.activeLanguageId;
   }
+
+  if (!activeLanguageId) {
+    redirect('/setup');
+  }
+
+  const validLanguageId = activeLanguageId as string;
 
   const member = await prisma.user.findUnique({
     where: { id: params.memberId },
@@ -55,9 +62,9 @@ export default async function MemberPage(props: MemberPageProps) {
   }
 
   const words = await listMemberWordsInLanguage(
-    user.id,
+    profile.id,
     member.id,
-    activeLanguageId,
+    validLanguageId,
   );
 
   return (
@@ -66,7 +73,7 @@ export default async function MemberPage(props: MemberPageProps) {
         id: language.id,
         name: language.name,
       }))}
-      activeLanguageId={activeLanguageId}
+      activeLanguageId={validLanguageId}
     >
       <div className="bg-background min-h-dvh">
         <Header />

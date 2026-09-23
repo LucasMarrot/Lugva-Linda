@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUserProfile } from '@/lib/auth/server';
 import { resolveActiveLanguageForUser } from '@/lib/services/language-service';
 import prisma from '@/lib/prisma';
 import { Header } from '@/components/layout/header/Header';
@@ -16,45 +16,36 @@ export default async function SettingsPage(props: SettingsPageProps) {
   const searchParams = await props.searchParams;
   const lang = searchParams.lang;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const profile = await getCurrentUserProfile();
+  if (!profile) redirect('/auth/login');
 
-  if (!user) redirect('/auth/login');
-
-  const { languages, activeLanguageId } = await resolveActiveLanguageForUser(
-    { id: user.id, email: user.email },
-    lang,
-  );
-
-  if (languages.length === 0 || !activeLanguageId) {
+  const languages = profile.learningLanguages.map((ll) => ll.language);
+  if (languages.length === 0) {
     redirect('/setup');
   }
 
-  if (lang !== activeLanguageId) {
-    redirect(`/settings?lang=${activeLanguageId}`);
+  let activeLanguageId: string | null =
+    lang && languages.some((l) => l.id === lang)
+      ? lang
+      : profile.activeLanguageId || languages[0]?.id || null;
+
+  if (!activeLanguageId) {
+    const resolved = await resolveActiveLanguageForUser(
+      { id: profile.id, email: profile.email },
+      lang,
+    );
+    activeLanguageId = resolved.activeLanguageId;
   }
 
-  const [profile, notifPreference] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        colorHex: true,
-        role: true,
-      },
-    }),
-    prisma.notificationPreference.findUnique({
-      where: { userId: user.id },
-    }),
-  ]);
-
-  if (!profile) {
-    redirect('/auth/login');
+  if (!activeLanguageId) {
+    redirect('/setup');
   }
+
+  const validLanguageId = activeLanguageId as string;
+
+  const notifPreference = await prisma.notificationPreference.findUnique({
+    where: { userId: profile.id },
+  });
 
   const notifPrefs = notifPreference
     ? {
@@ -71,14 +62,20 @@ export default async function SettingsPage(props: SettingsPageProps) {
         id: language.id,
         name: language.name,
       }))}
-      activeLanguageId={activeLanguageId}
+      activeLanguageId={validLanguageId}
     >
       <div className="bg-background min-h-dvh pb-[calc(var(--bottom-nav-height)+1rem)]">
         <Header />
 
         <main className="space-y-6 px-4 pt-4 pb-6">
           <SettingsClient
-            profile={profile}
+            profile={{
+              id: profile.id,
+              email: profile.email,
+              username: profile.username,
+              colorHex: profile.colorHex,
+              role: profile.role,
+            }}
             languages={languages.map((l) => ({ id: l.id, name: l.name }))}
             notifPrefs={notifPrefs}
           />

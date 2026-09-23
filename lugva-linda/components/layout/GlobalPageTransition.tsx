@@ -16,6 +16,7 @@ export function GlobalPageTransition({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isLongLoad, setIsLongLoad] = useState(false);
   const longLoadTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const leaveCompletionPromiseRef = useRef<Promise<void> | null>(null);
 
   return (
     <TransitionRouter
@@ -26,51 +27,113 @@ export function GlobalPageTransition({
           return;
         }
 
+        const prefersReducedMotion =
+          typeof window !== 'undefined' &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (prefersReducedMotion) {
+          next();
+          return;
+        }
+
+        let resolveLeaveCompletion: () => void = () => {};
+        leaveCompletionPromiseRef.current = new Promise<void>((resolve) => {
+          resolveLeaveCompletion = resolve;
+        });
+
         setIsTransitioning(true);
 
+        if (longLoadTimerRef.current) clearTimeout(longLoadTimerRef.current);
         longLoadTimerRef.current = setTimeout(() => {
           setIsLongLoad(true);
         }, 500);
 
-        await animate(
-          '#transition-path',
-          { pathLength: 0, pathOffset: 0, strokeWidth: 5, opacity: 1 },
-          { duration: 0 },
-        );
-        await animate(
-          '#transition-content',
-          { opacity: 0, y: 20 },
-          { duration: 0 },
-        );
+        // Réinitialisation instantanée des éléments
+        await Promise.all([
+          animate(
+            '#transition-curtain',
+            { y: '0%', opacity: 1 },
+            { duration: 0 },
+          ),
+          animate(
+            '#transition-path',
+            { pathLength: 0, pathOffset: 0, strokeWidth: 5, opacity: 1 },
+            { duration: 0 },
+          ),
+          animate(
+            '#transition-content',
+            { opacity: 0, scale: 0.94, y: 16 },
+            { duration: 0 },
+          ),
+        ]);
 
         await new Promise((resolve) => setTimeout(resolve, 20));
 
+        // 1. Traçage de l'éclair signature à travers l'écran
         await animate(
           '#transition-path',
           { pathLength: 1 },
-          { duration: 0.3, ease: [0.7, 0, 0.3, 1] },
+          { duration: 0.3, ease: [0.65, 0, 0.35, 1] },
         );
-        await animate(
-          '#transition-path',
-          { strokeWidth: 300 },
-          { duration: 0.4, ease: [0.7, 0, 0.3, 1] },
-        );
-        animate('#transition-content', { opacity: 1, y: 0 }, { duration: 0.3 });
 
+        // 2. Déclenchement du chargement Next.js en arrière-plan pendant l'inondation de l'écran
         next();
+
+        // 3. Expansion de l'éclair en canevas plein écran et apparition du logo
+        await Promise.all([
+          animate(
+            '#transition-path',
+            { strokeWidth: 350 },
+            { duration: 0.38, ease: [0.65, 0, 0.35, 1] },
+          ),
+          animate(
+            '#transition-content',
+            { opacity: 1, scale: 1, y: 0 },
+            { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+          ),
+        ]);
+
+        // L'écran est désormais 100% opaque avec le logo centré
+        resolveLeaveCompletion();
       }}
       enter={async (next) => {
         if (longLoadTimerRef.current) clearTimeout(longLoadTimerRef.current);
 
+        const prefersReducedMotion =
+          typeof window !== 'undefined' &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (prefersReducedMotion) {
+          setIsTransitioning(false);
+          setIsLongLoad(false);
+          next();
+          return;
+        }
+
+        // 1. Attendre impérativement que leave ait fini de couvrir l'écran (évite tout saut ou flash prématuré)
+        if (leaveCompletionPromiseRef.current) {
+          await leaveCompletionPromiseRef.current;
+        }
+
+        // 2. Disparition élégante du logo vers le haut
         await animate(
           '#transition-content',
-          { opacity: 0, y: -20 },
-          { duration: 0.2 },
+          { opacity: 0, scale: 0.94, y: -16 },
+          { duration: 0.22, ease: [0.32, 0.72, 0, 1] },
         );
+
+        // 3. Révélation fluide et travaillée de la nouvelle page via balayage ascendant et biseauté
         await animate(
-          '#transition-path',
-          { pathOffset: 1 },
-          { duration: 0.5, ease: [0.7, 0, 0.3, 1] },
+          '#transition-curtain',
+          {
+            y: '-110%',
+            opacity: [1, 1, 0.95, 0],
+          },
+          {
+            duration: 0.48,
+            times: [0, 0.65, 0.9, 1],
+            ease: [0.76, 0, 0.24, 1],
+          },
         );
 
         setIsTransitioning(false);
@@ -89,25 +152,36 @@ export function GlobalPageTransition({
             : 'pointer-events-none invisible',
         )}
       >
-        <svg
-          className="pointer-events-none absolute inset-0 h-full w-full"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
+        <div
+          id="transition-curtain"
+          className="absolute inset-x-0 top-0 h-[calc(100%+40px)] overflow-hidden"
+          style={{
+            clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 40px), 0 100%)',
+            willChange: 'transform, opacity',
+          }}
         >
-          <motion.path
-            id="transition-path"
-            initial={{
-              pathLength: 0,
-              pathOffset: 0,
-              strokeWidth: 5,
-              opacity: 1,
-            }}
-            d="M 0 100 L 60 50 L 40 50 L 100 0"
-            fill="none"
-            className="stroke-primary"
-            strokeWidth="0"
-          />
-        </svg>
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <motion.path
+              id="transition-path"
+              initial={{
+                pathLength: 0,
+                pathOffset: 0,
+                strokeWidth: 5,
+                opacity: 1,
+              }}
+              d="M 0 100 L 60 50 L 40 50 L 100 0"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="stroke-primary"
+              strokeWidth="0"
+            />
+          </svg>
+        </div>
 
         <motion.div
           id="transition-content"

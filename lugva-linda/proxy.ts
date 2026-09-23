@@ -60,9 +60,9 @@ export const config = {
      * - _next/static (fichiers statiques)
      * - _next/image (images optimisées)
      * - favicon.ico (icône)
-     * - les fichiers dans public/ (images, robots.txt, etc.)
+     * - les fichiers dans public/ (images, fonts, audios, manifest, etc.)
      * - api/cron/* (routes Cron internes, protégées par CRON_SECRET)
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/cron/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|api/cron/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|woff|woff2|ttf|mp3|wav|m4a|webm)$).*)',
   ],
 };
