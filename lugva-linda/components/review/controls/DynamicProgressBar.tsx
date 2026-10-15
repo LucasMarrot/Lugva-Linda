@@ -5,23 +5,29 @@ import { cn } from '@/lib/utils';
 
 interface DynamicProgressBarProps {
   initialCount: number;
-  currentIndex: number;
   lapsesCount: number;
+  activeSegmentIndex: number;
+  isLapsePhase?: boolean;
 }
 
 export const DynamicProgressBar = ({
   initialCount,
-  currentIndex,
   lapsesCount,
+  activeSegmentIndex,
+  isLapsePhase = false,
 }: DynamicProgressBarProps) => {
   const totalSegments = initialCount + lapsesCount;
-  const isLapseZone = currentIndex > initialCount;
 
-  const segments = Array.from({ length: totalSegments }).map((_, i) => {
-    if (i < currentIndex) return 'done';
-    if (i < initialCount) return 'normal-pending';
-    return 'lapse-pending';
-  });
+  type SegmentState = 'done' | 'active' | 'normal-pending' | 'lapse-pending';
+
+  const segments: SegmentState[] = Array.from({ length: totalSegments }).map(
+    (_, i) => {
+      if (i === activeSegmentIndex) return 'active';
+      if (i < activeSegmentIndex) return 'done';
+      if (i < initialCount) return 'normal-pending';
+      return 'lapse-pending';
+    },
+  );
 
   return (
     <div className="flex w-full flex-col gap-2 px-4">
@@ -29,18 +35,24 @@ export const DynamicProgressBar = ({
         <span
           className={cn(
             'transition-colors duration-300',
-            isLapseZone ? 'text-destructive' : 'text-primary',
+            isLapsePhase ? 'text-destructive' : 'text-primary',
           )}
         >
-          {currentIndex} / {totalSegments} mots
+          {activeSegmentIndex + 1} / {totalSegments} mots
         </span>
+        {isLapsePhase && (
+          <span className="text-destructive text-xs font-semibold tracking-wide uppercase">
+            Consolidation
+          </span>
+        )}
       </div>
 
       <div className="flex h-2.5 w-full gap-1">
         {segments.map((state, index) => (
           <AnimatedSegment
             key={index}
-            state={state as 'done' | 'normal-pending' | 'lapse-pending'}
+            state={state}
+            isLapsePhase={isLapsePhase}
           />
         ))}
       </div>

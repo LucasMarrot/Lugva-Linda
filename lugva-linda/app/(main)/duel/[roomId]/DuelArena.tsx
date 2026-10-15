@@ -86,8 +86,8 @@ export const DuelArena = ({
         <div className="mb-2 flex shrink-0 flex-col gap-3 py-4">
           <DynamicProgressBar
             initialCount={deck.length}
-            currentIndex={state.currentWordIndex + 1}
             lapsesCount={0}
+            activeSegmentIndex={state.currentWordIndex}
           />
 
           <DuelScoreBoard

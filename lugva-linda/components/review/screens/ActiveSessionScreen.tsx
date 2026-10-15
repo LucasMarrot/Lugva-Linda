@@ -29,8 +29,14 @@ export const ActiveSessionScreen = ({
   languageName = 'ERREUR',
   isSimulationMode = false,
 }: ActiveSessionScreenProps) => {
-  const { currentCard, progress, cardState, showLapseTransition, actions } =
-    useReviewSession(initialCards, onComplete, isSimulationMode);
+  const {
+    currentCard,
+    phase,
+    progress,
+    cardState,
+    showLapseTransition,
+    actions,
+  } = useReviewSession(initialCards, onComplete, isSimulationMode);
 
   if (!currentCard) return null;
 
@@ -45,6 +51,7 @@ export const ActiveSessionScreen = ({
   }
 
   const { label, instruction, icon } = getExerciseConfig(currentCard.type);
+  const isLapsePhase = phase === 'lapses';
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-4rem)] w-full max-w-2xl flex-col overflow-hidden p-4">
@@ -52,8 +59,9 @@ export const ActiveSessionScreen = ({
       <div className="mb-2 flex shrink-0 flex-col gap-3 py-4">
         <DynamicProgressBar
           initialCount={progress.initialCount}
-          currentIndex={progress.currentIndex + 1}
           lapsesCount={progress.lapsesCount}
+          activeSegmentIndex={progress.activeSegmentIndex}
+          isLapsePhase={isLapsePhase}
         />
         <div className="flex flex-col items-center justify-center gap-2 px-4">
           <div className="bg-background flex flex-row items-center justify-between gap-3 p-2">

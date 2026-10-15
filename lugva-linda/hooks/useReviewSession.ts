@@ -4,6 +4,15 @@ import { Rating } from 'ts-fsrs';
 import { processReview } from '@/actions/review-actions';
 import { ReviewCard } from '@/lib/validation/schemas';
 
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export type SessionStats = {
   easy: number;
   good: number;
@@ -19,6 +28,12 @@ export type CardState = {
 
 type ValidGrade = Exclude<Rating, Rating.Manual>;
 
+const INITIAL_CARD_STATE: CardState = {
+  isFlipped: false,
+  hasBeenRevealed: false,
+  isSubmitting: false,
+};
+
 export const useReviewSession = (
   initialCards: ReviewCard[],
   onComplete: (stats: SessionStats) => void,
@@ -26,19 +41,25 @@ export const useReviewSession = (
 ) => {
   const router = useRouter();
 
-  const [queue] = useState<ReviewCard[]>(initialCards || []);
-  const [lapses, setLapses] = useState<ReviewCard[]>([]);
+  // La queue initiale est mélangée une seule fois au montage
+  const [queue] = useState<ReviewCard[]>(() =>
+    shuffleArray(initialCards || []),
+  );
+
+  /**
+   * pendingLapses : file des mots à consolider.
+   * - En phase normale, les mots notés "Again" y sont ajoutés.
+   * - En phase lapses, le mot est retiré si validé (tout grade ≠ Again),
+   *   ou remis à la fin si noté "Again" à nouveau.
+   * Quand cette file est vide et que la phase normale est terminée → onComplete.
+   */
+  const [pendingLapses, setPendingLapses] = useState<ReviewCard[]>([]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [phase, setPhase] = useState<'normal' | 'lapses'>('normal');
   const [showLapseTransition, setShowLapseTransition] = useState(false);
 
-  const [cardState, setCardState] = useState<CardState>({
-    isFlipped: false,
-    hasBeenRevealed: false,
-    isSubmitting: false,
-  });
-
+  const [cardState, setCardState] = useState<CardState>(INITIAL_CARD_STATE);
   const [stats, setStats] = useState<SessionStats>({
     easy: 0,
     good: 0,
@@ -48,7 +69,7 @@ export const useReviewSession = (
   const [startTime, setStartTime] = useState<number>(() => Date.now());
 
   const currentCard =
-    phase === 'normal' ? queue[currentIndex] : lapses[currentIndex];
+    phase === 'normal' ? queue[currentIndex] : pendingLapses[0];
 
   const handleFlip = useCallback(() => {
     setCardState((prev) => {
@@ -57,13 +78,17 @@ export const useReviewSession = (
           setCardState((current) => ({ ...current, hasBeenRevealed: true }));
         }, 150);
       }
-
       return { ...prev, isFlipped: !prev.isFlipped };
     });
   }, []);
 
   const dismissTransition = useCallback(() => {
     setShowLapseTransition(false);
+    setStartTime(Date.now());
+  }, []);
+
+  const resetCard = useCallback(() => {
+    setCardState(INITIAL_CARD_STATE);
     setStartTime(Date.now());
   }, []);
 
@@ -81,57 +106,60 @@ export const useReviewSession = (
           await new Promise((resolve) => setTimeout(resolve, 300));
         }
 
+        // Mise à jour des stats
         const nextStats = { ...stats };
         if (grade === Rating.Again) nextStats.again += 1;
         if (grade === Rating.Hard) nextStats.hard += 1;
         if (grade === Rating.Good) nextStats.good += 1;
         if (grade === Rating.Easy) nextStats.easy += 1;
-
         setStats(nextStats);
 
-        const nextLapsesCount =
-          lapses.length + (grade === Rating.Again ? 1 : 0);
-        let nextLapses = lapses;
-
-        if (grade === Rating.Again && phase === 'normal') {
-          nextLapses = [...lapses, currentCard];
-          setLapses(nextLapses);
-        }
-
         if (phase === 'normal') {
-          if (currentIndex + 1 < queue.length) {
+          // Phase normale — gestion des lapses
+          let nextLapses = pendingLapses;
+          if (grade === Rating.Again) {
+            // Ajouter ce mot en file de consolidation
+            nextLapses = [...pendingLapses, currentCard];
+            setPendingLapses(nextLapses);
+          }
+
+          const hasMoreNormalCards = currentIndex + 1 < queue.length;
+
+          if (hasMoreNormalCards) {
+            // Passer à la carte normale suivante
             setCurrentIndex((prev) => prev + 1);
-            setCardState({
-              isFlipped: false,
-              hasBeenRevealed: false,
-              isSubmitting: false,
-            });
-            setStartTime(Date.now());
-          } else if (nextLapsesCount > 0) {
+            resetCard();
+          } else if (nextLapses.length > 0) {
+            // Phase normale terminée, lancer la consolidation
             setPhase('lapses');
-            setCurrentIndex(0);
             setShowLapseTransition(true);
-            setCardState({
-              isFlipped: false,
-              hasBeenRevealed: false,
-              isSubmitting: false,
-            });
+            resetCard();
           } else {
+            // Tout validé, aucun lapse
             if (!isSimulationMode) router.refresh();
             onComplete(nextStats);
           }
         } else {
-          if (currentIndex + 1 < nextLapsesCount) {
-            setCurrentIndex((prev) => prev + 1);
-            setCardState({
-              isFlipped: false,
-              hasBeenRevealed: false,
-              isSubmitting: false,
-            });
-            setStartTime(Date.now());
+          // Phase lapses
+          // La carte en tête de file est toujours pendingLapses[0]
+          if (grade === Rating.Again) {
+            // Mot non maîtrisé : retirer de la tête, remettre en queue
+            const [head, ...rest] = pendingLapses;
+            setPendingLapses([...rest, head]);
+            resetCard();
           } else {
-            if (!isSimulationMode) router.refresh();
-            onComplete(nextStats);
+            // Mot maîtrisé : le retirer définitivement de la file
+            const [, ...rest] = pendingLapses;
+            setPendingLapses(rest);
+
+            if (rest.length === 0) {
+              // Tous les lapses sont consolidés → fin de session
+              if (!isSimulationMode) router.refresh();
+              onComplete(nextStats);
+            } else {
+              // Il reste des lapses à consolider
+              resetCard();
+            }
           }
         }
       } catch (error) {
@@ -146,11 +174,12 @@ export const useReviewSession = (
       phase,
       currentIndex,
       queue.length,
-      lapses,
+      pendingLapses,
       stats,
       startTime,
       router,
       onComplete,
+      resetCard,
     ],
   );
 
@@ -158,57 +187,51 @@ export const useReviewSession = (
     if (phase === 'normal') {
       if (currentIndex + 1 < queue.length) {
         setCurrentIndex((prev) => prev + 1);
-        setCardState({
-          isFlipped: false,
-          hasBeenRevealed: false,
-          isSubmitting: false,
-        });
-        setStartTime(Date.now());
-      } else if (lapses.length > 0) {
+        resetCard();
+      } else if (pendingLapses.length > 0) {
         setPhase('lapses');
-        setCurrentIndex(0);
         setShowLapseTransition(true);
-        setCardState({
-          isFlipped: false,
-          hasBeenRevealed: false,
-          isSubmitting: false,
-        });
+        resetCard();
       } else {
         if (!isSimulationMode) router.refresh();
         onComplete(stats);
       }
     } else {
-      if (currentIndex + 1 < lapses.length) {
-        setCurrentIndex((prev) => prev + 1);
-        setCardState({
-          isFlipped: false,
-          hasBeenRevealed: false,
-          isSubmitting: false,
-        });
-        setStartTime(Date.now());
-      } else {
+      // En phase lapses, "Suivant" sans notation retire le mot (traité comme validé)
+      const [, ...rest] = pendingLapses;
+      setPendingLapses(rest);
+      if (rest.length === 0) {
         if (!isSimulationMode) router.refresh();
         onComplete(stats);
+      } else {
+        resetCard();
       }
     }
   }, [
     phase,
     currentIndex,
     queue.length,
-    lapses.length,
+    pendingLapses,
     isSimulationMode,
     router,
     onComplete,
     stats,
+    resetCard,
   ]);
+
+  // Calcul de la progression pour la barre d'avancement
+  // En phase normale : le segment actif est la carte en cours (currentIndex)
+  // En phase lapses : tous les segments normaux sont "done",
+  //   le premier lapse en attente est le segment actif (queue.length)
+  const activeSegmentIndex = phase === 'normal' ? currentIndex : queue.length;
 
   return {
     currentCard,
+    phase,
     progress: {
       initialCount: queue.length,
-      currentIndex:
-        phase === 'normal' ? currentIndex : queue.length + currentIndex,
-      lapsesCount: lapses.length,
+      lapsesCount: pendingLapses.length,
+      activeSegmentIndex,
     },
     cardState,
     showLapseTransition,

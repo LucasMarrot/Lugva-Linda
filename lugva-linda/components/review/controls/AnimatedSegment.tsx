@@ -3,11 +3,17 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
+type SegmentState = 'done' | 'active' | 'normal-pending' | 'lapse-pending';
+
 interface AnimatedSegmentProps {
-  state: 'done' | 'normal-pending' | 'lapse-pending';
+  state: SegmentState;
+  isLapsePhase?: boolean;
 }
 
-export const AnimatedSegment = ({ state }: AnimatedSegmentProps) => {
+export const AnimatedSegment = ({
+  state,
+  isLapsePhase = false,
+}: AnimatedSegmentProps) => {
   return (
     <motion.div
       layout
@@ -16,12 +22,30 @@ export const AnimatedSegment = ({ state }: AnimatedSegmentProps) => {
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className={cn(
         'h-2.5 flex-1 rounded-full transition-colors duration-300',
-        state === 'done' && 'bg-primary',
+        // Segments terminés
+        state === 'done' && !isLapsePhase && 'bg-primary',
+        state === 'done' && isLapsePhase && 'bg-destructive/60',
+        // Segment actif (mot en cours) — rempli à moitié, sans animation
+        state === 'active' && !isLapsePhase && 'bg-primary/20 overflow-hidden',
+        state === 'active' &&
+          isLapsePhase &&
+          'bg-destructive/20 overflow-hidden',
+        // Segments en attente
         state === 'normal-pending' &&
           'border-primary/30 border-[1.5px] bg-transparent',
         state === 'lapse-pending' &&
-          'border-destructive border-[1.5px] bg-transparent',
+          'border-destructive/50 border-[1.5px] bg-transparent',
       )}
-    />
+    >
+      {state === 'active' && (
+        <div
+          className={cn(
+            'h-full w-1/2 rounded-full',
+            !isLapsePhase && 'bg-primary',
+            isLapsePhase && 'bg-destructive',
+          )}
+        />
+      )}
+    </motion.div>
   );
 };
