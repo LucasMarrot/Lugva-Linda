@@ -58,6 +58,10 @@ export const useReviewSession = (
   const [currentIndex, setCurrentIndex] = useState(0);
   const [phase, setPhase] = useState<'normal' | 'lapses'>('normal');
   const [showLapseTransition, setShowLapseTransition] = useState(false);
+  // Nombre de lapses définitivement validés (pour l'index de la barre)
+  const [validatedLapsesCount, setValidatedLapsesCount] = useState(0);
+  // Nombre total de lapses créés (pour garder lapsesCount stable)
+  const [totalLapsesCreated, setTotalLapsesCreated] = useState(0);
 
   const [cardState, setCardState] = useState<CardState>(INITIAL_CARD_STATE);
   const [stats, setStats] = useState<SessionStats>({
@@ -121,6 +125,7 @@ export const useReviewSession = (
             // Ajouter ce mot en file de consolidation
             nextLapses = [...pendingLapses, currentCard];
             setPendingLapses(nextLapses);
+            setTotalLapsesCreated((prev) => prev + 1);
           }
 
           const hasMoreNormalCards = currentIndex + 1 < queue.length;
@@ -140,17 +145,17 @@ export const useReviewSession = (
             onComplete(nextStats);
           }
         } else {
-          // Phase lapses
-          // La carte en tête de file est toujours pendingLapses[0]
+          // Phase lapses — pendingLapses[0] est toujours le mot en cours
           if (grade === Rating.Again) {
-            // Mot non maîtrisé : retirer de la tête, remettre en queue
+            // Mot non maîtrisé : remettre en queue, rester sur le même segment
             const [head, ...rest] = pendingLapses;
             setPendingLapses([...rest, head]);
             resetCard();
           } else {
-            // Mot maîtrisé : le retirer définitivement de la file
+            // Mot maîtrisé : le retirer et avancer le segment actif
             const [, ...rest] = pendingLapses;
             setPendingLapses(rest);
+            setValidatedLapsesCount((prev) => prev + 1);
 
             if (rest.length === 0) {
               // Tous les lapses sont consolidés → fin de session
@@ -222,15 +227,17 @@ export const useReviewSession = (
   // Calcul de la progression pour la barre d'avancement
   // En phase normale : le segment actif est la carte en cours (currentIndex)
   // En phase lapses : tous les segments normaux sont "done",
-  //   le premier lapse en attente est le segment actif (queue.length)
-  const activeSegmentIndex = phase === 'normal' ? currentIndex : queue.length;
+  //   activeSegmentIndex = queue.length + validatedLapsesCount
+  //   (le mot reste sur le même segment tant qu'il est noté "Again")
+  const activeSegmentIndex =
+    phase === 'normal' ? currentIndex : queue.length + validatedLapsesCount;
 
   return {
     currentCard,
     phase,
     progress: {
       initialCount: queue.length,
-      lapsesCount: pendingLapses.length,
+      lapsesCount: totalLapsesCreated,
       activeSegmentIndex,
     },
     cardState,

@@ -18,12 +18,18 @@ export const DynamicProgressBar = ({
 }: DynamicProgressBarProps) => {
   const totalSegments = initialCount + lapsesCount;
 
-  type SegmentState = 'done' | 'active' | 'normal-pending' | 'lapse-pending';
+  type SegmentState =
+    | 'normal-done'
+    | 'lapse-done'
+    | 'active'
+    | 'normal-pending'
+    | 'lapse-pending';
 
   const segments: SegmentState[] = Array.from({ length: totalSegments }).map(
     (_, i) => {
       if (i === activeSegmentIndex) return 'active';
-      if (i < activeSegmentIndex) return 'done';
+      if (i < activeSegmentIndex)
+        return i < initialCount ? 'normal-done' : 'lapse-done';
       if (i < initialCount) return 'normal-pending';
       return 'lapse-pending';
     },
