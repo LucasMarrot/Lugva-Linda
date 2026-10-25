@@ -1,7 +1,7 @@
 'use client';
 
 import type { FC } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Word, WordStatus } from '@prisma/client';
 import { useWordModal } from '../providers/WordModalProvider';
 import { AlphabetNav } from './AlphabetNav';
@@ -10,6 +10,7 @@ import { StateMessage } from '@/components/shared/';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
 import { EncyclopediaItem } from './EncyclopediaItem';
 import { frenchPluralize } from '@/lib/utils';
+import { toWordSnapshot } from '@/hooks/useWordSnapshot';
 
 export type VisualWord = Word & {
   visualId: string;
@@ -35,7 +36,7 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
   emptyMessage = 'Votre encyclopedie est vide.',
   isContributorMode = false,
 }: EncyclopediaClientProps) => {
-  const { openWord } = useWordModal();
+  const { openWord, setNavigationList } = useWordModal();
   const { addingWordId, importWord } = useCommunityImport();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
@@ -117,6 +118,14 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
 
     return result;
   }, [visualWords, selectedTags, statusFilter]);
+
+  // Alimenter le provider de navigation à chaque changement de liste filtrée
+  useEffect(() => {
+    const snapshots = filteredWords.map((vw) =>
+      toWordSnapshot(vw.originalWord, mode),
+    );
+    setNavigationList(snapshots);
+  }, [filteredWords, mode, setNavigationList]);
 
   const groupedWords = useMemo(() => {
     return filteredWords.reduce(

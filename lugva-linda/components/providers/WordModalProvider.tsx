@@ -1,7 +1,13 @@
 'use client';
 
 import type { FC, ReactNode } from 'react';
-import { createContext, useContext, useReducer } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useReducer,
+  useState,
+} from 'react';
 import dynamic from 'next/dynamic';
 import { useToast } from '@/components/providers/ToastProvider';
 import { deleteWordAction, getWordByTextAction } from '@/actions/word-actions';
@@ -27,6 +33,8 @@ const WordCompleteModal = dynamic(
 
 type WordModalContextType = {
   openWord: (word: EditableWordSnapshot) => void;
+  /** Enregistre la liste de navigation courante (filtrée + triée). */
+  setNavigationList: (list: EditableWordSnapshot[]) => void;
 };
 
 type WordModalState =
@@ -92,6 +100,12 @@ export const WordModalProvider: FC<{
     wordModalReducer,
     initialWordModalState,
   );
+
+  /** Liste de mots dans laquelle naviguer (suit les filtres actifs). */
+  const [navigationList, setNavigationList] = useState<EditableWordSnapshot[]>(
+    [],
+  );
+
   const { addingWordId, importWord } = useCommunityImport();
   const toast = useToast();
 
@@ -116,6 +130,31 @@ export const WordModalProvider: FC<{
   const cancelEditing = () => {
     dispatch({ type: 'CLOSE_EDIT' });
   };
+
+  // ─── Navigation prev/next ─────────────────────────────────────────────────
+
+  const currentIndex = navigationList.findIndex((w) => w.id === activeWord?.id);
+  const hasPrev = navigationList.length > 1;
+  const hasNext = navigationList.length > 1;
+
+  const navigateTo = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (navigationList.length <= 1 || currentIndex === -1) return;
+
+      const nextIndex =
+        direction === 'next'
+          ? (currentIndex + 1) % navigationList.length
+          : (currentIndex - 1 + navigationList.length) % navigationList.length;
+
+      const targetWord = navigationList[nextIndex];
+      if (targetWord) {
+        dispatch({ type: 'REPLACE_WORD', payload: targetWord });
+      }
+    },
+    [navigationList, currentIndex],
+  );
+
+  // ─── Handlers ─────────────────────────────────────────────────────────────
 
   const resetSearchIfNeeded = () => {
     if (window.location.pathname === '/search') {
@@ -175,7 +214,7 @@ export const WordModalProvider: FC<{
   };
 
   return (
-    <WordModalContext.Provider value={{ openWord }}>
+    <WordModalContext.Provider value={{ openWord, setNavigationList }}>
       {children}
       {isModalOpen && activeWord && (
         <WordDetailModal
@@ -194,6 +233,11 @@ export const WordModalProvider: FC<{
           onAddExternalWord={handleAddExternalWord}
           isAddingExternalWord={addingWordId === activeWord?.id}
           isContributorMode={isContributorMode}
+          onNavigate={navigateTo}
+          hasPrev={hasPrev}
+          hasNext={hasNext}
+          currentIndex={currentIndex}
+          totalCount={navigationList.length}
         />
       )}
       {isCompleting && activeWord && (
