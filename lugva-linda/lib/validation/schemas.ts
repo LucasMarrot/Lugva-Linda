@@ -61,7 +61,7 @@ export const getDueWordsSchema = z.object({
     .int('La limite doit etre un entier.')
     .min(1, 'La limite doit etre superieure ou egale a 1.')
     .max(100, 'La limite doit etre inferieure ou egale a 100.')
-    .default(10),
+    .optional(),
   mode: reviewSelectionModeSchema.default('DUE_ONLY'),
 });
 
@@ -141,10 +141,19 @@ export const createWordFormSchema = z.object({
   mandatoryTag: mandatoryTagSchema,
 });
 
+/** Mot proposé dans la langue cible : facultatif, vide => null. */
+export const proposedTermSchema = z
+  .string()
+  .trim()
+  .max(128, 'Le mot proposé ne doit pas depasser 128 caracteres.')
+  .optional()
+  .transform((value) => (value ? value : null));
+
 export const createIncompleteWordFormSchema = z.object({
   translation: nonEmptyTextSchema
     .max(128, 'La traduction ne doit pas depasser 128 caracteres.')
     .transform(formalizeText),
+  proposedTerm: proposedTermSchema,
   mandatoryTag: mandatoryTagSchema,
 });
 

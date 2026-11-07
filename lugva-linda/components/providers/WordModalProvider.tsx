@@ -1,13 +1,25 @@
 'use client';
 
 import type { FC, ReactNode } from 'react';
-import { createContext, useContext, useReducer } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useReducer,
+  useState,
+} from 'react';
 import dynamic from 'next/dynamic';
 import { useToast } from '@/components/providers/ToastProvider';
 import { deleteWordAction, getWordByTextAction } from '@/actions/word-actions';
 import { type EditableWordSnapshot } from '@/lib/words/community';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
 import { toWordSnapshot } from '@/hooks/useWordSnapshot';
+import {
+  findEntryIndex,
+  getAdjacentIndex,
+  getNavigableEntries,
+  type NavigationDirection,
+} from '@/lib/words/navigation';
 
 const WordDetailModal = dynamic(
   () =>
@@ -27,6 +39,8 @@ const WordCompleteModal = dynamic(
 
 type WordModalContextType = {
   openWord: (word: EditableWordSnapshot) => void;
+  /** Enregistre la liste de navigation courante (filtrée + triée). */
+  setNavigationList: (list: EditableWordSnapshot[]) => void;
 };
 
 type WordModalState =
@@ -92,6 +106,19 @@ export const WordModalProvider: FC<{
     wordModalReducer,
     initialWordModalState,
   );
+
+  /** Liste de mots dans laquelle naviguer (suit les filtres actifs). */
+  const [navigationList, setNavigationListState] = useState<
+    EditableWordSnapshot[]
+  >([]);
+
+  // Les mots "À compléter" n'ont pas de fiche de détail : jamais navigables.
+  const setNavigationList = useCallback(
+    (list: EditableWordSnapshot[]) =>
+      setNavigationListState(getNavigableEntries(list)),
+    [],
+  );
+
   const { addingWordId, importWord } = useCommunityImport();
   const toast = useToast();
 
@@ -116,6 +143,31 @@ export const WordModalProvider: FC<{
   const cancelEditing = () => {
     dispatch({ type: 'CLOSE_EDIT' });
   };
+
+  // ─── Navigation prev/next ─────────────────────────────────────────────────
+
+  const currentIndex = activeWord
+    ? findEntryIndex(navigationList, activeWord)
+    : -1;
+
+  const navigateTo = useCallback(
+    (direction: NavigationDirection) => {
+      const nextIndex = getAdjacentIndex(
+        navigationList.length,
+        currentIndex,
+        direction,
+      );
+      if (nextIndex === null) return;
+
+      const targetWord = navigationList[nextIndex];
+      if (targetWord) {
+        dispatch({ type: 'REPLACE_WORD', payload: targetWord });
+      }
+    },
+    [navigationList, currentIndex],
+  );
+
+  // ─── Handlers ─────────────────────────────────────────────────────────────
 
   const resetSearchIfNeeded = () => {
     if (window.location.pathname === '/search') {
@@ -175,7 +227,7 @@ export const WordModalProvider: FC<{
   };
 
   return (
-    <WordModalContext.Provider value={{ openWord }}>
+    <WordModalContext.Provider value={{ openWord, setNavigationList }}>
       {children}
       {isModalOpen && activeWord && (
         <WordDetailModal
@@ -194,6 +246,9 @@ export const WordModalProvider: FC<{
           onAddExternalWord={handleAddExternalWord}
           isAddingExternalWord={addingWordId === activeWord?.id}
           isContributorMode={isContributorMode}
+          onNavigate={navigateTo}
+          currentIndex={currentIndex}
+          totalCount={navigationList.length}
         />
       )}
       {isCompleting && activeWord && (

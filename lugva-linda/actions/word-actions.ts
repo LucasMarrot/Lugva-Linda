@@ -13,6 +13,7 @@ import {
   wordIdSchema,
   CommunityImportSelection,
   mandatoryTagSchema,
+  proposedTermSchema,
 } from '@/lib/validation/schemas';
 import { revalidatePath } from 'next/cache';
 import {
@@ -536,6 +537,9 @@ export async function createIncompleteWordAction(formData: FormData) {
     const languageId = rawLanguageId
       ? languageIdSchema.parse(rawLanguageId)
       : undefined;
+    const proposedTerm = proposedTermSchema.parse(
+      formData.get('proposedTerm') ?? undefined,
+    );
 
     await createIncompleteWordForUser(
       user.id,
@@ -543,6 +547,7 @@ export async function createIncompleteWordAction(formData: FormData) {
       mandatoryTag,
       languageId,
       user.id,
+      proposedTerm,
     );
 
     revalidatePath('/');
@@ -580,16 +585,22 @@ export async function completeWordAction(wordId: string, formData: FormData) {
     const term = String(formData.get('term') ?? '');
     const audioFile = formData.get('audioFile') as File | null;
 
-    await completeWordForContributor(effectiveOwnerId, validatedWordId, term, {
-      audioFile,
-      supabase,
-      contributorId: user.id,
-    });
+    const result = await completeWordForContributor(
+      effectiveOwnerId,
+      validatedWordId,
+      term,
+      {
+        audioFile,
+        supabase,
+        contributorId: user.id,
+      },
+    );
 
     revalidatePath('/');
     revalidatePath('/words');
     revalidatePath('/contribute');
     logActionSuccess('completeWordAction', userId, startedAt);
+    return result;
   } catch (error) {
     logActionError('completeWordAction', userId, error, startedAt);
     throw toActionError(error);

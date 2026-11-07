@@ -1,5 +1,7 @@
 'use client';
 
+import { useCallback, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +12,8 @@ import { PageHeader } from '@/components/shared/';
 import { WordForm } from '@/components/shared/word-modal/word-form/WordForm';
 import { WordDetailView } from './word-detail-view/WordDetailView';
 import { type EditableWordSnapshot } from '@/lib/words/community';
+import { getEntryKey, type NavigationDirection } from '@/lib/words/navigation';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 
 type WordDetailModalProps = {
   word: EditableWordSnapshot | null;
@@ -27,6 +31,17 @@ type WordDetailModalProps = {
   onAddExternalWord?: (word: EditableWordSnapshot) => Promise<void>;
   isAddingExternalWord?: boolean;
   isContributorMode?: boolean;
+  // ─── Navigation (swipe + flèches clavier uniquement) ─────────────────────
+  onNavigate?: (direction: NavigationDirection) => void;
+  currentIndex?: number;
+  totalCount?: number;
+};
+
+// Sens du glissement : 1 = le mot suivant arrive par la droite
+const slideVariants = {
+  enter: (direction: number) => ({ x: direction * 40, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({ x: direction * -40, opacity: 0 }),
 };
 
 export const WordDetailModal = ({
@@ -45,7 +60,29 @@ export const WordDetailModal = ({
   onAddExternalWord,
   isAddingExternalWord = false,
   isContributorMode = false,
+  onNavigate,
+  currentIndex = -1,
+  totalCount = 0,
 }: WordDetailModalProps) => {
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const canNavigate = !!onNavigate && totalCount > 1 && currentIndex !== -1;
+
+  const handleNavigate = useCallback(
+    (navigationDirection: NavigationDirection) => {
+      if (canNavigate && !isEditing) {
+        setDirection(navigationDirection === 'next' ? 1 : -1);
+        onNavigate!(navigationDirection);
+      }
+    },
+    [canNavigate, isEditing, onNavigate],
+  );
+
+  // Swipe tactile + flèches clavier — désactivé en mode édition
+  useSwipeNavigation({
+    onNavigate: handleNavigate,
+    disabled: !isOpen || isEditing || !canNavigate,
+  });
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent fullScreen={isEditing}>
@@ -77,18 +114,43 @@ export const WordDetailModal = ({
               }
               onClose={onClose}
             />
+
             {!isEditing || !canEdit ? (
-              <WordDetailView
-                word={word}
-                canEdit={canEdit}
-                canDelete={canDelete}
-                canAdd={canAdd}
-                onEdit={onStartEdit}
-                onDelete={onDelete}
-                onAddExternalWord={onAddExternalWord}
-                isAddingExternalWord={isAddingExternalWord}
-                onRelatedWordSelect={onRelatedWordSelect}
-              />
+              <>
+                {/* Indicateur de position */}
+                {canNavigate && (
+                  <div className="text-muted-foreground flex items-center justify-center gap-2 pt-0 pb-1 text-xs">
+                    <span>
+                      {currentIndex + 1} / {totalCount}
+                    </span>
+                  </div>
+                )}
+
+                <AnimatePresence mode="wait" initial={false} custom={direction}>
+                  <motion.div
+                    key={getEntryKey(word)}
+                    custom={direction}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    className="flex min-h-0 flex-1 flex-col"
+                  >
+                    <WordDetailView
+                      word={word}
+                      canEdit={canEdit}
+                      canDelete={canDelete}
+                      canAdd={canAdd}
+                      onEdit={onStartEdit}
+                      onDelete={onDelete}
+                      onAddExternalWord={onAddExternalWord}
+                      isAddingExternalWord={isAddingExternalWord}
+                      onRelatedWordSelect={onRelatedWordSelect}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </>
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto p-6">
                 <WordForm
