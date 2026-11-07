@@ -20,7 +20,8 @@ type ReviewPageProps = {
   searchParams: Promise<ReviewSearchParams>;
 };
 
-const DEFAULT_DUE_LIMIT = 10;
+// Taille des cartes simulées en mode développement (sans base de données).
+const SIMULATION_SESSION_SIZE = 10;
 
 const buildReviewHref = (state: ReviewSearchParams) => {
   const searchParams = new URLSearchParams();
@@ -87,7 +88,9 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
   const isEarlyMode = requestedMode === 'ALLOW_EARLY';
   const isPracticeMode = requestedMode === 'PRACTICE';
 
-  const sessionSize = parsedSearchParams.fill ?? DEFAULT_DUE_LIMIT;
+  // `fill` (entraînement libre) plafonne la session ; sans `fill`, la révision
+  // du jour inclut toutes les cartes à réviser.
+  const sessionSize = parsedSearchParams.fill;
 
   let reviewSelectionMode: ReviewMode = 'DUE_ONLY';
   if (isEarlyMode) reviewSelectionMode = 'ALLOW_EARLY';
@@ -115,7 +118,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
 
   const cardsToReview =
     isSimulationEnabled && isDevelopment
-      ? generateMockCards(sessionSize)
+      ? generateMockCards(sessionSize ?? SIMULATION_SESSION_SIZE)
       : await getDueCards({
           languageId,
           limit: sessionSize,

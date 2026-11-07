@@ -27,10 +27,11 @@ const mapReviewGradeToRating = (grade: ReviewGrade) => {
   return Rating.Easy;
 };
 
+// `limit` absent = pas de plafond (révision du jour : toutes les cartes dues).
 const selectReviewCards = async (
   userId: string,
   languageId: string,
-  limit: number,
+  limit: number | undefined,
   mode: ReviewMode,
 ) => {
   if (mode === 'PRACTICE') {
@@ -67,8 +68,11 @@ const selectReviewCards = async (
     orderBy: { due: 'asc' },
   });
 
+  const remainingSlots =
+    limit === undefined ? undefined : limit - dueCards.length;
+
   const newCards =
-    dueCards.length < limit
+    remainingSlots === undefined || remainingSlots > 0
       ? await prisma.card.findMany({
           where: {
             ownerId: userId,
@@ -80,7 +84,7 @@ const selectReviewCards = async (
             },
           },
           include: { word: true },
-          take: limit - dueCards.length,
+          take: remainingSlots,
           orderBy: { createdAt: 'asc' },
         })
       : [];
@@ -125,7 +129,7 @@ const selectReviewCards = async (
 export const getDueCardsForReview = async (
   userId: string,
   languageId: string,
-  options: { limit: number; mode: ReviewMode },
+  options: { limit?: number; mode: ReviewMode },
 ) => {
   await assertUserLanguageAccess(userId, languageId);
 

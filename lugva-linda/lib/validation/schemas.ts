@@ -61,7 +61,7 @@ export const getDueWordsSchema = z.object({
     .int('La limite doit etre un entier.')
     .min(1, 'La limite doit etre superieure ou egale a 1.')
     .max(100, 'La limite doit etre inferieure ou egale a 100.')
-    .default(10),
+    .optional(),
   mode: reviewSelectionModeSchema.default('DUE_ONLY'),
 });
 
