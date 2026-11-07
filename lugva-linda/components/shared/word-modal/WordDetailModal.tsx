@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
@@ -11,9 +12,8 @@ import { PageHeader } from '@/components/shared/';
 import { WordForm } from '@/components/shared/word-modal/word-form/WordForm';
 import { WordDetailView } from './word-detail-view/WordDetailView';
 import { type EditableWordSnapshot } from '@/lib/words/community';
+import { getEntryKey, type NavigationDirection } from '@/lib/words/navigation';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 type WordDetailModalProps = {
   word: EditableWordSnapshot | null;
@@ -31,12 +31,17 @@ type WordDetailModalProps = {
   onAddExternalWord?: (word: EditableWordSnapshot) => Promise<void>;
   isAddingExternalWord?: boolean;
   isContributorMode?: boolean;
-  // ─── Navigation ──────────────────────────────────────────────────────────
-  onNavigate?: (direction: 'prev' | 'next') => void;
-  hasPrev?: boolean;
-  hasNext?: boolean;
+  // ─── Navigation (swipe + flèches clavier uniquement) ─────────────────────
+  onNavigate?: (direction: NavigationDirection) => void;
   currentIndex?: number;
   totalCount?: number;
+};
+
+// Sens du glissement : 1 = le mot suivant arrive par la droite
+const slideVariants = {
+  enter: (direction: number) => ({ x: direction * 40, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({ x: direction * -40, opacity: 0 }),
 };
 
 export const WordDetailModal = ({
@@ -56,17 +61,17 @@ export const WordDetailModal = ({
   isAddingExternalWord = false,
   isContributorMode = false,
   onNavigate,
-  hasPrev = false,
-  hasNext = false,
   currentIndex = -1,
   totalCount = 0,
 }: WordDetailModalProps) => {
-  const canNavigate = !!onNavigate && totalCount > 1;
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const canNavigate = !!onNavigate && totalCount > 1 && currentIndex !== -1;
 
   const handleNavigate = useCallback(
-    (direction: 'prev' | 'next') => {
+    (navigationDirection: NavigationDirection) => {
       if (canNavigate && !isEditing) {
-        onNavigate!(direction);
+        setDirection(navigationDirection === 'next' ? 1 : -1);
+        onNavigate!(navigationDirection);
       }
     },
     [canNavigate, isEditing, onNavigate],
@@ -113,7 +118,7 @@ export const WordDetailModal = ({
             {!isEditing || !canEdit ? (
               <>
                 {/* Indicateur de position */}
-                {canNavigate && currentIndex !== -1 && (
+                {canNavigate && (
                   <div className="text-muted-foreground flex items-center justify-center gap-2 pt-0 pb-1 text-xs">
                     <span>
                       {currentIndex + 1} / {totalCount}
@@ -121,52 +126,30 @@ export const WordDetailModal = ({
                   </div>
                 )}
 
-                <WordDetailView
-                  word={word}
-                  canEdit={canEdit}
-                  canDelete={canDelete}
-                  canAdd={canAdd}
-                  onEdit={onStartEdit}
-                  onDelete={onDelete}
-                  onAddExternalWord={onAddExternalWord}
-                  isAddingExternalWord={isAddingExternalWord}
-                  onRelatedWordSelect={onRelatedWordSelect}
-                />
-
-                {/* Boutons de navigation prev / next */}
-                {canNavigate && (
-                  <div className="border-border/50 flex items-center justify-between border-t px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => handleNavigate('prev')}
-                      disabled={!hasPrev}
-                      aria-label="Mot précédent"
-                      className={cn(
-                        'text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                        'hover:bg-accent focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none',
-                        'disabled:pointer-events-none disabled:opacity-30',
-                      )}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      Précédent
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleNavigate('next')}
-                      disabled={!hasNext}
-                      aria-label="Mot suivant"
-                      className={cn(
-                        'text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                        'hover:bg-accent focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none',
-                        'disabled:pointer-events-none disabled:opacity-30',
-                      )}
-                    >
-                      Suivant
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
+                <AnimatePresence mode="wait" initial={false} custom={direction}>
+                  <motion.div
+                    key={getEntryKey(word)}
+                    custom={direction}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    className="flex min-h-0 flex-1 flex-col"
+                  >
+                    <WordDetailView
+                      word={word}
+                      canEdit={canEdit}
+                      canDelete={canDelete}
+                      canAdd={canAdd}
+                      onEdit={onStartEdit}
+                      onDelete={onDelete}
+                      onAddExternalWord={onAddExternalWord}
+                      isAddingExternalWord={isAddingExternalWord}
+                      onRelatedWordSelect={onRelatedWordSelect}
+                    />
+                  </motion.div>
+                </AnimatePresence>
               </>
             ) : (
               <div className="min-h-0 flex-1 overflow-y-auto p-6">

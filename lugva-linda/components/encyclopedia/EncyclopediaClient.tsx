@@ -10,7 +10,7 @@ import { StateMessage } from '@/components/shared/';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
 import { EncyclopediaItem } from './EncyclopediaItem';
 import { frenchPluralize } from '@/lib/utils';
-import { toWordSnapshot } from '@/hooks/useWordSnapshot';
+import { toVisualWordSnapshot } from '@/hooks/useWordSnapshot';
 
 export type VisualWord = Word & {
   visualId: string;
@@ -119,13 +119,15 @@ export const EncyclopediaClient: FC<EncyclopediaClientProps> = ({
     return result;
   }, [visualWords, selectedTags, statusFilter]);
 
-  // Alimenter le provider de navigation à chaque changement de liste filtrée
+  // Alimenter le provider de navigation à chaque changement de liste filtrée.
+  // La liste est vidée au démontage : hors encyclopédie, la navigation est désactivée.
   useEffect(() => {
-    const snapshots = filteredWords.map((vw) =>
-      toWordSnapshot(vw.originalWord, mode),
+    setNavigationList(
+      filteredWords.map((vw) => toVisualWordSnapshot(vw, mode)),
     );
-    setNavigationList(snapshots);
   }, [filteredWords, mode, setNavigationList]);
+
+  useEffect(() => () => setNavigationList([]), [setNavigationList]);
 
   const groupedWords = useMemo(() => {
     return filteredWords.reduce(
