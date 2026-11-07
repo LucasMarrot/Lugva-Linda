@@ -36,13 +36,20 @@ export const WordCompleteModal = ({
   const [audioError, setAudioError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Pré-remplit avec la proposition de l'apprenant, sans valider : le
+  // contributeur doit confirmer explicitement en cliquant sur le bouton.
+  const proposedTerm = word?.proposedTerm ?? '';
+  const wordId = word?.id;
+
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      setTermValue(proposedTerm);
+    } else {
       setTermValue('');
       setAudioFile(null);
       setAudioError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, wordId, proposedTerm]);
 
   const termValidation = nonEmptyTextSchema.safeParse(termValue);
   const isValid = termValidation.success;
@@ -58,8 +65,12 @@ export const WordCompleteModal = ({
         formData.append('audioFile', audioFile);
       }
 
-      await completeWordAction(word.id, formData);
-      toast.success(`"${termValue}" complété !`);
+      const result = await completeWordAction(word.id, formData);
+      toast.success(
+        result.mergedIntoTerm
+          ? `"${termValue}" ajouté comme synonyme de "${result.mergedIntoTerm}" !`
+          : `"${termValue}" complété !`,
+      );
 
       setTermValue('');
       setAudioFile(null);
@@ -91,6 +102,9 @@ export const WordCompleteModal = ({
         </DialogTitle>
         <DialogDescription>
           Ajoutez le mot et la prononciation pour compléter cette traduction.
+          {word?.proposedTerm
+            ? ` L'apprenant propose : ${word.proposedTerm}.`
+            : ''}
         </DialogDescription>
 
         {word && (

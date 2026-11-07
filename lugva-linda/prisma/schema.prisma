@@ -121,6 +121,7 @@ model Word {
   termNormalized        String
   translation           String
   translationNormalized String
+  proposedTerm          String?
   mandatoryTag          String
   status                WordStatus @default(ACTIVE)
   tags                  String[] @default([])

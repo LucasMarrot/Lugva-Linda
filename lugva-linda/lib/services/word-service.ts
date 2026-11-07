@@ -1468,6 +1468,7 @@ export const createIncompleteWordForUser = async (
   mandatoryTag: MandatoryTag,
   languageId?: string,
   createdById?: string,
+  proposedTerm?: string | null,
 ) => {
   const resolvedLanguageId = await resolveLanguageId(ownerId, languageId);
   const creatorId = createdById ?? ownerId;
@@ -1479,7 +1480,25 @@ export const createIncompleteWordForUser = async (
     throw new ValidationError('La traduction est obligatoire.');
   }
 
-  // Generate a unique temporary term to satisfy DB constraints and avoid duplicate checks
+  const normalizedProposedTerm = proposedTerm
+    ? normalizeText(proposedTerm)
+    : null;
+
+  if (normalizedProposedTerm) {
+    // Le mot proposé ne doit pas déjà exister (actif) avec cette nature.
+    const isDuplicate = await checkWordTermNatureDuplicateForOwner(
+      ownerId,
+      resolvedLanguageId,
+      normalizedProposedTerm,
+      mandatoryTag,
+    );
+    if (isDuplicate) {
+      throw new DuplicateError('Ce mot existe deja avec cette nature.');
+    }
+  }
+
+  // Terme provisoire unique : la contrainte d'unicité ne doit pas dépendre
+  // de la proposition. Le statut TO_COMPLETE reste la seule source de vérité.
   const tempTerm = `?-${crypto.randomUUID()}`;
 
   const word = await prisma.word.create({
@@ -1491,6 +1510,7 @@ export const createIncompleteWordForUser = async (
       termNormalized: tempTerm,
       translation: normalizedTranslation,
       translationNormalized,
+      proposedTerm: normalizedProposedTerm,
       mandatoryTag,
       status: WordStatus.TO_COMPLETE,
       tags: [mandatoryTag],
@@ -1506,6 +1526,38 @@ export const createIncompleteWordForUser = async (
   );
 
   return word;
+};
+
+/**
+ * Fusionne une demande "À compléter" dans un concept actif de même traduction :
+ * le terme rejoint les synonymes du concept, la demande est supprimée
+ * (soft delete, comme une suppression normale). Aucune carte n'est créée.
+ */
+const mergeIncompleteWordIntoConcept = async (
+  placeholder: { id: string },
+  concept: { id: string; term: string; synonyms: string[] },
+  term: string,
+) => {
+  const { now, purgeAfter } = retentionDate();
+  const deleteToken = BigInt(now.getTime());
+
+  const nextSynonyms = sanitizeSynonymsForTerm(
+    mergeTermsByNormalized(concept.synonyms, [term]),
+    concept.term,
+  );
+
+  const [updatedConcept] = await prisma.$transaction([
+    prisma.word.update({
+      where: { id: concept.id },
+      data: { synonyms: nextSynonyms },
+    }),
+    prisma.word.update({
+      where: { id: placeholder.id },
+      data: { isDeleted: true, deletedAt: now, purgeAfter, deleteToken },
+    }),
+  ]);
+
+  return updatedConcept;
 };
 
 export const completeWordForContributor = async (
@@ -1534,6 +1586,33 @@ export const completeWordForContributor = async (
   const normalizedTerm = normalizeText(term);
   if (!normalizedTerm) {
     throw new ValidationError('Le mot est obligatoire.');
+  }
+
+  // Même traduction qu'un mot actif : le terme devient un synonyme de ce
+  // concept (comme pour la création d'un mot), sans nouvelles cartes.
+  const existingConcept = await prisma.word.findFirst({
+    where: {
+      ownerId,
+      languageId: existingWord.languageId,
+      translationNormalized: existingWord.translationNormalized,
+      status: WordStatus.ACTIVE,
+      isDeleted: false,
+      deleteToken: ACTIVE_DELETE_TOKEN,
+      id: { not: wordId },
+    },
+  });
+
+  if (
+    existingConcept &&
+    normalizeForLookup(existingConcept.term) !==
+      normalizeForLookup(normalizedTerm)
+  ) {
+    const merged = await mergeIncompleteWordIntoConcept(
+      existingWord,
+      existingConcept,
+      normalizedTerm,
+    );
+    return { word: merged, mergedIntoTerm: merged.term };
   }
 
   await assertNoActiveDuplicate(
@@ -1598,7 +1677,7 @@ export const completeWordForContributor = async (
     );
   }
 
-  return result;
+  return { word: result, mergedIntoTerm: null as string | null };
 };
 
 export const countWordsToCompleteSinceDate = async (
