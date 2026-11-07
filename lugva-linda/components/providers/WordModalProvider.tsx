@@ -17,6 +17,7 @@ import { toWordSnapshot } from '@/hooks/useWordSnapshot';
 import {
   findEntryIndex,
   getAdjacentIndex,
+  getNavigableEntries,
   type NavigationDirection,
 } from '@/lib/words/navigation';
 
@@ -107,7 +108,14 @@ export const WordModalProvider: FC<{
   );
 
   /** Liste de mots dans laquelle naviguer (suit les filtres actifs). */
-  const [navigationList, setNavigationList] = useState<EditableWordSnapshot[]>(
+  const [navigationList, setNavigationListState] = useState<
+    EditableWordSnapshot[]
+  >([]);
+
+  // Les mots "À compléter" n'ont pas de fiche de détail : jamais navigables.
+  const setNavigationList = useCallback(
+    (list: EditableWordSnapshot[]) =>
+      setNavigationListState(getNavigableEntries(list)),
     [],
   );
 

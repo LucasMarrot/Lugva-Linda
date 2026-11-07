@@ -3,6 +3,7 @@ import {
   findEntryIndex,
   getAdjacentIndex,
   getEntryKey,
+  getNavigableEntries,
 } from '@/lib/words/navigation';
 
 type Entry = { id: string; term: string };
@@ -32,6 +33,33 @@ describe('findEntryIndex()', () => {
 
   it('returns -1 when the entry is not in the list', () => {
     expect(findEntryIndex(list, { id: '9', term: 'absent' })).toBe(-1);
+  });
+});
+
+describe('getNavigableEntries()', () => {
+  it('excludes words to complete, which have no detail sheet', () => {
+    const entries = [
+      { id: '1', term: 'chat', status: 'ACTIVE' as const },
+      { id: '2', term: 'chien', status: 'TO_COMPLETE' as const },
+      { id: '3', term: 'maison', status: 'ACTIVE' as const },
+    ];
+
+    expect(getNavigableEntries(entries).map((e) => e.term)).toEqual([
+      'chat',
+      'maison',
+    ]);
+  });
+
+  it('keeps the list order', () => {
+    const entries = [
+      { id: '3', term: 'maison', status: 'ACTIVE' as const },
+      { id: '1', term: 'arbre', status: 'ACTIVE' as const },
+    ];
+
+    expect(getNavigableEntries(entries).map((e) => e.term)).toEqual([
+      'maison',
+      'arbre',
+    ]);
   });
 });
 

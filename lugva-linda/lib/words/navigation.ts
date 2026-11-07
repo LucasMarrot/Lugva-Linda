@@ -8,6 +8,14 @@ export type NavigationDirection = 'prev' | 'next';
 export const getEntryKey = (entry: { id: string; term: string }): string =>
   `${entry.id}::${entry.term}`;
 
+/**
+ * Seules les fiches détaillées sont navigables : un mot "À compléter"
+ * ouvre la modale de complétion et n'a pas de fiche de détail.
+ */
+export const getNavigableEntries = <T extends { status?: string }>(
+  list: readonly T[],
+): T[] => list.filter((entry) => entry.status !== 'TO_COMPLETE');
+
 /** Position de l'entrée dans la liste (ordre affiché), ou -1 si absente. */
 export const findEntryIndex = <T extends { id: string; term: string }>(
   list: readonly T[],
