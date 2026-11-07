@@ -70,6 +70,11 @@ export const WordListItem = ({
             {word.translation || 'À compléter'}
           </span>
         )}
+        {word.status === 'TO_COMPLETE' && word.proposedTerm && (
+          <span className="truncate text-xs text-amber-500 sm:text-sm">
+            {word.proposedTerm}
+          </span>
+        )}
 
         {ownerName && (
           <span

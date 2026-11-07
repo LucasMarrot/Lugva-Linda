@@ -33,6 +33,7 @@ export const generateDuelDeck = async (
     where: {
       ownerId: challengerId,
       languageId,
+      status: 'ACTIVE',
       isDeleted: false,
       deleteToken: BigInt(0),
     },
@@ -44,6 +45,7 @@ export const generateDuelDeck = async (
     where: {
       ownerId: targetId,
       languageId,
+      status: 'ACTIVE',
       isDeleted: false,
       deleteToken: BigInt(0),
     },
@@ -68,6 +70,7 @@ export const generateDuelDeck = async (
       ownerId: { in: [challengerId, targetId] },
       languageId,
       translationNormalized: { in: selectedTranslations },
+      status: 'ACTIVE',
       isDeleted: false,
       deleteToken: BigInt(0),
     },

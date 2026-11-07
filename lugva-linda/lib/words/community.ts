@@ -17,6 +17,8 @@ export type EditableWordSnapshot = {
   customAudioUrl: string | null;
   relatedWords: string[];
   status?: 'ACTIVE' | 'TO_COMPLETE';
+  /** Mot proposé par l'apprenant (langue cible), pour les mots à compléter. */
+  proposedTerm?: string | null;
 };
 
 export type WordOwnerSummary = {

@@ -79,5 +79,6 @@ export const toWordSnapshot = (
     customAudioUrl: word.customAudioUrl,
     relatedWords: word.relatedWords,
     status: word.status,
+    proposedTerm: word.proposedTerm ?? null,
   };
 };

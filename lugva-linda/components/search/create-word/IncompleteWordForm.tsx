@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useMaybeActiveLanguage } from '@/components/providers/ActiveLanguageProvider';
 import { Send } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import { createIncompleteWordAction } from '@/actions/word-actions';
@@ -33,6 +34,10 @@ export const IncompleteWordForm = ({
   onSuccess,
 }: IncompleteWordFormProps) => {
   const toast = useToast();
+  const activeLanguage = useMaybeActiveLanguage();
+  const targetLanguageName =
+    activeLanguage?.languages.find((language) => language.id === currentLangId)
+      ?.name ?? 'langue cible';
 
   const [selectedMandatoryTag, setSelectedMandatoryTag] = useState<
     string | null
@@ -41,6 +46,7 @@ export const IncompleteWordForm = ({
   const [translationValue, setTranslationValue] = useState(
     formalizeText(initialQuery) || initialQuery,
   );
+  const [proposedTermValue, setProposedTermValue] = useState('');
   const [selectedContributorId, setSelectedContributorId] = useState<string>(
     contributors.length === 1 ? contributors[0].id : '',
   );
@@ -55,9 +61,10 @@ export const IncompleteWordForm = ({
     () =>
       createIncompleteWordFormSchema.safeParse({
         translation: translationValue,
+        proposedTerm: proposedTermValue,
         mandatoryTag: selectedMandatoryTag ?? '',
       }),
-    [translationValue, selectedMandatoryTag],
+    [translationValue, proposedTermValue, selectedMandatoryTag],
   );
 
   const validationIssues = formValidation.success
@@ -65,6 +72,9 @@ export const IncompleteWordForm = ({
     : formValidation.error.issues;
   const translationError = validationIssues.find(
     (issue) => issue.path[0] === 'translation',
+  )?.message;
+  const proposedTermError = validationIssues.find(
+    (issue) => issue.path[0] === 'proposedTerm',
   )?.message;
   const mandatoryTagError = validationIssues.find(
     (issue) => issue.path[0] === 'mandatoryTag',
@@ -134,7 +144,7 @@ export const IncompleteWordForm = ({
           </div>
 
           <div className="space-y-2">
-            <SectionHeader title="Traduction" />
+            <SectionHeader title="Mot en français" />
             <Input
               id="translation"
               name="translation"
@@ -153,6 +163,30 @@ export const IncompleteWordForm = ({
             {translationError && (
               <p className="text-destructive text-sm font-medium">
                 {translationError}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <SectionHeader
+              title={`Mot en ${targetLanguageName} (facultatif)`}
+            />
+            <Input
+              id="proposedTerm"
+              name="proposedTerm"
+              value={proposedTermValue}
+              onChange={(event) => setProposedTermValue(event.target.value)}
+              aria-invalid={!!proposedTermError}
+              placeholder="Ex: Caminar (laissez vide si inconnu)"
+              className={cn(
+                'bg-background h-11',
+                proposedTermError &&
+                  'border-destructive ring-destructive/20 focus-visible:ring-destructive/30',
+              )}
+            />
+            {proposedTermError && (
+              <p className="text-destructive text-sm font-medium">
+                {proposedTermError}
               </p>
             )}
           </div>
