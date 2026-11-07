@@ -35,6 +35,28 @@ export const getWordVisualMeta = (
   };
 };
 
+/**
+ * Snapshot d'une ligne de liste (mot principal ou synonyme).
+ * Le terme et les synonymes correspondent à ce qui est affiché dans la liste,
+ * pour que la fiche ouverte et la navigation suivent l'ordre affiché.
+ */
+export const toVisualWordSnapshot = (
+  visualWord: {
+    originalWord: Word | WordCommunityView;
+    displayTerm: string;
+    displaySynonyms: string[];
+  },
+  mode: SnapshotMode,
+): EditableWordSnapshot =>
+  toWordSnapshot(
+    {
+      ...visualWord.originalWord,
+      term: visualWord.displayTerm,
+      synonyms: visualWord.displaySynonyms,
+    },
+    mode,
+  );
+
 export const toWordSnapshot = (
   word: Word | WordCommunityView,
   mode: SnapshotMode,

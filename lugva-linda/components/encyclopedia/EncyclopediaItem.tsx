@@ -1,6 +1,9 @@
 'use client';
 
-import { getWordVisualMeta, toWordSnapshot } from '@/hooks/useWordSnapshot';
+import {
+  getWordVisualMeta,
+  toVisualWordSnapshot,
+} from '@/hooks/useWordSnapshot';
 import { WordListItem } from '../shared';
 import { useUserColor } from '@/hooks/useUserColor';
 import { EditableWordSnapshot } from '@/lib/words/community';
@@ -40,7 +43,7 @@ export const EncyclopediaItem = ({
           ? () => onImport(visualWord.originalWord.id)
           : undefined
       }
-      onClick={() => onOpen(toWordSnapshot(visualWord.originalWord, mode))}
+      onClick={() => onOpen(toVisualWordSnapshot(visualWord, mode))}
     />
   );
 };

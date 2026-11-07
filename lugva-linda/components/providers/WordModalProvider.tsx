@@ -14,6 +14,11 @@ import { deleteWordAction, getWordByTextAction } from '@/actions/word-actions';
 import { type EditableWordSnapshot } from '@/lib/words/community';
 import { useCommunityImport } from '@/hooks/useCommunityImport';
 import { toWordSnapshot } from '@/hooks/useWordSnapshot';
+import {
+  findEntryIndex,
+  getAdjacentIndex,
+  type NavigationDirection,
+} from '@/lib/words/navigation';
 
 const WordDetailModal = dynamic(
   () =>
@@ -133,18 +138,18 @@ export const WordModalProvider: FC<{
 
   // ─── Navigation prev/next ─────────────────────────────────────────────────
 
-  const currentIndex = navigationList.findIndex((w) => w.id === activeWord?.id);
-  const hasPrev = navigationList.length > 1;
-  const hasNext = navigationList.length > 1;
+  const currentIndex = activeWord
+    ? findEntryIndex(navigationList, activeWord)
+    : -1;
 
   const navigateTo = useCallback(
-    (direction: 'prev' | 'next') => {
-      if (navigationList.length <= 1 || currentIndex === -1) return;
-
-      const nextIndex =
-        direction === 'next'
-          ? (currentIndex + 1) % navigationList.length
-          : (currentIndex - 1 + navigationList.length) % navigationList.length;
+    (direction: NavigationDirection) => {
+      const nextIndex = getAdjacentIndex(
+        navigationList.length,
+        currentIndex,
+        direction,
+      );
+      if (nextIndex === null) return;
 
       const targetWord = navigationList[nextIndex];
       if (targetWord) {
@@ -234,8 +239,6 @@ export const WordModalProvider: FC<{
           isAddingExternalWord={addingWordId === activeWord?.id}
           isContributorMode={isContributorMode}
           onNavigate={navigateTo}
-          hasPrev={hasPrev}
-          hasNext={hasNext}
           currentIndex={currentIndex}
           totalCount={navigationList.length}
         />
